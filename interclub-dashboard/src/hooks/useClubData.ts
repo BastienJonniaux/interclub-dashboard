@@ -12,6 +12,7 @@ import { ClubFrbe, DivisionFrbe, VenueFrbe } from '../modelsFRBE';
 import { calculateClubPlayerStats, PlayerStats } from '../domain/performance';
 import { calculateDivisionStandings, DivisionStandingTable } from '../domain/standings';
 import { scoutNextMatch, NextMatchScout } from '../domain/scouting';
+import { LatestTeamMatch, extractLatestClubMatches } from '../domain/matches';
 
 export interface ClubDataState {
   loading: boolean;
@@ -21,6 +22,7 @@ export interface ClubDataState {
   playerStats: PlayerStats[];
   standings: DivisionStandingTable[];
   scouting: NextMatchScout[];
+  latestMatches: LatestTeamMatch[];
   allDivisions: DivisionFrbe[];
   playerDirectory: Map<number, { name: string; rating: number; clubName?: string }>;
   isFallback: boolean;
@@ -37,6 +39,7 @@ export function useClubData(): ClubDataState {
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [standings, setStandings] = useState<DivisionStandingTable[]>([]);
   const [scouting, setScouting] = useState<NextMatchScout[]>([]);
+  const [latestMatches, setLatestMatches] = useState<LatestTeamMatch[]>([]);
   const [allDivisions, setAllDivisions] = useState<DivisionFrbe[]>([]);
   const [playerDirectory, setPlayerDirectory] = useState<
     Map<number, { name: string; rating: number; clubName?: string }>
@@ -78,7 +81,7 @@ export function useClubData(): ClubDataState {
       setAllDivisions(currentRoundDivisions);
 
       // 5. Calculate Player Stats
-      const stats = calculateClubPlayerStats(clubData.players || [], currentRoundDivisions, clubId);
+      const stats = calculateClubPlayerStats(clubData.players || [], currentRoundDivisions, clubId, directory);
       setPlayerStats(stats);
 
       // 6. Calculate Division Standings & Scouting for each team
@@ -118,6 +121,11 @@ export function useClubData(): ClubDataState {
 
       setStandings(divisionStandingsList);
       setScouting(scoutingList);
+
+      // 7. Extract Latest Played Matches with board-by-board detail
+      const latest = extractLatestClubMatches(currentRoundDivisions, clubId, directory);
+      setLatestMatches(latest);
+
       setIsFallback(isFallbackMode);
     } catch (err: any) {
       console.error('Failed to load club data:', err);
@@ -144,6 +152,7 @@ export function useClubData(): ClubDataState {
     playerStats,
     standings,
     scouting,
+    latestMatches,
     allDivisions,
     playerDirectory,
     isFallback,

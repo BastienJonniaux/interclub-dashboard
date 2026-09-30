@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
 import { useSimulator, AvailabilityStatus } from '../../context/SimulatorContext';
 import {
@@ -14,6 +14,7 @@ import {
   Check,
   X,
   HelpCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 interface Props {
@@ -52,15 +53,27 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName }) => {
     assignedBoards
   );
 
+  // Sort players by Elo descending (highest rated first, unrated last)
+  const sortedClubPlayers = useMemo(() => {
+    return [...players].sort(
+      (a, b) =>
+        (b.assignedrating || 0) - (a.assignedrating || 0) ||
+        a.last_name.localeCompare(b.last_name)
+    );
+  }, [players]);
+
+  // Available players (excluding unavailable ones, sorted by Elo descending)
+  const availablePlayers = useMemo(() => {
+    return sortedClubPlayers.filter((p) => {
+      const status = availability[p.idnumber] || 'tentative';
+      return status !== 'unavailable';
+    });
+  }, [sortedClubPlayers, availability]);
+
   // Available players (excluding players already assigned to this team on another board)
   const currentlyAssignedIds = new Set(
     Object.values(currentDraft).filter((id): id is number => id !== null && id !== undefined)
   );
-
-  const availablePlayers = players.filter((p) => {
-    const status = availability[p.idnumber] || 'tentative';
-    return status !== 'unavailable';
-  });
 
   return (
     <div className="space-y-6">
@@ -84,7 +97,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName }) => {
             </div>
 
             <div className="mt-3 max-h-137.5 overflow-y-auto space-y-1.5 pr-1">
-              {players.map((p) => {
+              {sortedClubPlayers.map((p) => {
                 const status = availability[p.idnumber] || 'tentative';
 
                 return (
@@ -150,21 +163,48 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName }) => {
 
         {/* Right Column: Lineup Builder & Validation (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Team selector tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {teams.map((t, idx) => (
-              <button
-                key={t.name}
-                onClick={() => setSelectedTeamIndex(idx)}
-                className={`rounded-xl px-4 py-2 text-xs font-semibold whitespace-nowrap transition border ${
-                  selectedTeamIndex === idx
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {t.name} (Div {t.division}{t.index})
-              </button>
-            ))}
+          {/* Team selector header bar */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                Équipe :
+              </span>
+              <div className="relative flex-1 sm:w-64">
+                <select
+                  value={selectedTeamIndex}
+                  onChange={(e) => setSelectedTeamIndex(Number(e.target.value))}
+                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-8 py-1.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none transition cursor-pointer shadow-2xs"
+                >
+                  {teams.map((t, idx) => (
+                    <option key={t.name} value={idx}>
+                      {t.name} — Div {t.division}{t.index} ({getBoardCountForDivision(t.division)} éch.)
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              </div>
+            </div>
+
+            {/* Quick Pills (wrapped, no horizontal scrollbar!) */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {teams.map((t, idx) => (
+                <button
+                  key={t.name}
+                  type="button"
+                  onClick={() => setSelectedTeamIndex(idx)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition border cursor-pointer ${
+                    selectedTeamIndex === idx
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  {t.name}
+                  <span className="ml-1 text-[10px] opacity-75 font-normal">
+                    (Div {t.division}{t.index})
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Validation Status Banner */}

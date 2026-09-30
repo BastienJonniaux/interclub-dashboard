@@ -20,6 +20,7 @@ const DashboardContent: React.FC = () => {
     playerStats,
     standings,
     scouting,
+    latestMatches,
     allDivisions,
     playerDirectory,
     isFallback,
@@ -78,7 +79,11 @@ const DashboardContent: React.FC = () => {
 
       <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:px-6">
         {activeTab === 'standings' && (
-          <StandingsTab standings={standings} clubName={club.name} />
+          <StandingsTab
+            standings={standings}
+            clubName={club.name}
+            latestMatches={latestMatches}
+          />
         )}
         {activeTab === 'players' && (
           <PlayerPerformanceTab players={playerStats} clubName={club.name} />

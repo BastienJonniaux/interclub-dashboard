@@ -5,6 +5,8 @@ export type ReadinessColor = 'green' | 'yellow' | 'red';
 
 export interface BoardScout {
   board: number;
+  averageBoardElo: number;
+  isRotation: boolean;
   frequentPlayer?: {
     name: string;
     id: number;
@@ -35,6 +37,7 @@ export interface NextMatchScout {
   readinessReason: string;
   boardsScouting: BoardScout[];
   boardCount: number;
+  pastRoundsCount: number;
 }
 
 /**
@@ -143,8 +146,65 @@ export function scoutNextMatch(
 
   let oppRatingsSum = 0;
   let oppRatingsCount = 0;
+  const oppRoundAverages: number[] = [];
+  const ourRoundAverages: number[] = [];
+  let pastRoundsCount = 0;
+
+  allDivisionsAcrossRounds.forEach(({ divisions }) => {
+    const divAtRound = divisions.find(
+      (d) => d.division === division.division && (d.index || 'A') === (division.index || 'A')
+    );
+    if (!divAtRound) return;
+
+    divAtRound.rounds.forEach((rd) => {
+      // Opponent encounter
+      const oppEncounter = rd.encounters.find(
+        (e) =>
+          e.played &&
+          (e.pairingnr_home === opponentPairingNr || e.pairingnr_visit === opponentPairingNr)
+      );
+      if (oppEncounter && oppEncounter.games && oppEncounter.games.length > 0) {
+        pastRoundsCount = Math.max(pastRoundsCount, rd.round);
+        const oppIsHome = oppEncounter.pairingnr_home === opponentPairingNr;
+        const ratings: number[] = [];
+        oppEncounter.games.slice(0, boardCount).forEach((g) => {
+          const pid = Number(oppIsHome ? g.idnumber_home : g.idnumber_visit);
+          const pInfo = playerDirectory?.get(pid);
+          if (pInfo?.rating && pInfo.rating > 0) {
+            ratings.push(pInfo.rating);
+          }
+        });
+        if (ratings.length > 0) {
+          oppRoundAverages.push(Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length));
+        }
+      }
+
+      // Our encounter
+      const ourEncounter = rd.encounters.find(
+        (e) =>
+          e.played &&
+          (e.pairingnr_home === ourTeam.pairingnumber || e.pairingnr_visit === ourTeam.pairingnumber)
+      );
+      if (ourEncounter && ourEncounter.games && ourEncounter.games.length > 0) {
+        const ourIsHome = ourEncounter.pairingnr_home === ourTeam.pairingnumber;
+        const ratings: number[] = [];
+        ourEncounter.games.slice(0, boardCount).forEach((g) => {
+          const pid = Number(ourIsHome ? g.idnumber_home : g.idnumber_visit);
+          const pInfo = playerDirectory?.get(pid);
+          if (pInfo?.rating && pInfo.rating > 0) {
+            ratings.push(pInfo.rating);
+          }
+        });
+        if (ratings.length > 0) {
+          ourRoundAverages.push(Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length));
+        }
+      }
+    });
+  });
 
   const boardsScouting: BoardScout[] = [];
+  const totalRoundsPlayed = Math.max(1, nextRoundNumber - 1);
+
   for (let b = 1; b <= boardCount; b++) {
     const map = boardOccurrences[b];
     const seen = Array.from(map.entries())
@@ -165,25 +225,51 @@ export function scoutNextMatch(
       })
       .sort((a, b) => b.count - a.count);
 
+    const ratedSeen = seen.filter((p) => p.rating > 0);
+    const averageBoardElo =
+      ratedSeen.length > 0
+        ? Math.round(
+            ratedSeen.reduce((s, p) => s + p.rating * p.count, 0) /
+              ratedSeen.reduce((s, p) => s + p.count, 0)
+          )
+        : 0;
+
     const top = seen[0];
+    const isRotation =
+      seen.length > 1 && (!top || top.count < Math.ceil(totalRoundsPlayed / 2));
+
     boardsScouting.push({
       board: b,
+      averageBoardElo,
+      isRotation,
       frequentPlayer: top
         ? {
             name: top.name,
             id: top.id,
             rating: top.rating,
             timesPlayed: top.count,
-            percentage: Math.round((top.count / Math.max(1, nextRoundNumber - 1)) * 100),
+            percentage: Math.round((top.count / totalRoundsPlayed) * 100),
           }
         : undefined,
       playersSeen: seen,
     });
   }
 
-  // Baseline ratings estimation
-  const opponentAverageElo = oppRatingsCount > 0 ? Math.round(oppRatingsSum / oppRatingsCount) : 1750;
-  const ourAverageElo = ourTeamAverageElo && ourTeamAverageElo > 0 ? ourTeamAverageElo : 1800;
+  // Average of team average Elo across past rounds
+  const opponentAverageElo =
+    oppRoundAverages.length > 0
+      ? Math.round(oppRoundAverages.reduce((a, b) => a + b, 0) / oppRoundAverages.length)
+      : oppRatingsCount > 0
+      ? Math.round(oppRatingsSum / oppRatingsCount)
+      : 1750;
+
+  const ourAverageElo =
+    ourRoundAverages.length > 0
+      ? Math.round(ourRoundAverages.reduce((a, b) => a + b, 0) / ourRoundAverages.length)
+      : ourTeamAverageElo && ourTeamAverageElo > 0
+      ? ourTeamAverageElo
+      : 1800;
+
   const eloDiff = ourAverageElo - opponentAverageElo;
 
   let readiness: ReadinessColor = 'yellow';
@@ -211,5 +297,6 @@ export function scoutNextMatch(
     readinessReason,
     boardsScouting,
     boardCount,
+    pastRoundsCount,
   };
 }

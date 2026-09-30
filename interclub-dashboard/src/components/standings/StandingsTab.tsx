@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { DivisionStandingTable } from '../../domain/standings';
+import { LatestTeamMatch } from '../../domain/matches';
+import { LatestMatchesSection } from './LatestMatchesSection';
 import { Trophy, ChevronDown, ChevronUp, Award } from 'lucide-react';
 
 interface Props {
   standings: DivisionStandingTable[];
   clubName: string;
+  latestMatches?: LatestTeamMatch[];
 }
 
-export const StandingsTab: React.FC<Props> = ({ standings, clubName }) => {
-  const [expandedDiv, setExpandedDiv] = useState<string | null>(
-    standings.length > 0 ? `${standings[0].division}${standings[0].index}` : null
-  );
+export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatches }) => {
+  const [expandedDiv, setExpandedDiv] = useState<string | null>(null);
 
   if (standings.length === 0) {
     return (
@@ -99,6 +100,11 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName }) => {
           })}
         </div>
       </div>
+
+      {/* Latest Matches and Board-by-board Results */}
+      {latestMatches && latestMatches.length > 0 && (
+        <LatestMatchesSection matches={latestMatches} clubName={clubName} />
+      )}
 
       {/* Detailed Division Tables Accordion */}
       <div className="space-y-4 pt-4">

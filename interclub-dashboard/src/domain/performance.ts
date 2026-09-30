@@ -25,11 +25,13 @@ export interface PlayerGameDetail {
   division: string;
   board: number;
   isHome: boolean;
+  color: 'white' | 'black';
   score: number;
   resultString: string;
   opponentId: number;
   opponentName?: string;
   opponentRating: number;
+  opponentClub?: string;
 }
 
 /**
@@ -155,16 +157,22 @@ export function calculateClubPlayerStats(
             playerStats.accumulatedRating += oppRating;
           }
 
+          const boardNum = boardIndex + 1;
+          const isWhite = isHome ? boardNum % 2 === 1 : boardNum % 2 === 0;
+          const color: 'white' | 'black' = isWhite ? 'white' : 'black';
+
           playerStats.games.push({
             round: round.round,
             division: divKey,
-            board: boardIndex + 1,
+            board: boardNum,
             isHome,
+            color,
             score,
             resultString: game.result,
             opponentId: oppIdNum || 0,
-            opponentName: oppInfo?.name,
+            opponentName: oppInfo?.name || (oppIdNum ? `Matr. ${oppIdNum}` : 'Joueur inconnu'),
             opponentRating: oppRating,
+            opponentClub: oppInfo?.clubName,
           });
         });
       });

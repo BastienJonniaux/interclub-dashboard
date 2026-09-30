@@ -120,6 +120,36 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Team Average Elo Comparison */}
+                  <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-white p-2 border border-slate-100 shadow-2xs">
+                      <div className="text-[11px] text-slate-400 font-medium">Notre Moyenne</div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {scout.ourAverageElo > 0 ? `${scout.ourAverageElo} Elo` : 'N/C'}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-white p-2 border border-slate-100 shadow-2xs">
+                      <div className="text-[11px] text-slate-400 font-medium">Moy. Adversaire</div>
+                      <div className="text-sm font-bold text-slate-900">
+                        {scout.opponentAverageElo > 0 ? `${scout.opponentAverageElo} Elo` : 'N/C'}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-white p-2 border border-slate-100 shadow-2xs">
+                      <div className="text-[11px] text-slate-400 font-medium">Écart Théorique</div>
+                      <div
+                        className={`text-sm font-bold ${
+                          scout.eloDiff >= 50
+                            ? 'text-emerald-600'
+                            : scout.eloDiff <= -50
+                            ? 'text-rose-600'
+                            : 'text-amber-600'
+                        }`}
+                      >
+                        {scout.eloDiff > 0 ? `+${scout.eloDiff}` : scout.eloDiff} Elo
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Board-by-board tendencies */}
@@ -128,37 +158,75 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                     Composition probable de l'adversaire (Tendances)
                   </h4>
                   <div className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-white">
-                    {scout.boardsScouting.map((b) => (
-                      <div
-                        key={b.board}
-                        className="flex items-center justify-between px-3 py-2 text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 font-bold text-slate-600">
-                            {b.board}
-                          </span>
-                          {b.frequentPlayer ? (
-                            <span className="font-semibold text-slate-800">
-                              Matr. {b.frequentPlayer.id}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 italic">
-                              Joueur non encore identifié
-                            </span>
-                          )}
-                        </div>
+                    {scout.boardsScouting.map((b) => {
+                      const tooltip =
+                        b.playersSeen.length > 0
+                          ? b.playersSeen
+                              .map(
+                                (p) =>
+                                  `${p.name} (${p.rating > 0 ? `${p.rating} Elo` : 'NC'}) - Vu ${
+                                    p.count
+                                  }x`
+                              )
+                              .join('\n')
+                          : undefined;
 
-                        <div>
-                          {b.frequentPlayer ? (
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                              Vu {b.frequentPlayer.timesPlayed}x à cet échiquier
+                      return (
+                        <div
+                          key={b.board}
+                          title={tooltip}
+                          className="flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 font-bold text-slate-600">
+                              {b.board}
                             </span>
-                          ) : (
-                            <span className="text-slate-300">-</span>
-                          )}
+
+                            {b.isRotation ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-slate-700 italic">
+                                  Rotation de joueurs
+                                </span>
+                                {b.averageBoardElo > 0 && (
+                                  <span className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                                    Moy. ~{b.averageBoardElo} Elo
+                                  </span>
+                                )}
+                              </div>
+                            ) : b.frequentPlayer ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-slate-800">
+                                  {b.frequentPlayer.name}
+                                </span>
+                                {b.frequentPlayer.rating > 0 && (
+                                  <span className="rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                                    {b.frequentPlayer.rating} Elo
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">
+                                Joueur non encore identifié
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            {b.isRotation ? (
+                              <span className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                {b.playersSeen.length} joueurs différents
+                              </span>
+                            ) : b.frequentPlayer ? (
+                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                Vu {b.frequentPlayer.timesPlayed}x à cet échiquier
+                              </span>
+                            ) : (
+                              <span className="text-slate-300">-</span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

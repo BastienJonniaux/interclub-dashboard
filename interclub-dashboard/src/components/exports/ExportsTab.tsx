@@ -154,7 +154,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).
             </p>
 
-            <pre className="mt-4 max-h-[420px] overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
+            <pre className="mt-4 max-h-105 overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
               {emailText}
             </pre>
           </div>
@@ -205,7 +205,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
               ))}
             </div>
 
-            <pre className="mt-3 max-h-[420px] overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
+            <pre className="mt-3 max-h-105 overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
               {matchSheetText}
             </pre>
           </div>
