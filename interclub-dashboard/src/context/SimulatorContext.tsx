@@ -3,20 +3,31 @@ import { useClub } from './ClubContext';
 
 export type AvailabilityStatus = 'available' | 'unavailable' | 'tentative';
 
+export interface PlayerSettings {
+  isIgnored?: boolean;
+  isBackup?: boolean;
+}
+
 interface SimulatorContextType {
   availability: { [playerId: number]: AvailabilityStatus };
   setPlayerAvailability: (playerId: number, status: AvailabilityStatus) => void;
+  playerSettings: { [playerId: number]: PlayerSettings };
+  setPlayerSetting: (playerId: number, setting: keyof PlayerSettings, value: boolean) => void;
   draftCompositions: { [teamNumber: number]: { [board: number]: number | null } };
   assignPlayerToBoard: (teamNumber: number, board: number, playerId: number | null) => void;
   clearDraft: (teamNumber?: number) => void;
+  autoFillTeam: (teamNumber: number, boardCount: number, availablePlayers: number[]) => void;
 }
 
 const SimulatorContext = createContext<SimulatorContextType>({
   availability: {},
   setPlayerAvailability: () => {},
+  playerSettings: {},
+  setPlayerSetting: () => {},
   draftCompositions: {},
   assignPlayerToBoard: () => {},
   clearDraft: () => {},
+  autoFillTeam: () => {},
 });
 
 export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,6 +35,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const storageKey = `interclub_sim_${clubId}`;
 
   const [availability, setAvailability] = useState<{ [playerId: number]: AvailabilityStatus }>({});
+  const [playerSettings, setPlayerSettings] = useState<{ [playerId: number]: PlayerSettings }>({});
   const [draftCompositions, setDraftCompositions] = useState<{
     [teamNumber: number]: { [board: number]: number | null };
   }>({});
@@ -35,13 +47,16 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (saved) {
         const parsed = JSON.parse(saved);
         setAvailability(parsed.availability || {});
+        setPlayerSettings(parsed.playerSettings || {});
         setDraftCompositions(parsed.draftCompositions || {});
       } else {
         setAvailability({});
+        setPlayerSettings({});
         setDraftCompositions({});
       }
     } catch {
       setAvailability({});
+      setPlayerSettings({});
       setDraftCompositions({});
     }
   }, [clubId, storageKey]);
@@ -49,6 +64,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Save to localStorage when state changes
   const saveState = (
     newAvail: { [playerId: number]: AvailabilityStatus },
+    newSettings: { [playerId: number]: PlayerSettings },
     newDrafts: { [teamNumber: number]: { [board: number]: number | null } }
   ) => {
     try {
@@ -56,6 +72,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         storageKey,
         JSON.stringify({
           availability: newAvail,
+          playerSettings: newSettings,
           draftCompositions: newDrafts,
         })
       );
@@ -67,7 +84,19 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const setPlayerAvailability = (playerId: number, status: AvailabilityStatus) => {
     const updated = { ...availability, [playerId]: status };
     setAvailability(updated);
-    saveState(updated, draftCompositions);
+    saveState(updated, playerSettings, draftCompositions);
+  };
+
+  const setPlayerSetting = (playerId: number, setting: keyof PlayerSettings, value: boolean) => {
+    const updatedSettings = {
+      ...playerSettings,
+      [playerId]: {
+        ...(playerSettings[playerId] || {}),
+        [setting]: value,
+      },
+    };
+    setPlayerSettings(updatedSettings);
+    saveState(availability, updatedSettings, draftCompositions);
   };
 
   const assignPlayerToBoard = (teamNumber: number, board: number, playerId: number | null) => {
@@ -86,7 +115,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const updated = { ...draftCompositions, [teamNumber]: teamDraft };
     setDraftCompositions(updated);
-    saveState(availability, updated);
+    saveState(availability, playerSettings, updated);
   };
 
   const clearDraft = (teamNumber?: number) => {
@@ -97,7 +126,29 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       updated = {};
     }
     setDraftCompositions(updated);
-    saveState(availability, updated);
+    saveState(availability, playerSettings, updated);
+  };
+
+  const autoFillTeam = (teamNumber: number, boardCount: number, availablePlayers: number[]) => {
+    // availablePlayers is already filtered by availability, not ignored, not already assigned to other teams, and sorted by ELO
+    const teamDraft = { ...(draftCompositions[teamNumber] || {}) };
+    
+    // First, find which boards are empty
+    const emptyBoards: number[] = [];
+    for (let b = 1; b <= boardCount; b++) {
+      if (!teamDraft[b]) emptyBoards.push(b);
+    }
+
+    // Now take the top N available players
+    const toAssign = availablePlayers.slice(0, emptyBoards.length);
+    
+    toAssign.forEach((playerId, index) => {
+      teamDraft[emptyBoards[index]] = playerId;
+    });
+
+    const updated = { ...draftCompositions, [teamNumber]: teamDraft };
+    setDraftCompositions(updated);
+    saveState(availability, playerSettings, updated);
   };
 
   return (
@@ -105,9 +156,12 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         availability,
         setPlayerAvailability,
+        playerSettings,
+        setPlayerSetting,
         draftCompositions,
         assignPlayerToBoard,
         clearDraft,
+        autoFillTeam
       }}
     >
       {children}

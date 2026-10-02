@@ -22,12 +22,15 @@ export interface TeamCompositionValidation {
   assignedCount: number;
 }
 
-/**
- * Validates a team composition against official FRBE regulations
- * @param teamNumber Number of the team (1 for Team 1, 2 for Team 2, etc.)
- * @param divisionNumber Division number (1 to 6)
- * @param boards Array of board assignments
- */
+const RESERVE_ELO_LIMITS: Record<number, number> = {
+  1: 2350,
+  2: 2200,
+  3: 2050,
+  4: 1950,
+  5: 1800,
+  6: 1700,
+};
+
 export function validateTeamComposition(
   teamNumber: number,
   divisionNumber: number,
@@ -50,10 +53,13 @@ export function validateTeamComposition(
     });
   }
 
-  // 2. No duplicate players in the same team
+  // 2. Duplicate Player & Titular Playing Down Check
   const seenPlayerIds = new Set<number>();
+  
   boards.forEach((b) => {
     if (!b.player) return;
+    
+    // Duplicates
     if (seenPlayerIds.has(b.player.idnumber)) {
       violations.push({
         board: b.board,
@@ -63,57 +69,96 @@ export function validateTeamComposition(
       });
     }
     seenPlayerIds.add(b.player.idnumber);
-  });
 
-  // 3. Titular Rule (Playing down is forbidden)
-  boards.forEach((b) => {
-    if (!b.player) return;
+    // Titular playing down
     const titularStr = b.player.titular || '';
-    const titularMatch = titularStr.match(/(\d+)$/);
+    const titularMatch = titularStr.match(/(\d+)/); // Extracts "1", "2" from "1", "2A", etc.
+    let titularTeam = 0;
+    
     if (titularMatch) {
-      const titularTeamNumber = parseInt(titularMatch[1], 10);
-      if (titularTeamNumber < teamNumber) {
+      titularTeam = parseInt(titularMatch[1], 10);
+      if (titularTeam < teamNumber) {
         violations.push({
           board: b.board,
           type: 'error',
           rule: 'TITULAR_PLAYING_DOWN',
-          message: `Interdit FRBE : ${b.player.first_name} ${b.player.last_name} est titulaire en équipe ${titularTeamNumber} et ne peut pas jouer en équipe ${teamNumber}.`,
+          message: `Règlement FRBE : ${b.player.first_name} ${b.player.last_name} est titulaire en équipe ${titularTeam} et ne peut pas descendre en équipe ${teamNumber}.`,
+        });
+      }
+    }
+
+    // Reserve Elo Limit Check
+    const isReserve = titularTeam !== teamNumber;
+    if (isReserve) {
+      const maxElo = RESERVE_ELO_LIMITS[divisionNumber] || 9999;
+      if ((b.player.assignedrating || 0) > maxElo) {
+        violations.push({
+          board: b.board,
+          type: 'error',
+          rule: 'RESERVE_ELO_LIMIT',
+          message: `Règlement FRBE : En division ${divisionNumber}, un réserviste ne peut pas dépasser ${maxElo} Elo (${b.player.first_name} a ${b.player.assignedrating}).`,
+        });
+      }
+    }
+
+    // Div 1 Specific Rules
+    if (divisionNumber === 1) {
+      if ((b.player.assignedrating || 0) < 1800) {
+        violations.push({
+          board: b.board,
+          type: 'error',
+          rule: 'DIV1_MIN_ELO',
+          message: `Règlement FRBE Div 1 : Impossible d'aligner un joueur sous 1800 Elo (${b.player.first_name} a ${b.player.assignedrating || 'NC'}).`,
+        });
+      }
+      if (b.board <= 4 && (b.player.assignedrating || 0) < 2000) {
+        violations.push({
+          board: b.board,
+          type: 'error',
+          rule: 'DIV1_TOP4_MIN_ELO',
+          message: `Règlement FRBE Div 1 : Les 4 premiers échiquiers doivent avoir au moins 2000 Elo (${b.player.first_name} a ${b.player.assignedrating || 'NC'}).`,
         });
       }
     }
   });
 
-  // 4. Elo Order Rule (Descending rating with allowed inversion tolerance)
-  // FRBE allows an Elo difference margin (generally max 100 Elo points inversion)
-  const MAX_INVERSION_TOLERANCE = 100;
+  // 3. Board Order Constraint (Elo List Order)
+  // Get all assigned players and sort them theoretically by rating descending
+  if (assigned.length > 0) {
+    const theoreticalOrder = [...assigned].sort((a, b) => {
+      const ratingA = a.player?.assignedrating || 0;
+      const ratingB = b.player?.assignedrating || 0;
+      // In case of tie, we use alphabetical order to be deterministic, 
+      // but strictly speaking, FRBE index is predefined. We approximate via rating.
+      if (ratingB !== ratingA) return ratingB - ratingA;
+      return (a.player?.last_name || '').localeCompare(b.player?.last_name || '');
+    });
 
-  for (let i = 0; i < boards.length - 1; i++) {
-    const higherBoard = boards[i];
-    const lowerBoard = boards[i + 1];
+    let maxDiff = 1; // Div 4, 5, 6
+    if (divisionNumber === 1 || divisionNumber === 2) maxDiff = 3;
+    if (divisionNumber === 3) maxDiff = 2;
 
-    if (!higherBoard.player || !lowerBoard.player) continue;
-
-    const higherElo = higherBoard.player.assignedrating || 0;
-    const lowerElo = lowerBoard.player.assignedrating || 0;
-
-    if (lowerElo > higherElo) {
-      const diff = lowerElo - higherElo;
-      if (diff > MAX_INVERSION_TOLERANCE) {
-        violations.push({
-          board: lowerBoard.board,
-          type: 'error',
-          rule: 'ELO_ORDER_VIOLATION',
-          message: `Ordre Elo invalide : Éch. ${lowerBoard.board} (${lowerElo}) dépasse Éch. ${higherBoard.board} (${higherElo}) de ${diff} Elo (> ${MAX_INVERSION_TOLERANCE} pts).`,
-        });
-      } else {
-        violations.push({
-          board: lowerBoard.board,
-          type: 'warning',
-          rule: 'ELO_INVERSION_TOLERATED',
-          message: `Inversion Elo tolérée : Éch. ${lowerBoard.board} (${lowerElo}) > Éch. ${higherBoard.board} (${higherElo}) (+${diff} pts).`,
-        });
+    assigned.forEach((actualBoard, currentLineupIndex) => {
+      if (!actualBoard.player) return;
+      
+      // Find where this player SHOULD be in the theoretical lineup
+      const theoreticalIndex = theoreticalOrder.findIndex((t) => t.player?.idnumber === actualBoard.player?.idnumber);
+      
+      if (theoreticalIndex !== -1) {
+        // Compare the relative positions within the assigned players array
+        // (Index in the array is effectively their board number among present players)
+        const diff = Math.abs(currentLineupIndex - theoreticalIndex);
+        
+        if (diff > maxDiff) {
+          violations.push({
+            board: actualBoard.board,
+            type: 'error',
+            rule: 'BOARD_ORDER_VIOLATION',
+            message: `Ordre invalide : ${actualBoard.player.first_name} ${actualBoard.player.last_name} (${actualBoard.player.assignedrating} Elo) est décalé de ${diff} places par rapport à son classement dans l'équipe (Max toléré: ${maxDiff}).`,
+          });
+        }
       }
-    }
+    });
   }
 
   const hasErrors = violations.some((v) => v.type === 'error');

@@ -32,24 +32,24 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
       {/* Header and Quick Stats */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">
+          <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
             Performance des Joueurs — {clubName}
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400 mt-1">
             Suivi individuel, scores, points et Performance Tournoi (TPR) par division.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-center shadow-xs">
+          <div className="glass-panel px-4 py-2 text-center rounded-xl">
             <span className="text-xs text-slate-400">Joueurs Actifs</span>
-            <div className="text-base font-bold text-slate-900">
+            <div className="text-lg font-bold text-slate-100 mt-0.5">
               {activePlayers.length} / {players.length}
             </div>
           </div>
-          <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2 text-center shadow-xs">
-            <span className="text-xs text-indigo-600 font-medium">Points Club</span>
-            <div className="text-base font-bold text-indigo-700">
+          <div className="glass-panel px-4 py-2 text-center rounded-xl bg-indigo-500/10 border-indigo-500/20">
+            <span className="text-xs text-indigo-300 font-medium">Points Club</span>
+            <div className="text-lg font-bold text-indigo-100 mt-0.5">
               {totalScore} / {totalGames} pts
             </div>
           </div>
@@ -57,7 +57,7 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between glass-panel p-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <input
@@ -65,43 +65,43 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
             placeholder="Rechercher un joueur (nom, matricule)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 pl-9 pr-4 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-white/10 bg-black/20 pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-colors"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-300 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={filterActiveOnly}
               onChange={(e) => setFilterActiveOnly(e.target.checked)}
-              className="h-4 w-4 rounded-sm border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="h-4 w-4 rounded-sm border-white/20 bg-black/20 text-indigo-500 focus:ring-indigo-500/50 focus:ring-offset-0 focus:ring-offset-transparent"
             />
-            Afficher uniquement les joueurs ayant joué
+            Afficher uniquement les joueurs actifs
           </label>
         </div>
       </div>
 
       {/* Players Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+      <div className="overflow-hidden glass-panel">
+        <div className="overflow-x-auto bg-black/10">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-white/5 text-xs uppercase tracking-wider text-slate-400 border-b border-white/10">
               <tr>
-                <th className="px-4 py-3">Joueur / Matricule</th>
-                <th className="px-3 py-3 text-center">Elo FRBE</th>
-                <th className="px-3 py-3 text-center">Titulaire</th>
-                <th className="px-3 py-3 text-center">Parties</th>
-                <th className="px-4 py-3 text-center font-bold text-indigo-700">Score</th>
-                <th className="px-3 py-3 text-center">Perf. (TPR)</th>
-                <th className="px-3 py-3 text-center">Diff.</th>
-                <th className="px-4 py-3">Divisions jouées</th>
+                <th className="px-4 py-3 font-medium">Joueur / Matricule</th>
+                <th className="px-3 py-3 text-center font-medium">Elo FRBE</th>
+                <th className="px-3 py-3 text-center font-medium">Titulaire</th>
+                <th className="px-3 py-3 text-center font-medium">Parties</th>
+                <th className="px-4 py-3 text-center font-bold text-indigo-400">Score</th>
+                <th className="px-3 py-3 text-center font-medium">Perf. (TPR)</th>
+                <th className="px-3 py-3 text-center font-medium">Diff.</th>
+                <th className="px-4 py-3 font-medium">Divisions jouées</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-white/5">
               {filteredPlayers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     Aucun joueur ne correspond à votre recherche.
                   </td>
                 </tr>
@@ -116,12 +116,12 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                   return (
                     <React.Fragment key={p.id}>
                       <tr
-                        className={`transition ${
+                        className={`transition-colors ${
                           isHot
-                            ? 'bg-amber-50/40 hover:bg-amber-50/60'
+                            ? 'bg-amber-500/5 hover:bg-amber-500/10'
                             : isExpanded
-                            ? 'bg-indigo-50/40'
-                            : 'hover:bg-slate-50'
+                            ? 'bg-indigo-500/10'
+                            : 'hover:bg-white/5'
                         }`}
                       >
                         {/* Player name with hover popover */}
@@ -137,15 +137,15 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                             }`}
                           >
                             <div>
-                              <div className="font-semibold text-slate-900 flex items-center gap-1.5 group-hover:text-indigo-600 transition">
+                              <div className="font-semibold text-slate-100 flex items-center gap-1.5 group-hover:text-indigo-400 transition-colors">
                                 {p.fullName}
                                 {isHot && (
                                   <span title="Joueur très en forme !">
-                                    <Flame className="h-4 w-4 text-amber-500 fill-amber-500 inline" />
+                                    <Flame className="h-4 w-4 text-amber-400 fill-amber-400/50 inline" />
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-slate-400 flex items-center gap-1">
+                              <div className="text-xs text-slate-500 flex items-center gap-1">
                                 <span>Matr. {p.id}</span>
                               </div>
                             </div>
@@ -153,7 +153,7 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                             {hasPlayed && (
                               <button
                                 type="button"
-                                className="p-1 text-slate-300 group-hover:text-indigo-600 transition"
+                                className="p-1 text-slate-500 group-hover:text-indigo-400 transition-colors"
                                 title="Voir les matchs détaillés"
                               >
                                 {isExpanded ? (
@@ -167,27 +167,27 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
 
                           {/* Hover Tooltip / Popover Tab */}
                           {isHovered && !isExpanded && hasPlayed && (
-                            <div className="absolute left-6 top-full z-40 mt-1 w-84 rounded-xl bg-slate-900 text-white p-3.5 shadow-2xl border border-slate-700 pointer-events-none">
-                              <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                            <div className="absolute left-6 top-full z-40 mt-1 w-84 rounded-xl glass-panel p-4 shadow-2xl pointer-events-none">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
                                 <div>
-                                  <div className="font-bold text-sm text-white">{p.fullName}</div>
-                                  <div className="text-[11px] text-slate-400">
+                                  <div className="font-bold text-sm text-slate-100">{p.fullName}</div>
+                                  <div className="text-[11px] text-slate-400 mt-0.5">
                                     Matr. {p.id} • {p.rating > 0 ? `${p.rating} Elo` : 'NC'}
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-xs font-bold text-indigo-400">
+                                  <div className="text-sm font-bold text-indigo-400">
                                     {p.score} / {p.gamesPlayed} pt{p.score > 1 ? 's' : ''}
                                   </div>
-                                  <div className="text-[10px] text-slate-400">TPR: {p.tpr}</div>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">TPR: {p.tpr}</div>
                                 </div>
                               </div>
 
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                                 Adversaires affrontés ({p.games.length})
                               </div>
 
-                              <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                              <div className="space-y-2 max-h-56 overflow-y-auto pr-1 no-scrollbar">
                                 {p.games.map((g, idx) => {
                                   const isWin = g.score === 1;
                                   const isDraw = g.score === 0.5;
@@ -195,33 +195,33 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                                   return (
                                     <div
                                       key={idx}
-                                      className="flex items-center justify-between gap-2 rounded-lg bg-slate-800/90 p-2 text-xs border border-slate-700/60"
+                                      className="flex items-center justify-between gap-2 rounded-lg bg-black/30 p-2.5 text-xs border border-white/5"
                                     >
                                       <div className="min-w-0">
-                                        <div className="flex items-center gap-1.5 font-semibold text-slate-100 truncate">
+                                        <div className="flex items-center gap-1.5 font-semibold text-slate-200 truncate">
                                           <span
                                             title={g.color === 'white' ? 'Blancs' : 'Noirs'}
                                             className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full border ${
                                               g.color === 'white'
-                                                ? 'bg-white border-slate-300'
+                                                ? 'bg-white border-slate-300 shadow-[0_0_5px_rgba(255,255,255,0.5)]'
                                                 : 'bg-slate-950 border-slate-600'
                                             }`}
                                           />
                                           <span className="truncate">{g.opponentName}</span>
                                           {g.opponentRating > 0 && (
-                                            <span className="text-[10px] text-slate-400 shrink-0">
+                                            <span className="text-[10px] text-slate-500 shrink-0">
                                               ({g.opponentRating} Elo)
                                             </span>
                                           )}
                                         </div>
 
-                                        <div className="mt-0.5 text-[10px] text-slate-400 flex items-center gap-1.5">
+                                        <div className="mt-1 text-[10px] text-slate-400 flex items-center gap-1.5">
                                           <span>Ronde {g.round}</span>
-                                          <span>•</span>
+                                          <span className="text-white/20">•</span>
                                           <span>Div {g.division}</span>
-                                          <span>•</span>
+                                          <span className="text-white/20">•</span>
                                           <span>Éch. {g.board}</span>
-                                          <span>•</span>
+                                          <span className="text-white/20">•</span>
                                           <span>{g.isHome ? 'Dom.' : 'Ext.'}</span>
                                         </div>
                                       </div>
@@ -230,10 +230,10 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                                         <span
                                           className={`inline-block rounded-md px-2 py-0.5 text-[11px] font-bold ${
                                             isWin
-                                              ? 'bg-emerald-900/90 text-emerald-300 border border-emerald-700'
+                                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                               : isDraw
-                                              ? 'bg-amber-900/90 text-amber-300 border border-amber-700'
-                                              : 'bg-rose-900/90 text-rose-300 border border-rose-700'
+                                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                           }`}
                                         >
                                           {g.resultString || (isWin ? '1 - 0' : isDraw ? '½ - ½' : '0 - 1')}
@@ -247,44 +247,44 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                           )}
                         </td>
 
-                        <td className="px-3 py-3 text-center font-semibold text-slate-800">
+                        <td className="px-3 py-3 text-center font-semibold text-slate-200">
                           {p.rating || 'NC'}
                         </td>
 
                         <td className="px-3 py-3 text-center">
                           {p.titular ? (
-                            <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            <span className="inline-block rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-medium text-slate-300 tracking-wide">
                               {p.titular}
                             </span>
                           ) : (
-                            <span className="text-xs text-slate-400">Réserve</span>
+                            <span className="text-xs text-slate-500">-</span>
                           )}
                         </td>
 
-                        <td className="px-3 py-3 text-center font-medium">
+                        <td className="px-3 py-3 text-center font-medium text-slate-300">
                           {p.gamesPlayed}
                         </td>
 
-                        <td className="px-4 py-3 text-center font-bold text-indigo-700 text-base">
-                          {p.score} <span className="text-xs text-slate-400">/ {p.gamesPlayed}</span>
+                        <td className="px-4 py-3 text-center font-bold text-indigo-400 text-base">
+                          {p.score} <span className="text-xs text-slate-500 font-medium">/ {p.gamesPlayed}</span>
                         </td>
 
                         <td className="px-3 py-3 text-center">
                           {hasPlayed ? (
-                            <span className="font-bold text-slate-900">{p.tpr}</span>
+                            <span className="font-bold text-slate-200">{p.tpr}</span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-slate-600">-</span>
                           )}
                         </td>
 
                         <td className="px-3 py-3 text-center">
                           {hasPlayed ? (
                             <span
-                              className={`inline-flex items-center gap-0.5 text-xs font-bold ${
+                              className={`inline-flex items-center gap-1 text-xs font-bold ${
                                 diff > 0
-                                  ? 'text-emerald-600'
+                                  ? 'text-emerald-400'
                                   : diff < 0
-                                  ? 'text-rose-600'
+                                  ? 'text-rose-400'
                                   : 'text-slate-500'
                               }`}
                             >
@@ -298,22 +298,22 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                               {diff > 0 ? `+${diff}` : diff}
                             </span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-slate-600">-</span>
                           )}
                         </td>
 
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1.5">
                             {Object.entries(p.divisionsPlayed).map(([divKey, count]) => (
                               <span
                                 key={divKey}
-                                className="rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700"
+                                className="rounded-md bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] font-medium text-indigo-300"
                               >
                                 Div {divKey} ({count})
                               </span>
                             ))}
                             {Object.keys(p.divisionsPlayed).length === 0 && (
-                              <span className="text-xs text-slate-400">-</span>
+                              <span className="text-xs text-slate-600">-</span>
                             )}
                           </div>
                         </td>
@@ -321,83 +321,83 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
 
                       {/* Expanded Sub-row with Opponent details table */}
                       {isExpanded && hasPlayed && (
-                        <tr className="bg-indigo-50/30 border-b border-indigo-100">
-                          <td colSpan={8} className="p-4">
-                            <div className="rounded-xl border border-indigo-100 bg-white p-4 shadow-xs">
-                              <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                        <tr className="bg-black/40 border-b border-white/5">
+                          <td colSpan={8} className="p-4 sm:p-6">
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-5 shadow-inner">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-white/10 gap-4">
                                 <div>
-                                  <h4 className="text-sm font-bold text-slate-900">
+                                  <h4 className="text-sm font-bold text-slate-100">
                                     Adversaires affrontés par {p.fullName} ({p.games.length} rencontre{p.games.length > 1 ? 's' : ''})
                                   </h4>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-slate-400 mt-1">
                                     Matricule {p.id} • Elo officiel FRBE: {p.rating || 'NC'}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                  <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
+                                  <span className="rounded-lg bg-indigo-500/20 border border-indigo-500/30 px-3 py-1.5 text-xs font-bold text-indigo-300">
                                     Score: {p.score} / {p.gamesPlayed} pts
                                   </span>
-                                  <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                                  <span className="rounded-lg bg-white/10 border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-200">
                                     TPR: {p.tpr} Elo
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="overflow-x-auto">
+                              <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/20">
                                 <table className="w-full text-left text-xs">
-                                  <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
+                                  <thead className="bg-white/5 text-[10px] uppercase font-bold text-slate-400 border-b border-white/5">
                                     <tr>
-                                      <th className="px-3 py-2">Ronde / Division</th>
-                                      <th className="px-3 py-2 text-center">Échiquier</th>
-                                      <th className="px-3 py-2 text-center">Couleur</th>
-                                      <th className="px-3 py-2">Joueur Adversaire</th>
-                                      <th className="px-3 py-2 text-center">Elo Adversaire</th>
-                                      <th className="px-3 py-2 text-center">Résultat</th>
+                                      <th className="px-4 py-2.5">Ronde / Division</th>
+                                      <th className="px-4 py-2.5 text-center">Échiquier</th>
+                                      <th className="px-4 py-2.5 text-center">Couleur</th>
+                                      <th className="px-4 py-2.5">Joueur Adversaire</th>
+                                      <th className="px-4 py-2.5 text-center">Elo Adversaire</th>
+                                      <th className="px-4 py-2.5 text-center">Résultat</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-slate-100">
+                                  <tbody className="divide-y divide-white/5">
                                     {p.games.map((g, idx) => {
                                       const isWin = g.score === 1;
                                       const isDraw = g.score === 0.5;
 
                                       return (
-                                        <tr key={idx} className="hover:bg-slate-50">
-                                          <td className="px-3 py-2.5 font-medium text-slate-700">
+                                        <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                          <td className="px-4 py-3 font-medium text-slate-300">
                                             Ronde {g.round} • Div {g.division} ({g.isHome ? 'Domicile' : 'Extérieur'})
                                           </td>
-                                          <td className="px-3 py-2.5 text-center font-bold text-slate-700">
+                                          <td className="px-4 py-3 text-center font-bold text-slate-300">
                                             {g.board}
                                           </td>
-                                          <td className="px-3 py-2.5 text-center">
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                                          <td className="px-4 py-3 text-center">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-300 border border-white/5">
                                               <span
-                                                className={`h-2 w-2 rounded-full border ${
+                                                className={`h-2.5 w-2.5 rounded-full border ${
                                                   g.color === 'white'
-                                                    ? 'bg-white border-slate-300'
-                                                    : 'bg-slate-900 border-slate-900'
+                                                    ? 'bg-white border-slate-300 shadow-[0_0_5px_rgba(255,255,255,0.5)]'
+                                                    : 'bg-slate-900 border-slate-700'
                                                 }`}
                                               />
                                               {g.color === 'white' ? 'Blancs' : 'Noirs'}
                                             </span>
                                           </td>
-                                          <td className="px-3 py-2.5 font-semibold text-slate-900">
+                                          <td className="px-4 py-3 font-semibold text-slate-200">
                                             {g.opponentName}
                                           </td>
-                                          <td className="px-3 py-2.5 text-center text-slate-700">
+                                          <td className="px-4 py-3 text-center text-slate-400">
                                             {g.opponentRating > 0 ? (
                                               <span className="font-semibold">{g.opponentRating} Elo</span>
                                             ) : (
-                                              <span className="text-slate-400">NC</span>
+                                              <span>NC</span>
                                             )}
                                           </td>
-                                          <td className="px-3 py-2.5 text-center">
+                                          <td className="px-4 py-3 text-center">
                                             <span
-                                              className={`inline-block rounded-md px-2 py-0.5 text-xs font-bold ${
+                                              className={`inline-block rounded-md px-2.5 py-1 text-xs font-bold ${
                                                 isWin
-                                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                                   : isDraw
-                                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+                                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                                               }`}
                                             >
                                               {g.resultString || (isWin ? '1 - 0' : isDraw ? '½ - ½' : '0 - 1')}

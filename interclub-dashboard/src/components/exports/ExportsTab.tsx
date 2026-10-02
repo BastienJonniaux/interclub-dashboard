@@ -122,82 +122,86 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">
+        <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
           Exports & Mails — {club.name}
         </h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400 mt-1">
           Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Email Generator Card */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div className="flex flex-col justify-between glass-panel p-6">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-indigo-600" />
-                <h3 className="font-bold text-slate-900 text-base">
-                  Email Récapitulatif d'Après-Ronde
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/20 shadow-inner">
+                  <Mail className="h-5 w-5 text-indigo-400" />
+                </div>
+                <h3 className="font-bold text-slate-100 text-lg">
+                  Email Récapitulatif
                 </h3>
               </div>
               <button
                 onClick={handleCopyEmail}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-4 py-2 text-xs font-semibold text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] hover:bg-indigo-500/30 hover:text-indigo-200 transition-all duration-300"
               >
                 {copiedEmail ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 <span>{copiedEmail ? 'Copié !' : 'Copier le texte'}</span>
               </button>
             </div>
 
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-4 text-xs text-slate-400">
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).
             </p>
 
-            <pre className="mt-4 max-h-105 overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
+            <pre className="mt-4 max-h-[500px] overflow-y-auto rounded-xl bg-black/30 p-5 text-[11px] leading-relaxed font-mono text-slate-300 border border-white/10 whitespace-pre-wrap select-all shadow-inner custom-scrollbar">
               {emailText}
             </pre>
           </div>
         </div>
 
         {/* Printable Match Day Sheet Card */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div className="flex flex-col justify-between glass-panel p-6">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-indigo-600" />
-                <h3 className="font-bold text-slate-900 text-base">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/20 shadow-inner">
+                  <FileText className="h-5 w-5 text-emerald-400" />
+                </div>
+                <h3 className="font-bold text-slate-100 text-lg">
                   Feuille de Match (Jour J)
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopySheet}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-slate-100 transition-colors"
                 >
-                  {copiedSheet ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                  <span>{copiedSheet ? 'Copié !' : 'Copier'}</span>
+                  {copiedSheet ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  <span className="hidden sm:inline">{copiedSheet ? 'Copié !' : 'Copier'}</span>
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition"
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-100 border border-white px-4 py-2 text-xs font-semibold text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:bg-white transition-all duration-300"
                 >
                   <Printer className="h-4 w-4" />
-                  <span>Imprimer</span>
+                  <span className="hidden sm:inline">Imprimer</span>
                 </button>
               </div>
             </div>
 
             {/* Team Picker */}
-            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {teams.map((t, idx) => (
                 <button
                   key={t.name}
                   onClick={() => setSelectedTeamIndex(idx)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition ${
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-300 border ${
                     selectedTeamIndex === idx
-                      ? 'bg-indigo-100 text-indigo-800'
-                      : 'text-slate-500 hover:bg-slate-100'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                      : 'bg-white/5 text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-200'
                   }`}
                 >
                   {t.name}
@@ -205,7 +209,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
               ))}
             </div>
 
-            <pre className="mt-3 max-h-105 overflow-y-auto rounded-xl bg-slate-50 p-4 text-xs font-mono text-slate-700 border border-slate-200 whitespace-pre-wrap select-all">
+            <pre className="mt-4 max-h-[450px] overflow-y-auto rounded-xl bg-black/30 p-5 text-[11px] leading-relaxed font-mono text-slate-300 border border-white/10 whitespace-pre-wrap select-all shadow-inner custom-scrollbar">
               {matchSheetText}
             </pre>
           </div>
