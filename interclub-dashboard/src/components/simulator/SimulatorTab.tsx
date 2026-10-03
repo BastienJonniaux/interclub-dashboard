@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
   validateTeamComposition,
   AssignedBoard,
+  RESERVE_ELO_LIMITS
 } from '../../domain/rules/frbeValidator';
 import { getBoardCountForDivision, NextMatchScout } from '../../domain/scouting';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
@@ -113,6 +114,41 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     return map;
   }, [draftCompositions]);
 
+  // Auto-scroll to first eligible player when team changes
+  useEffect(() => {
+    if (!activeTeam) return;
+    const div = activeTeam.division;
+    const limit = RESERVE_ELO_LIMITS[div] || 9999;
+    
+    const targetPlayer = deckPlayers.find(p => {
+      if (globalAssignments.has(p.idnumber)) return false; // Exclude already assigned
+      if (availability[p.idnumber] === 'unavailable') return false; // Exclude absent
+      if (playerSettings[p.idnumber]?.isIgnored) return false; // Exclude ignored
+
+      const titularMatch = (p.titular || '').match(/(\d+)/);
+      const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
+      
+      if (titularTeam === teamNumber) return true; // Is titular for this team
+      if (titularTeam > 0 && titularTeam < teamNumber) return false; // Cannot play down
+      
+      return (p.assignedrating || 0) <= limit;
+    });
+
+    if (targetPlayer) {
+      setTimeout(() => {
+        const el = document.getElementById(`deck-player-${targetPlayer.idnumber}`);
+        const container = document.getElementById('deck-container');
+        if (el && container) {
+          container.scrollTo({
+            top: el.offsetTop - container.offsetTop - 10,
+            behavior: 'smooth'
+          });
+        }
+      }, 150); // Small delay for render
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTeamIndex]);
+
   const currentlyAssignedIds = new Set(
     Object.values(currentDraft).filter((id): id is number => id !== null && id !== undefined)
   );
@@ -131,7 +167,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       const status = availability[p.idnumber] || 'tentative';
       if (status === 'unavailable') return false;
       if (playerSettings[p.idnumber]?.isIgnored) return false;
-      if (globalAssignments.has(p.idnumber) && !currentlyAssignedIds.has(p.idnumber)) return false;
+      // Do not auto-fill players that are already assigned to ANY board in ANY team
+      if (globalAssignments.has(p.idnumber)) return false;
       return true;
     });
 
@@ -180,7 +217,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </div>
             </div>
 
-            <div className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
+            <div id="deck-container" className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar relative" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
               {deckPlayers.map((p) => {
                 const status = availability[p.idnumber] || 'tentative';
                 const isSelected = selectedDeckPlayerId === p.idnumber;
@@ -194,6 +231,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 return (
                   <div
                     key={p.idnumber}
+                    id={`deck-player-${p.idnumber}`}
                     onClick={() => setSelectedDeckPlayerId(isSelected ? null : p.idnumber)}
                     className={`cursor-pointer flex flex-col rounded-xl border p-3 transition-all duration-200 ${
                       isSelected
