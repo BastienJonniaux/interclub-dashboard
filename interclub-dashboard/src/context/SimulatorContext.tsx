@@ -100,22 +100,39 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const assignPlayerToBoard = (teamNumber: number, board: number, playerId: number | null) => {
-    const teamDraft = { ...(draftCompositions[teamNumber] || {}) };
-    if (playerId === null) {
-      delete teamDraft[board];
-    } else {
-      // If player already assigned elsewhere in this team, remove from old board
-      Object.keys(teamDraft).forEach((b) => {
-        if (teamDraft[Number(b)] === playerId) {
-          delete teamDraft[Number(b)];
+    let updatedDrafts = { ...draftCompositions };
+
+    // If we are assigning a real player (not clearing), remove them from any other board across all teams
+    if (playerId !== null) {
+      Object.keys(updatedDrafts).forEach((tNumStr) => {
+        const tNum = Number(tNumStr);
+        const teamDraft = { ...updatedDrafts[tNum] };
+        let teamChanged = false;
+        
+        Object.keys(teamDraft).forEach((bNumStr) => {
+          if (teamDraft[Number(bNumStr)] === playerId) {
+            delete teamDraft[Number(bNumStr)];
+            teamChanged = true;
+          }
+        });
+
+        if (teamChanged) {
+          updatedDrafts[tNum] = teamDraft;
         }
       });
-      teamDraft[board] = playerId;
     }
 
-    const updated = { ...draftCompositions, [teamNumber]: teamDraft };
-    setDraftCompositions(updated);
-    saveState(availability, playerSettings, updated);
+    // Now assign them to the target team and board
+    const targetTeamDraft = { ...(updatedDrafts[teamNumber] || {}) };
+    if (playerId === null) {
+      delete targetTeamDraft[board];
+    } else {
+      targetTeamDraft[board] = playerId;
+    }
+    updatedDrafts[teamNumber] = targetTeamDraft;
+
+    setDraftCompositions(updatedDrafts);
+    saveState(availability, playerSettings, updatedDrafts);
   };
 
   const clearDraft = (teamNumber?: number) => {

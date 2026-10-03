@@ -22,7 +22,7 @@ export interface TeamCompositionValidation {
   assignedCount: number;
 }
 
-const RESERVE_ELO_LIMITS: Record<number, number> = {
+export const RESERVE_ELO_LIMITS: Record<number, number> = {
   1: 2350,
   2: 2200,
   3: 2050,

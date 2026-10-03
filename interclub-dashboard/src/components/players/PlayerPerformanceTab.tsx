@@ -108,7 +108,7 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
               ) : (
                 filteredPlayers.map((p) => {
                   const hasPlayed = p.gamesPlayed > 0;
-                  const isHot = hasPlayed && p.score / p.gamesPlayed >= 0.75;
+                  const isHot = hasPlayed && p.score / p.gamesPlayed >= 0.75; // le joueur est en forme si il a marqué au moins 75% de ses points sur les parties jouées
                   const diff = p.diff;
                   const isHovered = hoveredPlayerId === p.id;
                   const isExpanded = expandedPlayerId === p.id;
