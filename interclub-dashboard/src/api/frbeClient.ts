@@ -6,9 +6,7 @@ import {
   extractPlayersFromFirestoreRound,
 } from './firestoreFallback';
 
-const API_BASE = import.meta.env.DEV
-  ? '/api/v1/interclubs'
-  : 'https://www.frbe-kbsb-ksb.be/api/v1/interclubs';
+const API_BASE = '/api/v1/interclubs';
 
 export let isFallbackMode = false;
 

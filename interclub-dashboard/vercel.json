@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/v1/interclubs/:match*",
+      "destination": "https://www.frbe-kbsb-ksb.be/api/v1/interclubs/:match*"
+    }
+  ]
+}
