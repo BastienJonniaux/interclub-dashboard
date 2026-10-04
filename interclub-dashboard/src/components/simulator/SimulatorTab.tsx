@@ -178,30 +178,32 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
-          Simulateur de Composition & Règles FRBE
-        </h2>
-        <p className="text-sm text-slate-400 mt-1">
-          Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner.
-        </p>
+      <div className="bg-[#1A1918] text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#E2DFD8]">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-tight">
+            Simulateur de Composition & Règles FRBE
+          </h2>
+          <p className="text-sm text-[#E2DFD8] mt-2 max-w-3xl leading-relaxed">
+            Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Player Deck (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="glass-panel p-4 h-full flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-2 shrink-0">
-              <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-indigo-400" />
+          <div className="chess-panel p-4 h-full flex flex-col bg-white border border-[#E2DFD8]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-2 shrink-0">
+              <h3 className="font-bold text-[#1A1918] text-sm flex items-center gap-2 font-serif">
+                <UserPlus className="h-4 w-4 text-[#1E5E3A]" />
                 Deck des joueurs ({deckPlayers.length})
               </h3>
               
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowIgnored(!showIgnored)}
-                  className={`text-[10px] uppercase font-bold px-2 py-1 rounded-md transition-colors ${
-                    showIgnored ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                  className={`text-[10px] uppercase font-bold px-2 py-1 rounded-none transition-colors border ${
+                    showIgnored ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6]'
                   }`}
                   title="Afficher/Masquer les joueurs ignorés"
                 >
@@ -209,7 +211,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </button>
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold bg-white/5 px-2 py-1 rounded-md text-slate-300 hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold bg-white border border-[#E2DFD8] px-2 py-1 rounded-none text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
                   title="Gérer les joueurs (Saison)"
                 >
                   <Settings className="h-3 w-3" /> Config
@@ -217,7 +219,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </div>
             </div>
 
-            <div id="deck-container" className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar relative" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
+            <div id="deck-container" className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar relative bg-[#F9F8F6] p-2" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
               {deckPlayers.map((p) => {
                 const status = availability[p.idnumber] || 'tentative';
                 const isSelected = selectedDeckPlayerId === p.idnumber;
@@ -251,46 +253,46 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     key={p.idnumber}
                     id={`deck-player-${p.idnumber}`}
                     onClick={() => setSelectedDeckPlayerId(isSelected ? null : p.idnumber)}
-                    className={`cursor-pointer flex flex-col rounded-xl border p-3 transition-all duration-200 ${
+                    className={`cursor-pointer flex flex-col rounded-none border p-3 transition-all duration-200 ${
                       isSelected
-                        ? 'bg-indigo-500/20 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)] ring-1 ring-indigo-400'
+                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-1 ring-[#1E5E3A]'
                         : isIgnored
-                        ? 'bg-black/40 border-white/5 opacity-50 grayscale hover:opacity-80'
+                        ? 'bg-[#F9F8F6] border-[#E2DFD8] opacity-50 grayscale hover:opacity-80'
                         : isAbsent
-                        ? 'bg-rose-950/20 border-rose-900/30 opacity-70 hover:opacity-100'
+                        ? 'bg-[#B91C1C]/5 border-[#B91C1C]/20 opacity-70 hover:opacity-100'
                         : isAssignedHere
-                        ? 'bg-emerald-500/10 border-emerald-500/20 opacity-70 hover:opacity-100'
+                        ? 'bg-[#1A1918]/5 border-[#1A1918]/20 opacity-70 hover:opacity-100'
                         : assignmentStr
-                        ? 'bg-white/5 border-white/10 opacity-70 hover:opacity-100'
+                        ? 'bg-white border-[#E2DFD8] opacity-70 hover:opacity-100'
                         : isBackup
-                        ? 'bg-slate-900/50 border-white/5 opacity-80 hover:bg-white/5 hover:opacity-100'
-                        : 'bg-black/20 border-white/5 hover:bg-white/10'
-                    } ${!isIgnored && !isAbsent && !isSelected && !isAssignedHere && !assignmentStr && isEligible ? 'border-l-4 border-l-emerald-500/40 bg-emerald-500/5' : ''} ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'border-l-4 border-l-rose-500/40 opacity-50 grayscale' : ''}`}
+                        ? 'bg-white border-[#E2DFD8] opacity-80 hover:bg-[#F9F8F6] hover:opacity-100'
+                        : 'bg-white border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                    } ${!isIgnored && !isAbsent && !isSelected && !isAssignedHere && !assignmentStr && isEligible ? 'border-l-4 border-l-[#1E5E3A] bg-[#1E5E3A]/5' : ''} ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'border-l-4 border-l-[#B91C1C]/40 opacity-50 grayscale' : ''}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className={`font-bold ${isSelected ? 'text-indigo-300' : isIgnored ? 'text-slate-500 line-through' : isAbsent ? 'text-rose-400/70' : 'text-slate-200'}`}>
+                        <div className={`font-bold font-serif ${isSelected ? 'text-[#1E5E3A]' : isIgnored ? 'text-[#6E6A64] line-through' : isAbsent ? 'text-[#B91C1C]/70' : 'text-[#1A1918]'}`}>
                           {p.last_name} {p.first_name}
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
-                          <span><strong className={isIgnored ? '' : 'text-slate-300'}>{p.assignedrating || 'NC'}</strong> Elo</span>
+                        <div className="text-[11px] text-[#6E6A64] mt-1 flex flex-wrap items-center gap-1.5">
+                          <span><strong className={`font-mono ${isIgnored ? '' : 'text-[#1A1918]'}`}>{p.assignedrating || 'NC'}</strong> Elo</span>
                           {p.titular && (
-                            <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[9px] text-slate-300">
+                             <span className="bg-[#1A1918] text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase">
                               Tit. {p.titular}
                             </span>
                           )}
                           {isBackup && (
-                            <span className="rounded-md bg-amber-500/20 text-amber-300 px-1.5 py-0.5 text-[9px]">
-                              Réserve Permanente
+                            <span className="bg-white border border-[#E2DFD8] px-1.5 py-0.5 text-[9px] text-[#1A1918] font-bold uppercase">
+                              Réserve
                             </span>
                           )}
                           {isAbsent && !isIgnored && (
-                            <span className="rounded-md bg-rose-500/20 text-rose-300 px-1.5 py-0.5 text-[9px]">
+                            <span className="bg-[#B91C1C]/10 text-[#B91C1C] border border-[#B91C1C]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase">
                               Absent Ronde
                             </span>
                           )}
                           {!isEligible && !isIgnored && !isAbsent && (
-                            <span className="text-[9px] font-bold text-rose-400/80 uppercase">
+                            <span className="text-[9px] font-bold text-[#B91C1C] uppercase">
                               Inéligible
                             </span>
                           )}
@@ -300,10 +302,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'available'); }}
-                          className={`rounded-md p-1.5 transition-all ${
+                          className={`rounded-none p-1.5 transition-all border ${
                             status === 'available'
-                              ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                              : 'bg-white/5 text-slate-500 border border-transparent hover:text-emerald-400'
+                              ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30'
+                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="Présent pour cette ronde"
                         >
@@ -311,10 +313,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'tentative'); }}
-                          className={`rounded-md p-1.5 transition-all ${
+                          className={`rounded-none p-1.5 transition-all border ${
                             status === 'tentative'
-                              ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                              : 'bg-white/5 text-slate-500 border border-transparent hover:text-amber-400'
+                              ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
+                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="À confirmer"
                         >
@@ -322,10 +324,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'unavailable'); }}
-                          className={`rounded-md p-1.5 transition-all ${
+                          className={`rounded-none p-1.5 transition-all border ${
                             status === 'unavailable'
-                              ? 'bg-rose-500/30 text-rose-300 border border-rose-500/50'
-                              : 'bg-white/5 text-slate-500 border border-transparent hover:text-rose-400'
+                              ? 'bg-[#B91C1C]/10 text-[#B91C1C] border-[#B91C1C]/30'
+                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="Absent pour cette ronde"
                         >
@@ -335,7 +337,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     </div>
 
                     {assignmentStr && !isIgnored && (
-                      <div className={`mt-2 text-[10px] font-medium ${isAssignedHere ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <div className={`mt-2 text-[10px] font-bold font-mono uppercase tracking-wider ${isAssignedHere ? 'text-[#1E5E3A]' : 'text-[#B45309]'}`}>
                         {isAssignedHere ? 'Assigné à cette équipe' : `Déjà placé : ${assignmentStr}`}
                       </div>
                     )}
@@ -349,20 +351,20 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         {/* Right Column: Teams Builder (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
           {/* Team Tabs (Flex Wrap) */}
-          <div className="glass-panel p-3 flex flex-wrap items-center gap-2">
+          <div className="bg-white border border-[#E2DFD8] p-3 flex flex-wrap items-center gap-2">
             {teams.map((t, idx) => (
               <button
                 key={t.name}
                 type="button"
                 onClick={() => { setSelectedTeamIndex(idx); setSelectedDeckPlayerId(null); }}
-                className={`rounded-lg px-4 py-2 text-sm font-bold transition-all duration-300 border ${
+                className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
                   selectedTeamIndex === idx
-                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                    : 'bg-white/5 text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-200'
+                    ? 'bg-[#1A1918] text-white border-[#1A1918]'
+                    : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
                 }`}
               >
                 Équipe {idx + 1}
-                <span className="ml-2 text-[10px] opacity-70 font-normal">
+                <span className={`ml-2 text-[10px] font-mono ${selectedTeamIndex === idx ? 'text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
                   Div {t.division}{t.index}
                 </span>
               </button>
@@ -371,21 +373,21 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
           {/* Validation & Scouting Banner */}
           <div
-            className={`rounded-2xl border p-5 backdrop-blur-md transition-colors ${
+            className={`border p-5 transition-colors ${
               !validation.isValid
-                ? 'bg-rose-500/10 border-rose-500/30 shadow-[0_0_20px_rgba(243,66,113,0.1)]'
+                ? 'bg-[#B91C1C]/5 border-[#B91C1C]'
                 : validation.hasWarnings
-                ? 'bg-amber-500/10 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]'
-                : 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                ? 'bg-[#B45309]/5 border-[#B45309]'
+                : 'bg-[#1E5E3A]/5 border-[#1E5E3A]'
             }`}
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div className="flex-1">
-                <div className={`flex items-center gap-3 font-bold text-sm ${
-                  !validation.isValid ? 'text-rose-400' : validation.hasWarnings ? 'text-amber-400' : 'text-emerald-400'
+                <div className={`flex items-center gap-3 font-bold font-serif text-lg ${
+                  !validation.isValid ? 'text-[#B91C1C]' : validation.hasWarnings ? 'text-[#B45309]' : 'text-[#1E5E3A]'
                 }`}>
                   {!validation.isValid ? (
-                    <><AlertOctagon className="h-6 w-6 animate-pulse" /><span>Non conforme (Règles FRBE)</span></>
+                    <><AlertOctagon className="h-6 w-6" /><span>Non conforme (Règles FRBE)</span></>
                   ) : validation.hasWarnings ? (
                     <><AlertTriangle className="h-6 w-6" /><span>Avertissements FRBE</span></>
                   ) : (
@@ -395,15 +397,15 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 
                 {/* List of violations / warnings */}
                 {validation.violations.length > 0 && (
-                  <div className="mt-3 space-y-1 text-xs">
+                  <div className="mt-4 space-y-2 text-xs">
                     {validation.violations.map((v, i) => (
                       <div
                         key={i}
                         className={`flex items-start gap-2 font-medium ${
-                          v.type === 'error' ? 'text-rose-300' : 'text-amber-300'
+                          v.type === 'error' ? 'text-[#B91C1C]' : 'text-[#B45309]'
                         }`}
                       >
-                        <span className="text-white/30 mt-0.5">•</span>
+                        <span className="font-bold mt-0.5">•</span>
                         <span>{v.message}</span>
                       </div>
                     ))}
@@ -412,17 +414,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </div>
 
               {/* Matchup Stats */}
-              <div className="flex items-center gap-4 bg-black/30 rounded-xl p-3 border border-white/5 shrink-0">
+              <div className="flex items-center gap-4 bg-white border border-[#E2DFD8] rounded-none p-3 shrink-0">
                 <div className="text-center">
-                  <div className="text-[10px] uppercase font-bold text-slate-400">Moyenne {clubName}</div>
-                  <div className="text-xl font-bold text-slate-100">{validation.averageElo || 'NC'}</div>
+                  <div className="text-[10px] uppercase font-bold text-[#6E6A64]">Moyenne {clubName}</div>
+                  <div className="text-xl font-bold font-mono text-[#1A1918]">{validation.averageElo || 'NC'}</div>
                 </div>
                 {teamScout && (
                   <>
-                    <Swords className="h-5 w-5 text-indigo-400 opacity-50" />
+                    <Swords className="h-5 w-5 text-[#E2DFD8]" />
                     <div className="text-center">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">{teamScout.opponentTeamName}</div>
-                      <div className="text-xl font-bold text-slate-300">{teamScout.opponentAverageElo || 'NC'}</div>
+                      <div className="text-[10px] uppercase font-bold text-[#6E6A64]">{teamScout.opponentTeamName}</div>
+                      <div className="text-xl font-bold font-mono text-[#1A1918]">{teamScout.opponentAverageElo || 'NC'}</div>
                     </div>
                   </>
                 )}
@@ -431,16 +433,16 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           </div>
 
           {/* Boards Assignment Grid */}
-          <div className="glass-panel p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-3">
-              <h3 className="font-bold text-slate-100 text-sm">
+          <div className="chess-panel p-5 bg-white border border-[#E2DFD8]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-3">
+              <h3 className="font-bold text-[#1A1918] text-sm font-serif">
                 Échiquiers ({validation.assignedCount} / {validation.totalBoards})
               </h3>
               
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleAutoFill}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/30 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors"
                   title="Remplit automatiquement les places vides de cette équipe avec les joueurs du deck (triés par Elo)"
                 >
                   <Wand2 className="h-3.5 w-3.5" />
@@ -448,7 +450,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </button>
                 <button
                   onClick={() => clearDraft(teamNumber)}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Vider l'équipe
@@ -465,18 +467,18 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   <div
                     key={b.board}
                     onClick={() => handleBoardClick(b.board, b.player?.idnumber)}
-                    className={`flex items-center gap-4 rounded-xl border p-3 transition-all duration-200 ${
+                    className={`flex items-center gap-4 rounded-none border p-3 transition-all duration-200 ${
                       selectedDeckPlayerId !== null
-                        ? 'cursor-pointer hover:bg-indigo-500/10 hover:border-indigo-500/30'
-                        : b.player ? 'cursor-pointer hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-400' : 'bg-black/20 border-white/5'
+                        ? 'cursor-pointer hover:bg-[#F9F8F6] hover:border-[#1A1918]'
+                        : b.player ? 'cursor-pointer hover:bg-[#B91C1C]/5 hover:border-[#B91C1C] hover:text-[#B91C1C]' : 'bg-[#F9F8F6] border-[#E2DFD8]'
                     } ${
-                      !b.player ? 'border-dashed border-white/20 bg-black/20' : 'border-white/10 bg-black/40'
+                      !b.player ? 'border-dashed border-[#E2DFD8] bg-[#F9F8F6]' : 'border-[#E2DFD8] bg-white'
                     }`}
                   >
-                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg border text-sm font-bold shrink-0 shadow-inner ${
+                    <span className={`flex h-8 w-8 items-center justify-center font-mono font-bold text-sm shrink-0 border ${
                       b.player 
-                        ? 'bg-indigo-500/20 border-indigo-500/20 text-indigo-300' 
-                        : 'bg-white/5 border-white/10 text-slate-500'
+                        ? 'bg-[#1A1918] border-[#1A1918] text-white' 
+                        : 'bg-white border-[#E2DFD8] text-[#6E6A64]'
                     }`}>
                       {b.board}
                     </span>
@@ -484,28 +486,28 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     <div className="flex-1 min-w-0">
                       {b.player ? (
                         <div>
-                          <div className={`font-bold text-sm truncate ${willReplace ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                          <div className={`font-bold font-serif text-sm truncate ${willReplace ? 'line-through text-[#6E6A64]' : 'text-[#1A1918]'}`}>
                             {b.player.last_name} {b.player.first_name}
                           </div>
-                          <div className={`text-xs mt-0.5 ${willReplace ? 'line-through text-slate-600' : 'text-slate-400'}`}>
+                          <div className={`text-xs mt-0.5 font-mono ${willReplace ? 'line-through text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
                             {b.player.assignedrating || 'NC'} Elo
                           </div>
                         </div>
                       ) : (
-                        <div className={`text-sm italic ${isSelectedForDrop ? 'text-indigo-400 font-semibold' : 'text-slate-500'}`}>
+                        <div className={`text-sm italic ${isSelectedForDrop ? 'text-[#1E5E3A] font-bold' : 'text-[#6E6A64]'}`}>
                           {isSelectedForDrop ? 'Cliquer pour assigner' : 'Échiquier vide'}
                         </div>
                       )}
                     </div>
 
                     {b.player && selectedDeckPlayerId === null && (
-                      <div className="text-slate-500 p-2">
+                      <div className="text-[#6E6A64] hover:text-[#B91C1C] transition-colors p-2">
                         <X className="h-5 w-5" />
                       </div>
                     )}
                     {willReplace && (
-                      <div className="text-indigo-400 text-xs font-bold uppercase tracking-wider p-2">
-                        Remplacer
+                      <div className="text-[#1E5E3A] text-xs font-bold font-mono tracking-wider p-2">
+                        REMPLACER
                       </div>
                     )}
                   </div>
