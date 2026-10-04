@@ -228,6 +228,24 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 const isBackup = playerSettings[p.idnumber]?.isBackup;
                 const isAbsent = status === 'unavailable';
 
+                // Eligibility check for the currently active team
+                const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
+                const titularMatch = (p.titular || '').match(/(\d+)/);
+                const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
+                let isEligible = false;
+                if (titularTeam === teamNumber) {
+                  isEligible = true;
+                } else if (titularTeam > 0 && titularTeam < teamNumber) {
+                  isEligible = false; // Cannot play down
+                } else {
+                  isEligible = (p.assignedrating || 0) <= activeTeamLimit;
+                }
+                
+                // Specific rule for Div 1: No player below 1800
+                if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
+                  isEligible = false;
+                }
+
                 return (
                   <div
                     key={p.idnumber}
@@ -247,7 +265,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         : isBackup
                         ? 'bg-slate-900/50 border-white/5 opacity-80 hover:bg-white/5 hover:opacity-100'
                         : 'bg-black/20 border-white/5 hover:bg-white/10'
-                    }`}
+                    } ${!isIgnored && !isAbsent && !isSelected && !isAssignedHere && !assignmentStr && isEligible ? 'border-l-4 border-l-emerald-500/40 bg-emerald-500/5' : ''} ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'border-l-4 border-l-rose-500/40 opacity-50 grayscale' : ''}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -269,6 +287,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                           {isAbsent && !isIgnored && (
                             <span className="rounded-md bg-rose-500/20 text-rose-300 px-1.5 py-0.5 text-[9px]">
                               Absent Ronde
+                            </span>
+                          )}
+                          {!isEligible && !isIgnored && !isAbsent && (
+                            <span className="text-[9px] font-bold text-rose-400/80 uppercase">
+                              Inéligible
                             </span>
                           )}
                         </div>
