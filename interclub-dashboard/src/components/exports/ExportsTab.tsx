@@ -121,70 +121,72 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
-          Exports & Mails — {club.name}
-        </h2>
-        <p className="text-sm text-slate-400 mt-1">
-          Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
-        </p>
+      <div className="bg-[#1A1918] text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#E2DFD8]">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-tight">
+            Exports & Mails — {club.name}
+          </h2>
+          <p className="text-sm text-[#E2DFD8] mt-2 max-w-3xl leading-relaxed">
+            Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Email Generator Card */}
-        <div className="flex flex-col justify-between glass-panel p-6">
+        <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/20 shadow-inner">
-                  <Mail className="h-5 w-5 text-indigo-400" />
+                <div className="p-2 border border-[#1A1918] bg-[#F9F8F6]">
+                  <Mail className="h-5 w-5 text-[#1A1918]" />
                 </div>
-                <h3 className="font-bold text-slate-100 text-lg">
+                <h3 className="font-bold font-serif text-[#1A1918] text-lg">
                   Email Récapitulatif
                 </h3>
               </div>
               <button
                 onClick={handleCopyEmail}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-4 py-2 text-xs font-semibold text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.2)] hover:bg-indigo-500/30 hover:text-indigo-200 transition-all duration-300"
+                className="inline-flex items-center justify-center gap-2 bg-[#1E5E3A]/10 border border-[#1E5E3A]/30 px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-all duration-300"
               >
                 {copiedEmail ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 <span>{copiedEmail ? 'Copié !' : 'Copier le texte'}</span>
               </button>
             </div>
 
-            <p className="mt-4 text-xs text-slate-400">
+            <p className="mt-4 text-xs font-mono text-[#6E6A64]">
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).
             </p>
 
-            <pre className="mt-4 max-h-[500px] overflow-y-auto rounded-xl bg-black/30 p-5 text-[11px] leading-relaxed font-mono text-slate-300 border border-white/10 whitespace-pre-wrap select-text shadow-inner custom-scrollbar">
+            <pre className="mt-4 max-h-[500px] overflow-y-auto bg-[#F9F8F6] p-5 text-[11px] leading-relaxed font-mono text-[#1A1918] border border-[#E2DFD8] whitespace-pre-wrap select-text custom-scrollbar">
               {emailText}
             </pre>
           </div>
         </div>
 
         {/* Printable Match Day Sheet Card */}
-        <div className="flex flex-col justify-between glass-panel p-6">
+        <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/20 shadow-inner">
-                  <FileText className="h-5 w-5 text-emerald-400" />
+                <div className="p-2 border border-[#1A1918] bg-[#F9F8F6]">
+                  <FileText className="h-5 w-5 text-[#1A1918]" />
                 </div>
-                <h3 className="font-bold text-slate-100 text-lg">
+                <h3 className="font-bold font-serif text-[#1A1918] text-lg">
                   Feuille de Match (Jour J)
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopySheet}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-slate-100 transition-colors"
+                  className="inline-flex items-center gap-2 border border-[#E2DFD8] bg-white px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
                 >
-                  {copiedSheet ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  {copiedSheet ? <Check className="h-4 w-4 text-[#1E5E3A]" /> : <Copy className="h-4 w-4" />}
                   <span className="hidden sm:inline">{copiedSheet ? 'Copié !' : 'Copier'}</span>
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-100 border border-white px-4 py-2 text-xs font-semibold text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:bg-white transition-all duration-300"
+                  className="inline-flex items-center gap-2 bg-[#1A1918] border border-[#1A1918] px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-white hover:bg-black transition-all duration-300"
                 >
                   <Printer className="h-4 w-4" />
                   <span className="hidden sm:inline">Imprimer</span>
@@ -193,15 +195,15 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
             </div>
 
             {/* Team Picker */}
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <div className="mt-4 flex flex-wrap gap-2">
               {teams.map((t, idx) => (
                 <button
                   key={t.name}
                   onClick={() => setSelectedTeamIndex(idx)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-300 border ${
+                  className={`px-3 py-1.5 text-xs font-bold whitespace-nowrap transition-all duration-300 border ${
                     selectedTeamIndex === idx
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                      : 'bg-white/5 text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-200'
+                      ? 'bg-[#1A1918] text-white border-[#1A1918]'
+                      : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
                   }`}
                 >
                   {t.name}
@@ -209,7 +211,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
               ))}
             </div>
 
-            <pre className="mt-4 max-h-[450px] overflow-y-auto rounded-xl bg-black/30 p-5 text-[11px] leading-relaxed font-mono text-slate-300 border border-white/10 whitespace-pre-wrap select-text shadow-inner custom-scrollbar">
+            <pre className="mt-4 max-h-[450px] overflow-y-auto bg-[#F9F8F6] p-5 text-[11px] leading-relaxed font-mono text-[#1A1918] border border-[#E2DFD8] whitespace-pre-wrap select-text custom-scrollbar">
               {matchSheetText}
             </pre>
           </div>

@@ -45,15 +45,15 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
     <div className="space-y-8">
       {/* Top Banner / Summary Cards */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
+        <h2 className="text-3xl font-bold font-serif text-[#1A1918] tracking-tight">
           Vue d'ensemble des Équipes — {clubName}
         </h2>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-[#6E6A64] mt-2 max-w-3xl leading-relaxed">
           Classement en direct de chaque équipe de votre club dans sa division respective.
         </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 isometric-grid">
-          {standings.map((divTable, idx) => {
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {standings.map((divTable) => {
             const our = divTable.ourTeam;
             const rank = our?.rank || '-';
             const totalTeams = divTable.teams.length;
@@ -63,45 +63,44 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
               <div
                 key={`${divTable.division}${divTable.index}`}
                 onClick={() => toggleExpand(`${divTable.division}${divTable.index}`)}
-                className="group cursor-pointer glass-panel p-5 hover:border-indigo-400/50"
-                style={{ animationDelay: `${idx * 100}ms` }}
+                className="group cursor-pointer chess-panel p-5"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="inline-block rounded-md bg-indigo-500/20 px-2 py-0.5 text-xs font-semibold text-indigo-300 border border-indigo-500/20">
+                    <span className="chess-badge">
                       {divTable.divisionLabel}
                     </span>
-                    <h3 className="mt-2 font-bold text-slate-100 group-hover:text-indigo-400 transition-colors">
+                    <h3 className="mt-3 text-lg font-bold font-serif text-[#1A1918] group-hover:text-[#1E5E3A] transition-colors">
                       {our?.teamName || `Équipe ${divTable.divisionLabel}`}
                     </h3>
                   </div>
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold text-sm transition-all duration-300 ${
+                    className={`flex h-10 w-10 items-center justify-center font-mono font-bold text-base border ${
                       isLeader
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                        : 'bg-white/5 text-slate-300 border border-white/10 group-hover:bg-white/10'
+                        ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
+                        : 'bg-[#F9F8F6] text-[#1A1918] border-[#E2DFD8]'
                     }`}
                   >
-                    {isLeader ? <Award className="h-5 w-5 text-amber-400" /> : `${rank}e`}
+                    {isLeader ? <Award className="h-5 w-5 text-[#B45309]" /> : `${rank}`}
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-[#E2DFD8] pt-3 text-center font-mono">
                   <div>
-                    <div className="text-xs text-slate-400 mb-1">Rang</div>
-                    <div className="text-sm font-bold text-slate-200">
-                      {rank} / {totalTeams}
+                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Rang</div>
+                    <div className="text-base font-bold text-[#1A1918]">
+                      {rank} <span className="text-xs text-[#6E6A64] font-normal">/ {totalTeams}</span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-400 mb-1">Pts Match</div>
-                    <div className="text-sm font-bold text-indigo-400">
-                      {our?.matchPoints ?? 0} pts
+                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Pts Match</div>
+                    <div className="text-base font-bold text-[#1A1918]">
+                      {our?.matchPoints ?? 0}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-slate-400 mb-1">Pts Échiq.</div>
-                    <div className="text-sm font-bold text-slate-200">
+                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Pts Échiq.</div>
+                    <div className="text-base font-bold text-[#1A1918]">
                       {our?.boardPoints ?? 0}
                     </div>
                   </div>
@@ -118,8 +117,8 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
       )}
 
       {/* Detailed Division Tables Accordion */}
-      <div className="space-y-4 pt-4">
-        <h3 className="text-xl font-bold text-slate-100 tracking-tight">
+      <div className="space-y-4 pt-8 border-t border-[#E2DFD8]">
+        <h3 className="text-2xl font-bold font-serif text-[#1A1918] tracking-tight">
           Détail des Divisions
         </h3>
 
@@ -131,46 +130,46 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
             <div
               key={key}
               id={`details-${key}`}
-              className="overflow-hidden glass-panel"
+              className="chess-panel p-0 overflow-hidden"
             >
               <button
                 onClick={() => toggleExpand(key)}
-                className="flex w-full items-center justify-between p-4 text-left font-semibold text-slate-100 hover:bg-white/5 transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-[#F9F8F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1A1918]"
               >
-                <div className="flex items-center gap-3">
-                  <span className="rounded-lg bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 text-xs font-bold text-indigo-300">
+                <div className="flex items-center gap-4">
+                  <span className="chess-badge">
                     {divTable.divisionLabel}
                   </span>
-                  <span>{divTable.ourTeam?.teamName || divTable.divisionLabel}</span>
-                  <span className="text-xs text-slate-400 font-normal">
+                  <span className="text-base font-bold text-[#1A1918]">{divTable.ourTeam?.teamName || divTable.divisionLabel}</span>
+                  <span className="text-sm text-[#6E6A64]">
                     ({divTable.teams.length} équipes)
                   </span>
                 </div>
                 {isExpanded ? (
-                  <ChevronUp className="h-5 w-5 text-indigo-400" />
+                  <ChevronUp className="h-5 w-5 text-[#1A1918]" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-slate-400" />
+                  <ChevronDown className="h-5 w-5 text-[#6E6A64]" />
                 )}
               </button>
 
               {isExpanded && (
-                <div className="overflow-x-auto border-t border-white/10 bg-black/20">
-                  <table className="w-full text-left text-sm text-slate-300">
-                    <thead className="bg-white/5 text-xs uppercase tracking-wider text-slate-400 border-b border-white/10">
+                <div className="overflow-x-auto border-t border-[#E2DFD8] bg-white">
+                  <table className="w-full text-left text-sm text-[#1A1918]">
+                    <thead className="bg-[#F9F8F6] text-[10px] uppercase tracking-wider font-semibold text-[#6E6A64] border-b border-[#E2DFD8]">
                       <tr>
-                        <th className="px-4 py-3 text-center font-medium">Rang</th>
-                        <th className="px-4 py-3 font-medium">Équipe</th>
-                        <th className="px-3 py-3 text-center font-medium">J</th>
-                        <th className="px-3 py-3 text-center font-medium">G</th>
-                        <th className="px-3 py-3 text-center font-medium">N</th>
-                        <th className="px-3 py-3 text-center font-medium">P</th>
-                        <th className="px-4 py-3 text-center font-bold text-indigo-400">
+                        <th className="px-4 py-2 text-center border-r border-[#E2DFD8]">Rang</th>
+                        <th className="px-4 py-2 border-r border-[#E2DFD8]">Équipe</th>
+                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Joués">J</th>
+                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Gagnés">G</th>
+                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Nuls">N</th>
+                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Perdus">P</th>
+                        <th className="px-4 py-2 text-center font-bold text-[#1A1918] border-r border-[#E2DFD8]">
                           Pts Match
                         </th>
-                        <th className="px-4 py-3 text-center font-medium">Pts Échiq.</th>
+                        <th className="px-4 py-2 text-center font-bold text-[#1A1918]">Pts Échiq.</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[#E2DFD8]">
                       {divTable.teams.map((t) => {
                         const isOur = t.isOurClub;
                         return (
@@ -178,43 +177,43 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                             key={t.pairingNumber}
                             className={`transition-colors ${
                               isOur
-                                ? 'bg-indigo-500/10 font-semibold text-indigo-100'
-                                : 'hover:bg-white/5'
+                                ? 'bg-[#1E5E3A]/5 font-bold'
+                                : 'hover:bg-[#F9F8F6]'
                             }`}
                           >
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-4 py-2.5 text-center border-r border-[#E2DFD8] font-mono">
                               <span
-                                className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                                className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs border ${
                                   t.rank === 1
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                                    ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
                                     : t.rank === 2
-                                    ? 'bg-slate-300/20 text-slate-200 border border-slate-300/30'
+                                    ? 'bg-[#F9F8F6] text-[#1A1918] border-[#E2DFD8]'
                                     : t.rank === 3
-                                    ? 'bg-amber-700/30 text-amber-500 border border-amber-700/30'
-                                    : 'text-slate-400'
+                                    ? 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8]'
+                                    : 'bg-transparent text-[#6E6A64] border-transparent'
                                 }`}
                               >
                                 {t.rank}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <span>{t.teamName}</span>
+                            <td className="px-4 py-2.5 border-r border-[#E2DFD8]">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-sm ${isOur ? 'font-bold text-[#1E5E3A]' : 'font-medium'}`}>{t.teamName}</span>
                                 {isOur && (
-                                  <span className="rounded-md bg-indigo-500 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider shadow-[0_0_10px_rgba(99,102,241,0.4)]">
+                                  <span className="bg-[#1E5E3A] px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
                                     Notre Équipe
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 py-3 text-center text-slate-400">{t.played}</td>
-                            <td className="px-3 py-3 text-center text-emerald-400 font-medium">{t.won}</td>
-                            <td className="px-3 py-3 text-center text-slate-400">{t.drawn}</td>
-                            <td className="px-3 py-3 text-center text-rose-400">{t.lost}</td>
-                            <td className="px-4 py-3 text-center font-bold text-indigo-400 text-base">
+                            <td className="px-3 py-2.5 text-center border-r border-[#E2DFD8] text-[#6E6A64] font-mono">{t.played}</td>
+                            <td className="px-3 py-2.5 text-center font-bold text-[#1E5E3A] border-r border-[#E2DFD8] font-mono">{t.won}</td>
+                            <td className="px-3 py-2.5 text-center border-r border-[#E2DFD8] text-[#6E6A64] font-mono">{t.drawn}</td>
+                            <td className="px-3 py-2.5 text-center font-bold text-[#B91C1C] border-r border-[#E2DFD8] font-mono">{t.lost}</td>
+                            <td className="px-4 py-2.5 text-center font-bold text-[#1A1918] border-r border-[#E2DFD8] font-mono">
                               {t.matchPoints}
                             </td>
-                            <td className="px-4 py-3 text-center font-medium">
+                            <td className="px-4 py-2.5 text-center font-bold text-[#1A1918] font-mono">
                               {t.boardPoints}
                             </td>
                           </tr>

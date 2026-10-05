@@ -29,13 +29,13 @@ const DashboardContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Loader2 className="h-10 w-10 text-indigo-400 animate-spin floating-element" />
-        <h3 className="mt-4 text-base font-bold text-slate-200">
-          Chargement des données FRBE...
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#F9F8F6]">
+        <Loader2 className="h-10 w-10 text-[#1E5E3A] animate-spin" />
+        <h3 className="mt-4 text-lg font-bold font-serif text-[#1A1918]">
+          Chargement de l'Échiquier...
         </h3>
-        <p className="mt-1 text-xs text-slate-400">
-          Récupération des équipes, résultats et joueurs du Club {clubId}
+        <p className="mt-1 text-sm font-mono text-[#6E6A64]">
+          Synchronisation FRBE pour le matricule {clubId}
         </p>
       </div>
     );
@@ -43,17 +43,17 @@ const DashboardContent: React.FC = () => {
 
   if (error || !club) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
-        <div className="h-16 w-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4 floating-element">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-[#F9F8F6]">
+        <div className="h-16 w-16 bg-white border border-[#E2DFD8] flex items-center justify-center text-[#B91C1C] mb-4 shadow-sm">
           <AlertCircle className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-bold text-slate-100">Erreur de chargement</h3>
-        <p className="mt-2 max-w-md text-sm text-slate-400">
+        <h3 className="text-2xl font-bold font-serif text-[#1A1918]">Erreur de connexion</h3>
+        <p className="mt-2 max-w-md text-base text-[#6E6A64]">
           {error || 'Impossible de charger les données du club.'}
         </p>
         <button
           onClick={refresh}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-5 py-2.5 text-sm font-semibold text-indigo-300 shadow-lg hover:bg-indigo-500/30 hover:text-indigo-200 transition-all duration-300"
+          className="mt-6 chess-button inline-flex items-center gap-2"
         >
           <RotateCcw className="h-4 w-4" />
           Réessayer
@@ -63,7 +63,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative z-10">
+    <div className="min-h-screen flex flex-col relative z-10 bg-[#F9F8F6]">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -72,16 +72,12 @@ const DashboardContent: React.FC = () => {
       />
 
       {isFallback && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 text-center text-xs font-medium text-amber-200/90 backdrop-blur-md">
-          ⚠️ Le serveur principal de la FRBE est temporairement inaccessible (Erreur 502). Les données ont été chargées avec succès depuis le miroir de sauvegarde synchronisé.
+        <div className="bg-[#B45309]/10 border-b border-[#B45309] px-4 py-3 text-center text-sm font-semibold text-[#B45309]">
+          Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
         </div>
       )}
 
       <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative z-0">
-        {/* Ambient background glows for the main content area */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10 pointer-events-none mix-blend-screen" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-10 pointer-events-none mix-blend-screen" />
-
         {activeTab === 'standings' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <StandingsTab
@@ -122,8 +118,9 @@ const DashboardContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="mt-auto border-t border-white/5 bg-slate-900/40 backdrop-blur-md py-6 text-center text-xs text-slate-500 z-10">
-        Tableau de bord Interclubs FRBE • Conçu pour les directeurs et capitaines d'interclubs
+      <footer className="mt-auto border-t border-[#E2DFD8] bg-white py-8 text-center text-sm text-[#6E6A64]">
+        <div className="font-serif font-bold text-[#1A1918] mb-1">INTERCLUBS FRBE</div>
+        Tableau de bord tactique officiel
       </footer>
     </div>
   );

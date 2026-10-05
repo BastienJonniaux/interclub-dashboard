@@ -1,52 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen relative overflow-x-hidden;
-    /* Deep spatial background pattern */
-    background-image: 
-      radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.12), transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.12), transparent 25%);
-    background-attachment: fixed;
+    @apply bg-[#F9F8F6] text-[#1A1918] antialiased min-h-screen relative overflow-x-hidden selection:bg-[#1E5E3A] selection:text-white;
+    font-family: 'Inter', sans-serif;
   }
 
-  /* Smooth scroll for the whole page */
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Playfair Display', serif;
+    @apply font-bold text-[#1A1918];
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   html {
     scroll-behavior: smooth;
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.3)] rounded-2xl;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  .chess-panel {
+    @apply bg-[#FFFFFF] border border-[#E2DFD8] transition-shadow duration-200;
   }
   
-  .glass-panel:hover {
-    @apply border-white/20 shadow-[0_30px_60px_rgba(0,0,0,0.4)];
-    transform: translateY(-2px);
+  .chess-panel:hover {
+    @apply shadow-[0_2px_8px_rgba(26,25,24,0.04)];
   }
 
-  .glass-button {
-    @apply relative overflow-hidden bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300;
+  .chess-button {
+    @apply bg-[#1A1918] text-white px-4 py-2 text-sm font-semibold hover:bg-[#33312E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F8F6] focus-visible:ring-[#1A1918] shadow-sm;
   }
 
-  .glass-button:hover {
-    @apply bg-white/10 border-white/20 transform -translate-y-0.5 shadow-[0_10px_20px_rgba(0,0,0,0.2)];
+  .chess-button-secondary {
+    @apply bg-[#FFFFFF] text-[#1A1918] border border-[#E2DFD8] px-4 py-2 text-sm font-medium hover:bg-[#F9F8F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#F9F8F6] focus-visible:ring-[#E2DFD8] shadow-sm;
   }
 
-  /* Isometric container base */
-  .isometric-grid {
-    perspective: 1000px;
+  .chess-badge {
+    @apply inline-flex items-center gap-1.5 bg-[#F9F8F6] text-[#6E6A64] px-2 py-0.5 text-xs font-semibold border border-[#E2DFD8];
   }
-  
-  .floating-element {
-    animation: float 6s ease-in-out infinite;
-  }
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
 }
