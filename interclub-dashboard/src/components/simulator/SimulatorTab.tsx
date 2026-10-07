@@ -3,6 +3,7 @@ import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
   validateTeamComposition,
+  validateCrossTeamAverages,
   AssignedBoard,
   RESERVE_ELO_LIMITS
 } from '../../domain/rules/frbeValidator';
@@ -36,6 +37,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   const {
     availability,
     setPlayerAvailability,
+    setAllPlayersAvailability,
     playerSettings,
     draftCompositions,
     assignPlayerToBoard,
@@ -68,6 +70,19 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     assignedBoards
   );
 
+  const crossTeamViolations = validateCrossTeamAverages(teams, draftCompositions, players);
+  const relevantCrossViolations = crossTeamViolations.filter(v => v.message.includes(activeTeam?.name || ''));
+  
+  if (relevantCrossViolations.length > 0) {
+    validation.violations.push(...relevantCrossViolations);
+    if (relevantCrossViolations.some(v => v.type === 'error')) {
+      validation.isValid = false;
+    }
+    if (relevantCrossViolations.some(v => v.type === 'warning')) {
+      validation.hasWarnings = true;
+    }
+  }
+
   const sortedClubPlayers = useMemo(() => {
     return [...players].sort(
       (a, b) =>
@@ -76,7 +91,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     );
   }, [players]);
 
-  // Deck players grouped by status (Active vs Reserve/Backup vs Absent vs Ignored)
+  // Deck players grouped only by Ignored status so they don't jump when availability changes
   const deckPlayers = useMemo(() => {
     return sortedClubPlayers.filter((p) => {
       const isIgnored = playerSettings[p.idnumber]?.isIgnored;
@@ -87,20 +102,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       const aIgnored = playerSettings[a.idnumber]?.isIgnored ? 1 : 0;
       const bIgnored = playerSettings[b.idnumber]?.isIgnored ? 1 : 0;
       if (aIgnored !== bIgnored) return aIgnored - bIgnored;
-
-      // 2. Unavailable (Absent) players below active/backups
-      const aAbsent = availability[a.idnumber] === 'unavailable' ? 1 : 0;
-      const bAbsent = availability[b.idnumber] === 'unavailable' ? 1 : 0;
-      if (aAbsent !== bAbsent) return aAbsent - bAbsent;
-
-      // 3. Persistent backups below active players
-      const aBackup = playerSettings[a.idnumber]?.isBackup ? 1 : 0;
-      const bBackup = playerSettings[b.idnumber]?.isBackup ? 1 : 0;
-      if (aBackup !== bBackup) return aBackup - bBackup;
       
-      return 0; // The original sorting (Elo) is preserved within groups
+      // Original sorting (Elo) is preserved
+      return 0;
     });
-  }, [sortedClubPlayers, availability, playerSettings, showIgnored]);
+  }, [sortedClubPlayers, playerSettings, showIgnored]);
 
   const globalAssignments = useMemo(() => {
     const map = new Map<number, string>();
@@ -167,9 +173,27 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       const status = availability[p.idnumber] || 'tentative';
       if (status === 'unavailable') return false;
       if (playerSettings[p.idnumber]?.isIgnored) return false;
-      // Do not auto-fill players that are already assigned to ANY board in ANY team
       if (globalAssignments.has(p.idnumber)) return false;
-      return true;
+
+      // ELIGIBILITY LOGIC
+      const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
+      const titularMatch = (p.titular || '').match(/(\d+)/);
+      const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
+      let isEligible = false;
+      if (titularTeam === teamNumber) {
+        isEligible = true;
+      } else if (titularTeam > 0 && titularTeam < teamNumber) {
+        isEligible = false; // Cannot play down
+      } else {
+        isEligible = (p.assignedrating || 0) <= activeTeamLimit;
+      }
+      
+      // Specific rule for Div 1: No player below 1800
+      if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
+        isEligible = false;
+      }
+
+      return isEligible;
     });
 
     const eligibleIds = eligiblePlayers.map(p => p.idnumber);
@@ -199,23 +223,50 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 Deck des joueurs ({deckPlayers.length})
               </h3>
               
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowIgnored(!showIgnored)}
-                  className={`text-[10px] uppercase font-bold px-2 py-1 rounded-none transition-colors border ${
-                    showIgnored ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6]'
-                  }`}
-                  title="Afficher/Masquer les joueurs ignorés"
-                >
-                  {showIgnored ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                </button>
-                <button
-                  onClick={() => setIsSettingsModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold bg-white border border-[#E2DFD8] px-2 py-1 rounded-none text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
-                  title="Gérer les joueurs (Saison)"
-                >
-                  <Settings className="h-3 w-3" /> Config
-                </button>
+              <div className="flex flex-col xl:flex-row xl:items-center gap-2">
+                {/* Bulk availability actions */}
+                <div className="flex items-center border border-[#E2DFD8] bg-white divide-x divide-[#E2DFD8] mr-2">
+                  <button
+                    onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'available')}
+                    className="flex items-center justify-center p-2 text-[#1E5E3A] hover:bg-[#1E5E3A]/10 transition-colors"
+                    title="Mettre tous les joueurs (non ignorés) présents"
+                  >
+                    <Check className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                  </button>
+                  <button
+                    onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'tentative')}
+                    className="flex items-center justify-center p-2 text-[#B45309] hover:bg-[#B45309]/10 transition-colors"
+                    title="Mettre tous les joueurs (non ignorés) à confirmer"
+                  >
+                    <HelpCircle className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                  </button>
+                  <button
+                    onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'unavailable')}
+                    className="flex items-center justify-center p-2 text-[#B91C1C] hover:bg-[#B91C1C]/10 transition-colors"
+                    title="Mettre tous les joueurs (non ignorés) absents"
+                  >
+                    <X className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowIgnored(!showIgnored)}
+                    className={`text-[10px] uppercase font-bold px-2 py-1.5 rounded-none transition-colors border ${
+                      showIgnored ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                    }`}
+                    title="Afficher/Masquer les joueurs ignorés"
+                  >
+                    {showIgnored ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold bg-white border border-[#E2DFD8] px-2 py-1.5 rounded-none text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
+                    title="Gérer les joueurs (Saison)"
+                  >
+                    <Settings className="h-4 w-4" /> Config
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -255,19 +306,21 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     onClick={() => setSelectedDeckPlayerId(isSelected ? null : p.idnumber)}
                     className={`cursor-pointer flex flex-col rounded-none border p-3 transition-all duration-200 ${
                       isSelected
-                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-1 ring-[#1E5E3A]'
+                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-2 ring-[#1E5E3A]'
                         : isIgnored
                         ? 'bg-[#F9F8F6] border-[#E2DFD8] opacity-50 grayscale hover:opacity-80'
                         : isAbsent
-                        ? 'bg-[#B91C1C]/5 border-[#B91C1C]/20 opacity-70 hover:opacity-100'
+                        ? 'bg-[#B91C1C]/10 border-l-8 border-[#B91C1C] opacity-75 hover:opacity-100'
                         : isAssignedHere
-                        ? 'bg-[#1A1918]/5 border-[#1A1918]/20 opacity-70 hover:opacity-100'
+                        ? 'bg-[#1A1918]/10 border-l-8 border-[#1A1918] opacity-75 hover:opacity-100'
                         : assignmentStr
                         ? 'bg-white border-[#E2DFD8] opacity-70 hover:opacity-100'
                         : isBackup
-                        ? 'bg-white border-[#E2DFD8] opacity-80 hover:bg-[#F9F8F6] hover:opacity-100'
+                        ? 'bg-[#B45309]/10 border-l-8 border-[#B45309] opacity-90 hover:opacity-100'
+                        : status === 'available'
+                        ? 'bg-white border-l-8 border-[#1E5E3A] shadow-sm hover:shadow-md hover:bg-[#F9F8F6]'
                         : 'bg-white border-[#E2DFD8] hover:bg-[#F9F8F6]'
-                    } ${!isIgnored && !isAbsent && !isSelected && !isAssignedHere && !assignmentStr && isEligible ? 'border-l-4 border-l-[#1E5E3A] bg-[#1E5E3A]/5' : ''} ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'border-l-4 border-l-[#B91C1C]/40 opacity-50 grayscale' : ''}`}
+                    } ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'opacity-50 grayscale' : ''}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -299,39 +352,39 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'available'); }}
                           className={`rounded-none p-1.5 transition-all border ${
                             status === 'available'
-                              ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30'
+                              ? 'bg-[#1E5E3A]/20 text-[#1E5E3A] border-[#1E5E3A]'
                               : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="Présent pour cette ronde"
                         >
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'tentative'); }}
                           className={`rounded-none p-1.5 transition-all border ${
                             status === 'tentative'
-                              ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
+                              ? 'bg-[#B45309]/20 text-[#B45309] border-[#B45309]'
                               : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="À confirmer"
                         >
-                          <HelpCircle className="h-3.5 w-3.5" />
+                          <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'unavailable'); }}
                           className={`rounded-none p-1.5 transition-all border ${
                             status === 'unavailable'
-                              ? 'bg-[#B91C1C]/10 text-[#B91C1C] border-[#B91C1C]/30'
+                              ? 'bg-[#B91C1C]/20 text-[#B91C1C] border-[#B91C1C]'
                               : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
                           }`}
                           title="Absent pour cette ronde"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
                       </div>
                     </div>
