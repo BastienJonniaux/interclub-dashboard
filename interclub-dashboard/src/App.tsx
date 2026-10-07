@@ -63,7 +63,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative z-10 bg-[#F9F8F6]">
+    <div className="min-h-screen flex flex-col relative bg-[#F9F8F6]">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -77,7 +77,7 @@ const DashboardContent: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative z-0">
+      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative">
         {activeTab === 'standings' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <StandingsTab

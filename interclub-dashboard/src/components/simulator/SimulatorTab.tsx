@@ -42,10 +42,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     draftCompositions,
     assignPlayerToBoard,
     clearDraft,
-    autoFillTeam
+    autoFillTeam,
+    autoFillAllTeams
   } = useSimulator();
 
-  const [selectedTeamIndex, setSelectedTeamIndex] = useState(0);
+  const [selectedTeamIndex, setSelectedTeamIndex] = useState(-1);
   const [selectedDeckPlayerId, setSelectedDeckPlayerId] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -225,27 +226,27 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               
               <div className="flex flex-col xl:flex-row xl:items-center gap-2">
                 {/* Bulk availability actions */}
-                <div className="flex items-center border border-[#E2DFD8] bg-white divide-x divide-[#E2DFD8] mr-2">
+                <div className="flex items-center border border-[#E2DFD8] bg-white divide-x divide-[#E2DFD8] mr-1">
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'available')}
                     className="flex items-center justify-center p-2 text-[#1E5E3A] hover:bg-[#1E5E3A]/10 transition-colors"
                     title="Mettre tous les joueurs (non ignorés) présents"
                   >
-                    <Check className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                    <Check className="h-3 w-3 md:h-5 md:w-5" strokeWidth={3} />
                   </button>
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'tentative')}
                     className="flex items-center justify-center p-2 text-[#B45309] hover:bg-[#B45309]/10 transition-colors"
                     title="Mettre tous les joueurs (non ignorés) à confirmer"
                   >
-                    <HelpCircle className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                    <HelpCircle className="h-3 w-3  md:h-5 md:w-5" strokeWidth={3} />
                   </button>
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'unavailable')}
                     className="flex items-center justify-center p-2 text-[#B91C1C] hover:bg-[#B91C1C]/10 transition-colors"
                     title="Mettre tous les joueurs (non ignorés) absents"
                   >
-                    <X className="h-4 w-4 md:h-5 md:w-5" strokeWidth={3} />
+                    <X className="h-3 w-3 md:h-5 md:w-5" strokeWidth={3} />
                   </button>
                 </div>
 
@@ -405,6 +406,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         <div className="lg:col-span-7 space-y-4">
           {/* Team Tabs (Flex Wrap) */}
           <div className="bg-white border border-[#E2DFD8] p-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { setSelectedTeamIndex(-1); setSelectedDeckPlayerId(null); }}
+              className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
+                selectedTeamIndex === -1
+                  ? 'bg-[#1A1918] text-white border-[#1A1918]'
+                  : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
+              }`}
+            >
+              Aperçu Global
+            </button>
             {teams.map((t, idx) => (
               <button
                 key={t.name}
@@ -424,8 +436,101 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
             ))}
           </div>
 
-          {/* Validation & Scouting Banner */}
-          <div
+          {selectedTeamIndex === -1 ? (
+            <div className="chess-panel p-5 bg-white border border-[#E2DFD8] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DFD8] pb-4">
+                <div>
+                  <h3 className="font-bold text-[#1A1918] text-lg font-serif">Aperçu Global des Équipes</h3>
+                  <p className="text-sm text-[#6E6A64]">Vue d'ensemble de toutes les compositions.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const eligiblePlayers = sortedClubPlayers.filter(p => {
+                        const status = availability[p.idnumber] || 'tentative';
+                        if (status === 'unavailable') return false;
+                        if (playerSettings[p.idnumber]?.isIgnored) return false;
+                        return true;
+                      });
+                      const teamsSpec = teams.map((t, i) => ({
+                        teamNumber: i + 1,
+                        boardCount: getBoardCountForDivision(t.division),
+                        division: t.division
+                      }));
+                      autoFillAllTeams(teamsSpec, eligiblePlayers);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors"
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Auto-fill Tout
+                  </button>
+                  <button
+                    onClick={() => clearDraft()}
+                    className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Vider Tout
+                  </button>
+                </div>
+              </div>
+
+              {/* Cross-team validation banner for Global View */}
+              {crossTeamViolations.length > 0 && (
+                <div className="bg-[#B91C1C]/5 border border-[#B91C1C] p-4">
+                  <div className="flex items-center gap-2 font-bold font-serif text-[#B91C1C] mb-2">
+                    <AlertOctagon className="h-5 w-5" /> Invalide (Moyennes Inter-équipes)
+                  </div>
+                  <ul className="text-sm space-y-1 text-[#B91C1C]">
+                    {crossTeamViolations.map((v, i) => <li key={i}>• {v.message}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {teams.map((t, idx) => {
+                  const tNum = idx + 1;
+                  const bCount = getBoardCountForDivision(t.division);
+                  const tDraft = draftCompositions[tNum] || {};
+                  
+                  let assignedPlayers = [];
+                  for (let b = 1; b <= bCount; b++) {
+                    const pid = tDraft[b];
+                    if (pid) {
+                      const p = players.find(x => x.idnumber === pid);
+                      if (p) assignedPlayers.push(p);
+                    }
+                  }
+
+                  const avgElo = assignedPlayers.length === bCount 
+                    ? Math.round(assignedPlayers.reduce((sum, p) => sum + (p.assignedrating || 0), 0) / bCount)
+                    : null;
+
+                  return (
+                    <div key={tNum} className="border border-[#E2DFD8] p-3 hover:bg-[#F9F8F6] transition-colors cursor-pointer" onClick={() => setSelectedTeamIndex(idx)}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-bold text-[#1A1918] font-serif">Équipe {tNum} <span className="text-xs text-[#6E6A64] font-mono font-normal">Div {t.division}</span></div>
+                        <div className="text-xs font-mono font-bold">{assignedPlayers.length}/{bCount} Joueurs</div>
+                      </div>
+                      <div className="text-[10px] text-[#6E6A64] mb-2">
+                        Moyenne: <span className="font-bold text-[#1A1918]">{avgElo || 'NC'}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {assignedPlayers.map(p => (
+                          <span key={p.idnumber} className="text-[10px] bg-white border border-[#E2DFD8] px-1.5 py-0.5 truncate max-w-[100px]">
+                            {p.last_name}
+                          </span>
+                        ))}
+                        {assignedPlayers.length === 0 && <span className="text-[10px] text-[#6E6A64] italic">Vide</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Validation & Scouting Banner */}
+              <div
             className={`border p-5 transition-colors ${
               !validation.isValid
                 ? 'bg-[#B91C1C]/5 border-[#B91C1C]'
@@ -568,6 +673,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               })}
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
 

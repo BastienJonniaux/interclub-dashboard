@@ -10,6 +10,7 @@ import {
   RotateCw,
   Building2,
 } from 'lucide-react';
+import { NextRoundBanner } from './NextRoundBanner';
 
 export type TabType = 'standings' | 'players' | 'scouting' | 'simulator' | 'exports';
 
@@ -39,7 +40,7 @@ export const Navbar: React.FC<Props> = ({
 
   return (
     <>
-      <header className="relative z-40 mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 chess-panel p-0 flex flex-col">
+      <header className="relative mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 chess-panel p-0 flex flex-col">
         <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-[#E2DFD8]">
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-4">
@@ -70,6 +71,8 @@ export const Navbar: React.FC<Props> = ({
           </div>
 
           <div className="hidden sm:flex items-center gap-4 mt-4 sm:mt-0">
+            <NextRoundBanner />
+            
             <button
               onClick={() => setModalOpen(true)}
               className="inline-flex items-center gap-2 chess-button-secondary text-sm"
