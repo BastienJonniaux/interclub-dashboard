@@ -11,6 +11,7 @@ export interface PlayerSettings {
 interface SimulatorContextType {
   availability: { [playerId: number]: AvailabilityStatus };
   setPlayerAvailability: (playerId: number, status: AvailabilityStatus) => void;
+  setAllPlayersAvailability: (playerIds: number[], status: AvailabilityStatus) => void;
   playerSettings: { [playerId: number]: PlayerSettings };
   setPlayerSetting: (playerId: number, setting: keyof PlayerSettings, value: boolean) => void;
   draftCompositions: { [teamNumber: number]: { [board: number]: number | null } };
@@ -22,6 +23,7 @@ interface SimulatorContextType {
 const SimulatorContext = createContext<SimulatorContextType>({
   availability: {},
   setPlayerAvailability: () => {},
+  setAllPlayersAvailability: () => {},
   playerSettings: {},
   setPlayerSetting: () => {},
   draftCompositions: {},
@@ -83,6 +85,15 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const setPlayerAvailability = (playerId: number, status: AvailabilityStatus) => {
     const updated = { ...availability, [playerId]: status };
+    setAvailability(updated);
+    saveState(updated, playerSettings, draftCompositions);
+  };
+
+  const setAllPlayersAvailability = (playerIds: number[], status: AvailabilityStatus) => {
+    const updated = { ...availability };
+    playerIds.forEach(id => {
+      updated[id] = status;
+    });
     setAvailability(updated);
     saveState(updated, playerSettings, draftCompositions);
   };
@@ -173,6 +184,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         availability,
         setPlayerAvailability,
+        setAllPlayersAvailability,
         playerSettings,
         setPlayerSetting,
         draftCompositions,

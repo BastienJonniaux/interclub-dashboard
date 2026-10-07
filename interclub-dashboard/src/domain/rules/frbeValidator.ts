@@ -173,3 +173,53 @@ export function validateTeamComposition(
     assignedCount: assigned.length,
   };
 }
+
+export function validateCrossTeamAverages(
+  teams: import('../../modelsFRBE').TeamFrbe[],
+  draftCompositions: { [teamNumber: number]: { [board: number]: number | null } },
+  players: import('../../modelsFRBE').PlayerFrbe[]
+): RuleViolation[] {
+  const violations: RuleViolation[] = [];
+  const teamAverages = new Map<number, { avg: number; div: number; name: string }>();
+
+  teams.forEach((team, idx) => {
+    const teamNumber = idx + 1;
+    const draft = draftCompositions[teamNumber] || {};
+    const assignedIds = Object.values(draft).filter((id) => id !== null) as number[];
+    if (assignedIds.length === 0) return;
+
+    let total = 0;
+    assignedIds.forEach((id) => {
+      const p = players.find((x) => x.idnumber === id);
+      total += p?.assignedrating || 0;
+    });
+    teamAverages.set(teamNumber, {
+      avg: Math.round(total / assignedIds.length),
+      div: team.division,
+      name: team.name,
+    });
+  });
+
+  const teamNumbers = Array.from(teamAverages.keys()).sort((a, b) => a - b);
+  for (let i = 0; i < teamNumbers.length; i++) {
+    for (let j = i + 1; j < teamNumbers.length; j++) {
+      const t1 = teamAverages.get(teamNumbers[i])!; // Lower team index (e.g., Équipe 1)
+      const t2 = teamAverages.get(teamNumbers[j])!; // Higher team index (e.g., Équipe 2)
+
+      // Exempt: Comparison where BOTH teams are in Div 4, 5, or 6
+      if (t1.div >= 4 && t2.div >= 4) {
+        continue;
+      }
+
+      if (t1.avg < t2.avg) {
+        violations.push({
+          type: 'error',
+          rule: 'CROSS_TEAM_AVG',
+          message: `Règle de Moyenne : ${t1.name} (Div ${t1.div}) a une moyenne (${t1.avg}) inférieure à ${t2.name} (Div ${t2.div}, moy. ${t2.avg}).`,
+        });
+      }
+    }
+  }
+
+  return violations;
+}
