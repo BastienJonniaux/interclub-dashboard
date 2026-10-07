@@ -3,6 +3,7 @@ import { ClubProvider, useClub } from './context/ClubContext';
 import { SimulatorProvider } from './context/SimulatorContext';
 import { useClubData } from './hooks/useClubData';
 import { Navbar, TabType } from './components/layout/Navbar';
+import { NextRoundBanner } from './components/layout/NextRoundBanner';
 import { StandingsTab } from './components/standings/StandingsTab';
 import { PlayerPerformanceTab } from './components/players/PlayerPerformanceTab';
 import { ScoutingTab } from './components/scouting/ScoutingTab';
@@ -63,7 +64,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative z-10 bg-[#F9F8F6]">
+    <div className="min-h-screen flex flex-col relative bg-[#F9F8F6]">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -71,13 +72,15 @@ const DashboardContent: React.FC = () => {
         isLoading={loading}
       />
 
+      <NextRoundBanner divisions={allDivisions} />
+
       {isFallback && (
         <div className="bg-[#B45309]/10 border-b border-[#B45309] px-4 py-3 text-center text-sm font-semibold text-[#B45309]">
           Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
         </div>
       )}
 
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative z-0">
+      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative">
         {activeTab === 'standings' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <StandingsTab
