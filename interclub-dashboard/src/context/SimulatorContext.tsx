@@ -17,7 +17,10 @@ interface SimulatorContextType {
   setPlayerSetting: (playerId: number, setting: keyof PlayerSettings, value: boolean) => void;
   draftCompositions: { [teamNumber: number]: { [board: number]: number | null } };
   assignPlayerToBoard: (teamNumber: number, board: number, playerId: number | null) => void;
+  swapPlayers: (playerId1: number, playerId2: number) => void;
   clearDraft: (teamNumber?: number) => void;
+  undoDraftChange: () => void;
+  canUndo: boolean;
   autoFillTeam: (teamNumber: number, boardCount: number, availablePlayers: number[]) => void;
   autoFillAllTeams: (teams: { teamNumber: number; boardCount: number; division: number }[], availablePlayersList: any[]) => void;
 }
@@ -30,7 +33,10 @@ const SimulatorContext = createContext<SimulatorContextType>({
   setPlayerSetting: () => {},
   draftCompositions: {},
   assignPlayerToBoard: () => {},
+  swapPlayers: () => {},
   clearDraft: () => {},
+  undoDraftChange: () => {},
+  canUndo: false,
   autoFillTeam: () => {},
   autoFillAllTeams: () => {},
 });
@@ -44,6 +50,30 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [draftCompositions, setDraftCompositions] = useState<{
     [teamNumber: number]: { [board: number]: number | null };
   }>({});
+  const [draftHistory, setDraftHistory] = useState<{
+    [teamNumber: number]: { [board: number]: number | null };
+  }[]>([]);
+
+  const pushHistory = (currentDraft: { [teamNumber: number]: { [board: number]: number | null } }) => {
+    setDraftHistory(prev => {
+      const newHistory = [...prev, currentDraft];
+      if (newHistory.length > 20) return newHistory.slice(newHistory.length - 20);
+      return newHistory;
+    });
+  };
+
+  const undoDraftChange = () => {
+    setDraftHistory(prev => {
+      if (prev.length === 0) return prev;
+      const previousState = prev[prev.length - 1];
+      const newHistory = prev.slice(0, -1);
+      setDraftCompositions(previousState);
+      // Wait to saveState? We can't access availability easily here without breaking dependencies, 
+      // but saveState is already available in the closure!
+      saveState(availability, playerSettings, previousState);
+      return newHistory;
+    });
+  };
 
   // Load from localStorage on club change
   useEffect(() => {
@@ -54,15 +84,18 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setAvailability(parsed.availability || {});
         setPlayerSettings(parsed.playerSettings || {});
         setDraftCompositions(parsed.draftCompositions || {});
+        setDraftHistory([]);
       } else {
         setAvailability({});
         setPlayerSettings({});
         setDraftCompositions({});
+        setDraftHistory([]);
       }
     } catch {
       setAvailability({});
       setPlayerSettings({});
       setDraftCompositions({});
+      setDraftHistory([]);
     }
   }, [clubId, storageKey]);
 
@@ -120,6 +153,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (status === 'unavailable') {
       const result = removePlayersFromDrafts(new Set([playerId]), updatedDrafts);
       if (result.draftsChanged) {
+        pushHistory(draftCompositions);
         updatedDrafts = result.updatedDrafts;
         setDraftCompositions(updatedDrafts);
       }
@@ -139,6 +173,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (status === 'unavailable') {
       const result = removePlayersFromDrafts(new Set(playerIds), updatedDrafts);
       if (result.draftsChanged) {
+        pushHistory(draftCompositions);
         updatedDrafts = result.updatedDrafts;
         setDraftCompositions(updatedDrafts);
       }
@@ -161,6 +196,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (setting === 'isIgnored' && value === true) {
       const result = removePlayersFromDrafts(new Set([playerId]), updatedDrafts);
       if (result.draftsChanged) {
+        pushHistory(draftCompositions);
         updatedDrafts = result.updatedDrafts;
         setDraftCompositions(updatedDrafts);
       }
@@ -171,6 +207,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const assignPlayerToBoard = (teamNumber: number, board: number, playerId: number | null) => {
+    pushHistory(draftCompositions);
     let updatedDrafts = { ...draftCompositions };
 
     // If we are assigning a real player (not clearing), remove them from any other board across all teams
@@ -192,7 +229,78 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveState(availability, playerSettings, updatedDrafts);
   };
 
+  const swapPlayers = (playerId1: number, playerId2: number) => {
+    pushHistory(draftCompositions);
+    let updatedDrafts = { ...draftCompositions };
+    
+    let pos1: { team: number, board: number } | null = null;
+    let pos2: { team: number, board: number } | null = null;
+
+    Object.keys(updatedDrafts).forEach((tStr) => {
+      const t = Number(tStr);
+      Object.keys(updatedDrafts[t]).forEach((bStr) => {
+        const b = Number(bStr);
+        if (updatedDrafts[t][b] === playerId1) pos1 = { team: t, board: b };
+        if (updatedDrafts[t][b] === playerId2) pos2 = { team: t, board: b };
+      });
+    });
+
+    const position1 = pos1 as { team: number, board: number } | null;
+    const position2 = pos2 as { team: number, board: number } | null;
+
+    // We build the changes to apply, to avoid conflicts if they are on the same team
+    const updatesByTeam: { [t: number]: { [b: number]: number | null } } = {};
+
+    if (position1 !== null) {
+      const t = position1.team;
+      const b = position1.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId2;
+    } else if (position2 !== null) {
+      // playerId1 is in deck, they go to pos2
+      const t = position2.team;
+      const b = position2.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId1;
+    }
+
+      if (position2 !== null) {
+      const t = position2.team;
+      const b = position2.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId1;
+    } else if (position1 !== null) {
+      // playerId2 is in deck, they go to pos1
+      const t = position1.team;
+      const b = position1.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId2;
+    }
+
+    // Apply all updates
+    Object.keys(updatesByTeam).forEach(tStr => {
+      const t = Number(tStr);
+      const targetTeamDraft = { ...(updatedDrafts[t] || {}) };
+      
+      Object.keys(updatesByTeam[t]).forEach(bStr => {
+        const b = Number(bStr);
+        const val = updatesByTeam[t][b];
+        if (val === null) {
+          delete targetTeamDraft[b];
+        } else {
+          targetTeamDraft[b] = val;
+        }
+      });
+      
+      updatedDrafts[t] = targetTeamDraft;
+    });
+
+    setDraftCompositions(updatedDrafts);
+    saveState(availability, playerSettings, updatedDrafts);
+  };
+
   const clearDraft = (teamNumber?: number) => {
+    pushHistory(draftCompositions);
     let updated: { [teamNumber: number]: { [board: number]: number | null } };
     if (teamNumber) {
       updated = { ...draftCompositions, [teamNumber]: {} };
@@ -204,6 +312,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const autoFillTeam = (teamNumber: number, boardCount: number, availablePlayers: number[]) => {
+    pushHistory(draftCompositions);
     // availablePlayers is already filtered by availability, not ignored, not already assigned to other teams, and sorted by ELO
     const teamDraft = { ...(draftCompositions[teamNumber] || {}) };
     
@@ -226,6 +335,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const autoFillAllTeams = (teams: { teamNumber: number; boardCount: number; division: number }[], availablePlayersList: any[]) => {
+    pushHistory(draftCompositions);
     let updatedDrafts = { ...draftCompositions };
     const globalAssignedIds = new Set<number>();
     
@@ -292,7 +402,10 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setPlayerSetting,
         draftCompositions,
         assignPlayerToBoard,
+        swapPlayers,
         clearDraft,
+        undoDraftChange,
+        canUndo: draftHistory.length > 0,
         autoFillTeam,
         autoFillAllTeams
       }}
