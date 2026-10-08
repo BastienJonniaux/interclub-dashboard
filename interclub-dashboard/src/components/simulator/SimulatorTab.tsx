@@ -23,7 +23,8 @@ import {
   EyeOff,
   UserCog,
   Eye,
-  Settings
+  Settings,
+  Undo2
 } from 'lucide-react';
 
 interface Props {
@@ -43,6 +44,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     assignPlayerToBoard,
     swapPlayers,
     clearDraft,
+    undoDraftChange,
+    canUndo,
     autoFillTeam,
     autoFillAllTeams
   } = useSimulator();
@@ -157,16 +160,21 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeamIndex]);
 
-  // Handle Escape key to cancel selection
+  // Handle Escape key to cancel selection, Ctrl+Z to undo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSelectedPlayerId(null);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (canUndo) {
+          undoDraftChange();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [canUndo, undoDraftChange]);
 
   const currentlyAssignedIds = new Set(
     Object.values(currentDraft).filter((id): id is number => id !== null && id !== undefined)
@@ -474,6 +482,15 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={undoDraftChange}
+                    disabled={!canUndo}
+                    className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#6E6A64] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Annuler la dernière action (Ctrl+Z)"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" />
+                    Annuler
+                  </button>
+                  <button
                     onClick={() => {
                       const eligiblePlayers = sortedClubPlayers.filter(p => {
                         const status = availability[p.idnumber] || 'tentative';
@@ -654,6 +671,15 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </h3>
               
               <div className="flex items-center gap-2">
+                <button
+                  onClick={undoDraftChange}
+                  disabled={!canUndo}
+                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#6E6A64] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Annuler la dernière action (Ctrl+Z)"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                  Annuler
+                </button>
                 <button
                   onClick={handleAutoFill}
                   className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors"
