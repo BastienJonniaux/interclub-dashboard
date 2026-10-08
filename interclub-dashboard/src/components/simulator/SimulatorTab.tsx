@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
@@ -126,6 +126,19 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     return map;
   }, [draftCompositions]);
 
+  const deckCounts = useMemo(() => {
+    let present = 0;
+    let unknown = 0;
+    let absent = 0;
+    deckPlayers.forEach(p => {
+      const status = availability[p.idnumber] || 'tentative';
+      if (status === 'available') present++;
+      else if (status === 'unavailable') absent++;
+      else unknown++;
+    });
+    return { present, unknown, absent };
+  }, [deckPlayers, availability]);
+
   // Auto-scroll to first eligible player when team changes
   useEffect(() => {
     if (!activeTeam) return;
@@ -206,21 +219,23 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       if (globalAssignments.has(p.idnumber)) return false;
 
       // ELIGIBILITY LOGIC
-      const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
-      const titularMatch = (p.titular || '').match(/(\d+)/);
-      const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
-      let isEligible = false;
-      if (titularTeam === teamNumber) {
-        isEligible = true;
-      } else if (titularTeam > 0 && titularTeam < teamNumber) {
-        isEligible = false; // Cannot play down
-      } else {
-        isEligible = (p.assignedrating || 0) <= activeTeamLimit;
-      }
-      
-      // Specific rule for Div 1: No player below 1800
-      if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
-        isEligible = false;
+      let isEligible = true;
+      if (selectedTeamIndex !== -1) {
+        const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
+        const titularMatch = (p.titular || '').match(/(\d+)/);
+        const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
+        if (titularTeam === teamNumber) {
+          isEligible = true;
+        } else if (titularTeam > 0 && titularTeam < teamNumber) {
+          isEligible = false; // Cannot play down
+        } else {
+          isEligible = (p.assignedrating || 0) <= activeTeamLimit;
+        }
+        
+        // Specific rule for Div 1: No player below 1800
+        if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
+          isEligible = false;
+        }
       }
 
       return isEligible;
@@ -248,10 +263,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         <div className="lg:col-span-5 space-y-4">
           <div className="chess-panel p-4 h-full flex flex-col bg-white border border-[#E2DFD8]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-2 shrink-0">
-              <h3 className="font-bold text-[#1A1918] text-sm flex items-center gap-2 font-serif">
-                <UserPlus className="h-4 w-4 text-[#1E5E3A]" />
-                Deck des joueurs ({deckPlayers.length})
-              </h3>
+              <div className="flex flex-col">
+                <h3 className="font-bold text-[#1A1918] text-sm flex items-center gap-2 font-serif">
+                  <UserPlus className="h-4 w-4 text-[#1E5E3A]" />
+                  Deck des joueurs ({deckPlayers.length})
+                </h3>
+                <div className="text-[10px] text-[#6E6A64] flex gap-2 mt-0.5 ml-6">
+                  <span className="flex items-center gap-1" title="Présents"><Check className="h-3 w-3 text-[#1E5E3A]" strokeWidth={3} /> {deckCounts.present}</span>
+                  <span className="flex items-center gap-1" title="À confirmer"><HelpCircle className="h-3 w-3 text-[#B45309]" strokeWidth={3} /> {deckCounts.unknown}</span>
+                  <span className="flex items-center gap-1" title="Absents"><X className="h-3 w-3 text-[#B91C1C]" strokeWidth={3} /> {deckCounts.absent}</span>
+                </div>
+              </div>
               
               <div className="flex flex-col xl:flex-row xl:items-center gap-2">
                 {/* Bulk availability actions */}
@@ -312,21 +334,23 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 const isAbsent = status === 'unavailable';
 
                 // Eligibility check for the currently active team
-                const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
-                const titularMatch = (p.titular || '').match(/(\d+)/);
-                const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
-                let isEligible = false;
-                if (titularTeam === teamNumber) {
-                  isEligible = true;
-                } else if (titularTeam > 0 && titularTeam < teamNumber) {
-                  isEligible = false; // Cannot play down
-                } else {
-                  isEligible = (p.assignedrating || 0) <= activeTeamLimit;
-                }
-                
-                // Specific rule for Div 1: No player below 1800
-                if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
-                  isEligible = false;
+                let isEligible = true;
+                if (selectedTeamIndex !== -1) {
+                  const activeTeamLimit = activeTeam ? RESERVE_ELO_LIMITS[activeTeam.division] || 9999 : 9999;
+                  const titularMatch = (p.titular || '').match(/(\d+)/);
+                  const titularTeam = titularMatch ? parseInt(titularMatch[1], 10) : 0;
+                  if (titularTeam === teamNumber) {
+                    isEligible = true;
+                  } else if (titularTeam > 0 && titularTeam < teamNumber) {
+                    isEligible = false; // Cannot play down
+                  } else {
+                    isEligible = (p.assignedrating || 0) <= activeTeamLimit;
+                  }
+                  
+                  // Specific rule for Div 1: No player below 1800
+                  if (isEligible && activeTeam?.division === 1 && (p.assignedrating || 0) < 1800) {
+                    isEligible = false;
+                  }
                 }
 
                 return (
@@ -683,7 +707,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </button>
                 <button
                   onClick={handleAutoFill}
-                  className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors"
+                  disabled={isByeRound}
+                  className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Remplit automatiquement les places vides de cette équipe avec les joueurs du deck (triés par Elo)"
                 >
                   <Wand2 className="h-3.5 w-3.5" />
@@ -691,7 +716,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </button>
                 <button
                   onClick={() => clearDraft(teamNumber)}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors"
+                  disabled={isByeRound}
+                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Vider l'équipe
@@ -699,6 +725,14 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </div>
             </div>
 
+            {isByeRound ? (
+              <div className="mt-8 p-8 flex flex-col items-center justify-center text-center bg-[#F9F8F6] border-2 border-dashed border-[#E2DFD8]">
+                <div className="text-4xl font-serif text-[#1A1918] opacity-20 mb-2">BYE</div>
+                <div className="text-sm text-[#6E6A64] font-medium max-w-md">
+                  L'équipe est exempte (BYE) pour cette ronde. Aucun joueur ne doit être aligné.
+                </div>
+              </div>
+            ) : (
             <div className="mt-4 space-y-3">
               {assignedBoards.map((b) => {
                 const isThisPlayerSelected = b.player?.idnumber === selectedPlayerId;
@@ -762,6 +796,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 );
               })}
             </div>
+            )}
           </div>
           </>
           )}
@@ -776,6 +811,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     </div>
   );
 };
+
 
 
 
