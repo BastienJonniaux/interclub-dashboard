@@ -233,37 +233,48 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     pushHistory(draftCompositions);
     let updatedDrafts = { ...draftCompositions };
     
-    let pos1: { t: number, b: number } | null = null;
-    let pos2: { t: number, b: number } | null = null;
+    let pos1: { team: number, board: number } | null = null;
+    let pos2: { team: number, board: number } | null = null;
 
     Object.keys(updatedDrafts).forEach((tStr) => {
       const t = Number(tStr);
       Object.keys(updatedDrafts[t]).forEach((bStr) => {
         const b = Number(bStr);
-        if (updatedDrafts[t][b] === playerId1) pos1 = { t, b };
-        if (updatedDrafts[t][b] === playerId2) pos2 = { t, b };
+        if (updatedDrafts[t][b] === playerId1) pos1 = { team: t, board: b };
+        if (updatedDrafts[t][b] === playerId2) pos2 = { team: t, board: b };
       });
     });
+
+    const position1 = pos1 as { team: number, board: number } | null;
+    const position2 = pos2 as { team: number, board: number } | null;
 
     // We build the changes to apply, to avoid conflicts if they are on the same team
     const updatesByTeam: { [t: number]: { [b: number]: number | null } } = {};
 
-    if (pos1) {
-      if (!updatesByTeam[pos1.t]) updatesByTeam[pos1.t] = {};
-      updatesByTeam[pos1.t][pos1.b] = playerId2;
-    } else if (pos2) {
+    if (position1 !== null) {
+      const t = position1.team;
+      const b = position1.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId2;
+    } else if (position2 !== null) {
       // playerId1 is in deck, they go to pos2
-      if (!updatesByTeam[pos2.t]) updatesByTeam[pos2.t] = {};
-      updatesByTeam[pos2.t][pos2.b] = playerId1;
+      const t = position2.team;
+      const b = position2.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId1;
     }
 
-    if (pos2) {
-      if (!updatesByTeam[pos2.t]) updatesByTeam[pos2.t] = {};
-      updatesByTeam[pos2.t][pos2.b] = playerId1;
-    } else if (pos1) {
+      if (position2 !== null) {
+      const t = position2.team;
+      const b = position2.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId1;
+    } else if (position1 !== null) {
       // playerId2 is in deck, they go to pos1
-      if (!updatesByTeam[pos1.t]) updatesByTeam[pos1.t] = {};
-      updatesByTeam[pos1.t][pos1.b] = playerId2;
+      const t = position1.team;
+      const b = position1.board;
+      if (!updatesByTeam[t]) updatesByTeam[t] = {};
+      updatesByTeam[t][b] = playerId2;
     }
 
     // Apply all updates
