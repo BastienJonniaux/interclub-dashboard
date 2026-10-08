@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { NextMatchScout, ReadinessColor } from '../../domain/scouting';
 import {
   Compass,
@@ -252,4 +252,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
     </div>
   );
 };
+
+
+
 
