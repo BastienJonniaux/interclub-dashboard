@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { NextMatchScout, ReadinessColor } from '../../domain/scouting';
 import {
   Compass,
@@ -77,6 +77,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {scouting.map((scout, idx) => {
+          const isBye = scout.opponentTeamName.toUpperCase().includes('BYE');
           return (
             <div
               key={idx}
@@ -93,7 +94,9 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                       {scout.ourTeamName}
                     </h3>
                   </div>
-                  <div className="shrink-0">{getBadge(scout.readiness, scout.readinessReason)}</div>
+                  {!isBye && (
+                    <div className="shrink-0">{getBadge(scout.readiness, scout.readinessReason)}</div>
+                  )}
                 </div>
 
                 {/* Matchup Banner */}
@@ -106,31 +109,41 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                       <div className="font-bold font-serif text-[#1A1918] text-lg mt-0.5">
                         {scout.opponentTeamName}
                       </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-[#6E6A64] font-medium">
-                        {scout.isHome ? (
-                          <>
-                            <Home className="h-4 w-4 text-[#1E5E3A]" />
-                            <span>À Domicile</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plane className="h-4 w-4" />
-                            <span>En Déplacement (Extérieur)</span>
-                          </>
-                        )}
-                      </div>
+                      {!isBye && (
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-[#6E6A64] font-medium">
+                          {scout.isHome ? (
+                            <>
+                              <Home className="h-4 w-4 text-[#1E5E3A]" />
+                              <span>À Domicile</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plane className="h-4 w-4" />
+                              <span>En Déplacement (Extérieur)</span>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-[10px] text-[#6E6A64] uppercase font-bold tracking-wider">Échiquiers</span>
-                      <div className="text-lg font-bold font-mono text-[#1A1918] mt-0.5">
-                        {scout.boardCount}
+                    {!isBye && (
+                      <div className="text-right">
+                        <span className="text-[10px] text-[#6E6A64] uppercase font-bold tracking-wider">Échiquiers</span>
+                        <div className="text-lg font-bold font-mono text-[#1A1918] mt-0.5">
+                          {scout.boardCount}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Team Average Elo Comparison */}
-                  <div className="mt-4 pt-4 border-t border-[#E2DFD8] grid grid-cols-3 gap-3 text-center">
+                  {isBye ? (
+                    <div className="mt-6 pt-4 border-t border-[#E2DFD8] text-center">
+                      <div className="text-sm text-[#6E6A64] font-medium">
+                        L'équipe est exempte (BYE) pour cette ronde. Aucun joueur ne doit être aligné et aucune préparation n'est nécessaire.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 pt-4 border-t border-[#E2DFD8] grid grid-cols-3 gap-3 text-center">
                     <div className="bg-white p-2.5 border border-[#E2DFD8]">
                       <div className="text-[10px] text-[#6E6A64] font-bold uppercase tracking-wider mb-1">Notre Moy.</div>
                       <div className="text-sm font-bold font-mono text-[#1A1918]">
@@ -158,80 +171,83 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
 
-                {/* Board-by-board tendencies */}
-                <div className="mt-6">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#6E6A64] mb-2">
-                    Composition probable de l'adversaire
-                  </h4>
-                  <div className="border border-[#E2DFD8] bg-white overflow-hidden">
-                    <table className="w-full text-left">
-                      <tbody className="divide-y divide-[#E2DFD8]">
-                        {scout.boardsScouting.map((b) => {
-                          const tooltip =
-                            b.playersSeen.length > 0
-                              ? b.playersSeen
-                                  .map(
-                                    (p) =>
-                                      `${p.name} (${p.rating > 0 ? `${p.rating} Elo` : 'NC'}) - Vu ${
-                                        p.count
-                                      }x`
-                                  )
-                                  .join('\n')
-                              : undefined;
+                {!isBye && (
+                  <div className="mt-6">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#6E6A64] mb-2">
+                      Composition probable de l'adversaire
+                    </h4>
+                    <div className="border border-[#E2DFD8] bg-white overflow-hidden">
+                      <table className="w-full text-left">
+                        <tbody className="divide-y divide-[#E2DFD8]">
+                          {scout.boardsScouting.map((b) => {
+                            const tooltip =
+                              b.playersSeen.length > 0
+                                ? b.playersSeen
+                                    .map(
+                                      (p) =>
+                                        `${p.name} (${p.rating > 0 ? `${p.rating} Elo` : 'NC'}) - Vu ${
+                                          p.count
+                                        }x`
+                                    )
+                                    .join('\n')
+                                : undefined;
 
-                          return (
-                            <tr
-                              key={b.board}
-                              title={tooltip}
-                              className="hover:bg-[#F9F8F6] transition-colors h-[38px] text-[13px]"
-                            >
-                              <td className="px-3 py-1.5 w-8 text-center border-r border-[#E2DFD8] bg-[#F9F8F6]">
-                                <span className="font-bold text-[#1A1918] font-mono text-xs">
-                                  {b.board}
-                                </span>
-                              </td>
-                              <td className="px-3 py-1.5">
-                                {b.isRotation ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium text-[#6E6A64] italic">
-                                      Rotation ({b.playersSeen.length} j.)
-                                    </span>
-                                    {b.averageBoardElo > 0 && (
-                                      <span className="font-mono text-[10px] text-[#6E6A64]">
-                                        ~{b.averageBoardElo}
-                                      </span>
-                                    )}
-                                  </div>
-                                ) : b.frequentPlayer ? (
-                                  <div className="flex items-center justify-between w-full">
-                                    <span className="font-semibold text-[#1A1918] truncate max-w-[150px]">
-                                      {b.frequentPlayer.name}
-                                    </span>
-                                    {b.frequentPlayer.rating > 0 && (
-                                      <span className="font-mono text-[10px] text-[#6E6A64]">
-                                        {b.frequentPlayer.rating}
-                                      </span>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span className="text-[#6E6A64] italic">
-                                    Non identifié
+                            return (
+                              <tr
+                                key={b.board}
+                                title={tooltip}
+                                className="hover:bg-[#F9F8F6] transition-colors h-[38px] text-[13px]"
+                              >
+                                <td className="px-3 py-1.5 w-8 text-center border-r border-[#E2DFD8] bg-[#F9F8F6]">
+                                  <span className="font-bold text-[#1A1918] font-mono text-xs">
+                                    {b.board}
                                   </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                </td>
+                                <td className="px-3 py-1.5">
+                                  {b.isRotation ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-[#6E6A64] italic">
+                                        Rotation ({b.playersSeen.length} j.)
+                                      </span>
+                                      {b.averageBoardElo > 0 && (
+                                        <span className="font-mono text-[10px] text-[#6E6A64]">
+                                          ~{b.averageBoardElo}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : b.frequentPlayer ? (
+                                    <div className="flex items-center justify-between w-full">
+                                      <span className="font-semibold text-[#1A1918] truncate max-w-[150px]">
+                                        {b.frequentPlayer.name}
+                                      </span>
+                                      {b.frequentPlayer.rating > 0 && (
+                                        <span className="font-mono text-[10px] text-[#6E6A64]">
+                                          {b.frequentPlayer.rating}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-[#6E6A64] italic">
+                                      Non identifié
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Action advice */}
-              <div className="mt-6 border-t border-[#E2DFD8] pt-4">
+              {!isBye && (
+                <div className="mt-6 border-t border-[#E2DFD8] pt-4">
                 <div className="flex items-center justify-between text-[13px] text-[#1A1918] bg-[#F9F8F6] p-3 border border-[#E2DFD8]">
                   <span>
                     <strong>CONSEIL DIRECTEUR :</strong>{' '}
@@ -245,6 +261,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                   </span>
                 </div>
               </div>
+              )}
             </div>
           );
         })}
