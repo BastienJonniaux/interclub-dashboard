@@ -41,13 +41,14 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     playerSettings,
     draftCompositions,
     assignPlayerToBoard,
+    swapPlayers,
     clearDraft,
     autoFillTeam,
     autoFillAllTeams
   } = useSimulator();
 
   const [selectedTeamIndex, setSelectedTeamIndex] = useState(-1);
-  const [selectedDeckPlayerId, setSelectedDeckPlayerId] = useState<number | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
@@ -156,16 +157,35 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeamIndex]);
 
+  // Handle Escape key to cancel selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedPlayerId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const currentlyAssignedIds = new Set(
     Object.values(currentDraft).filter((id): id is number => id !== null && id !== undefined)
   );
 
   const handleBoardClick = (board: number, currentOccupantId: number | undefined) => {
-    if (selectedDeckPlayerId !== null) {
-      assignPlayerToBoard(teamNumber, board, selectedDeckPlayerId);
-      setSelectedDeckPlayerId(null);
+    if (selectedPlayerId !== null) {
+      if (selectedPlayerId === currentOccupantId) {
+        // Deselect if clicking the same player
+        setSelectedPlayerId(null);
+      } else if (currentOccupantId) {
+        swapPlayers(selectedPlayerId, currentOccupantId);
+        setSelectedPlayerId(null);
+      } else {
+        assignPlayerToBoard(teamNumber, board, selectedPlayerId);
+        setSelectedPlayerId(null);
+      }
     } else if (currentOccupantId) {
-      assignPlayerToBoard(teamNumber, board, null);
+      setSelectedPlayerId(currentOccupantId);
     }
   };
 
@@ -274,7 +294,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
             <div id="deck-container" className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar relative bg-[#F9F8F6] p-2" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
               {deckPlayers.map((p) => {
                 const status = availability[p.idnumber] || 'tentative';
-                const isSelected = selectedDeckPlayerId === p.idnumber;
+                const isSelected = selectedPlayerId === p.idnumber;
                 const assignmentStr = globalAssignments.get(p.idnumber);
                 const isAssignedHere = currentlyAssignedIds.has(p.idnumber);
                 
@@ -304,7 +324,14 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   <div
                     key={p.idnumber}
                     id={`deck-player-${p.idnumber}`}
-                    onClick={() => setSelectedDeckPlayerId(isSelected ? null : p.idnumber)}
+                    onClick={() => {
+                      if (selectedPlayerId !== null && selectedPlayerId !== p.idnumber) {
+                        swapPlayers(selectedPlayerId, p.idnumber);
+                        setSelectedPlayerId(null);
+                      } else {
+                        setSelectedPlayerId(isSelected ? null : p.idnumber);
+                      }
+                    }}
                     className={`cursor-pointer flex flex-col rounded-none border p-3 transition-all duration-200 ${
                       isSelected
                         ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-2 ring-[#1E5E3A]'
@@ -408,7 +435,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           <div className="bg-white border border-[#E2DFD8] p-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => { setSelectedTeamIndex(-1); setSelectedDeckPlayerId(null); }}
+              onClick={() => { setSelectedTeamIndex(-1); }}
               className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
                 selectedTeamIndex === -1
                   ? 'bg-[#1A1918] text-white border-[#1A1918]'
@@ -421,7 +448,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               <button
                 key={t.name}
                 type="button"
-                onClick={() => { setSelectedTeamIndex(idx); setSelectedDeckPlayerId(null); }}
+                onClick={() => { setSelectedTeamIndex(idx); }}
                 className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
                   selectedTeamIndex === idx
                     ? 'bg-[#1A1918] text-white border-[#1A1918]'
@@ -435,6 +462,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               </button>
             ))}
           </div>
+
+
 
           {selectedTeamIndex === -1 ? (
             <div className="chess-panel p-5 bg-white border border-[#E2DFD8] space-y-6">
@@ -483,6 +512,20 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   <ul className="text-sm space-y-1 text-[#B91C1C]">
                     {crossTeamViolations.map((v, i) => <li key={i}>• {v.message}</li>)}
                   </ul>
+                </div>
+              )}
+
+              {selectedPlayerId !== null && (
+                <div className="bg-[#1E5E3A]/10 border border-[#1E5E3A] p-2 flex items-center justify-between">
+                  <div className="text-xs font-bold text-[#1E5E3A]">
+                    Mode sélection actif : allez dans une équipe pour échanger ou assigner le joueur.
+                  </div>
+                  <button 
+                    onClick={() => setSelectedPlayerId(null)}
+                    className="bg-white border border-[#1E5E3A] px-2 py-1 text-[10px] uppercase font-bold text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-colors"
+                  >
+                    Annuler
+                  </button>
                 </div>
               )}
 
@@ -591,6 +634,19 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           </div>
 
           {/* Boards Assignment Grid */}
+          {selectedPlayerId !== null && (
+            <div className="bg-[#1E5E3A]/10 border border-[#1E5E3A] p-2 flex items-center justify-between mb-4 mt-4">
+              <div className="text-xs font-bold text-[#1E5E3A]">
+                Mode sélection : cliquez sur un autre joueur (ou un échiquier) pour échanger ou assigner.
+              </div>
+              <button 
+                onClick={() => setSelectedPlayerId(null)}
+                className="bg-white border border-[#1E5E3A] px-2 py-1 text-[10px] uppercase font-bold text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
           <div className="chess-panel p-5 bg-white border border-[#E2DFD8]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-3">
               <h3 className="font-bold text-[#1A1918] text-sm font-serif">
@@ -618,23 +674,28 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
             <div className="mt-4 space-y-3">
               {assignedBoards.map((b) => {
-                const isSelectedForDrop = selectedDeckPlayerId !== null && !b.player;
-                const willReplace = selectedDeckPlayerId !== null && b.player;
+                const isThisPlayerSelected = b.player?.idnumber === selectedPlayerId;
+                const isSelectedForDrop = selectedPlayerId !== null && !b.player;
+                const willSwap = selectedPlayerId !== null && !isThisPlayerSelected && b.player;
                 
                 return (
                   <div
                     key={b.board}
                     onClick={() => handleBoardClick(b.board, b.player?.idnumber)}
                     className={`flex items-center gap-4 rounded-none border p-3 transition-all duration-200 ${
-                      selectedDeckPlayerId !== null
+                      isThisPlayerSelected 
+                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-2 ring-[#1E5E3A] cursor-pointer'
+                        : selectedPlayerId !== null
                         ? 'cursor-pointer hover:bg-[#F9F8F6] hover:border-[#1A1918]'
-                        : b.player ? 'cursor-pointer hover:bg-[#B91C1C]/5 hover:border-[#B91C1C] hover:text-[#B91C1C]' : 'bg-[#F9F8F6] border-[#E2DFD8]'
+                        : b.player ? 'cursor-pointer hover:bg-[#F9F8F6] hover:border-[#1A1918]' : 'bg-[#F9F8F6] border-[#E2DFD8]'
                     } ${
                       !b.player ? 'border-dashed border-[#E2DFD8] bg-[#F9F8F6]' : 'border-[#E2DFD8] bg-white'
                     }`}
                   >
                     <span className={`flex h-8 w-8 items-center justify-center font-mono font-bold text-sm shrink-0 border ${
-                      b.player 
+                      isThisPlayerSelected
+                        ? 'bg-[#1E5E3A] border-[#1E5E3A] text-white'
+                        : b.player 
                         ? 'bg-[#1A1918] border-[#1A1918] text-white' 
                         : 'bg-white border-[#E2DFD8] text-[#6E6A64]'
                     }`}>
@@ -644,10 +705,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     <div className="flex-1 min-w-0">
                       {b.player ? (
                         <div>
-                          <div className={`font-bold font-serif text-sm truncate ${willReplace ? 'line-through text-[#6E6A64]' : 'text-[#1A1918]'}`}>
+                          <div className={`font-bold font-serif text-sm truncate ${isThisPlayerSelected ? 'text-[#1E5E3A]' : willSwap ? 'text-[#6E6A64]' : 'text-[#1A1918]'}`}>
                             {b.player.last_name} {b.player.first_name}
                           </div>
-                          <div className={`text-xs mt-0.5 font-mono ${willReplace ? 'line-through text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
+                          <div className={`text-xs mt-0.5 font-mono ${isThisPlayerSelected ? 'text-[#1E5E3A]/80' : willSwap ? 'text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
                             {b.player.assignedrating || 'NC'} Elo
                           </div>
                         </div>
@@ -658,14 +719,16 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                       )}
                     </div>
 
-                    {b.player && selectedDeckPlayerId === null && (
-                      <div className="text-[#6E6A64] hover:text-[#B91C1C] transition-colors p-2">
+                    {b.player && (
+                      <div 
+                        className={`text-[#6E6A64] hover:text-[#B91C1C] transition-colors p-2 ${isThisPlayerSelected ? 'opacity-0 pointer-events-none' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          assignPlayerToBoard(teamNumber, b.board, null);
+                        }}
+                        title="Retirer ce joueur"
+                      >
                         <X className="h-5 w-5" />
-                      </div>
-                    )}
-                    {willReplace && (
-                      <div className="text-[#1E5E3A] text-xs font-bold font-mono tracking-wider p-2">
-                        REMPLACER
                       </div>
                     )}
                   </div>

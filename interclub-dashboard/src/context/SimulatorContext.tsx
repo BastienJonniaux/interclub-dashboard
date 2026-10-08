@@ -17,6 +17,7 @@ interface SimulatorContextType {
   setPlayerSetting: (playerId: number, setting: keyof PlayerSettings, value: boolean) => void;
   draftCompositions: { [teamNumber: number]: { [board: number]: number | null } };
   assignPlayerToBoard: (teamNumber: number, board: number, playerId: number | null) => void;
+  swapPlayers: (playerId1: number, playerId2: number) => void;
   clearDraft: (teamNumber?: number) => void;
   autoFillTeam: (teamNumber: number, boardCount: number, availablePlayers: number[]) => void;
   autoFillAllTeams: (teams: { teamNumber: number; boardCount: number; division: number }[], availablePlayersList: any[]) => void;
@@ -30,6 +31,7 @@ const SimulatorContext = createContext<SimulatorContextType>({
   setPlayerSetting: () => {},
   draftCompositions: {},
   assignPlayerToBoard: () => {},
+  swapPlayers: () => {},
   clearDraft: () => {},
   autoFillTeam: () => {},
   autoFillAllTeams: () => {},
@@ -192,6 +194,64 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveState(availability, playerSettings, updatedDrafts);
   };
 
+  const swapPlayers = (playerId1: number, playerId2: number) => {
+    let updatedDrafts = { ...draftCompositions };
+    
+    let pos1: { t: number, b: number } | null = null;
+    let pos2: { t: number, b: number } | null = null;
+
+    Object.keys(updatedDrafts).forEach((tStr) => {
+      const t = Number(tStr);
+      Object.keys(updatedDrafts[t]).forEach((bStr) => {
+        const b = Number(bStr);
+        if (updatedDrafts[t][b] === playerId1) pos1 = { t, b };
+        if (updatedDrafts[t][b] === playerId2) pos2 = { t, b };
+      });
+    });
+
+    // We build the changes to apply, to avoid conflicts if they are on the same team
+    const updatesByTeam: { [t: number]: { [b: number]: number | null } } = {};
+
+    if (pos1) {
+      if (!updatesByTeam[pos1.t]) updatesByTeam[pos1.t] = {};
+      updatesByTeam[pos1.t][pos1.b] = playerId2;
+    } else if (pos2) {
+      // playerId1 is in deck, they go to pos2
+      if (!updatesByTeam[pos2.t]) updatesByTeam[pos2.t] = {};
+      updatesByTeam[pos2.t][pos2.b] = playerId1;
+    }
+
+    if (pos2) {
+      if (!updatesByTeam[pos2.t]) updatesByTeam[pos2.t] = {};
+      updatesByTeam[pos2.t][pos2.b] = playerId1;
+    } else if (pos1) {
+      // playerId2 is in deck, they go to pos1
+      if (!updatesByTeam[pos1.t]) updatesByTeam[pos1.t] = {};
+      updatesByTeam[pos1.t][pos1.b] = playerId2;
+    }
+
+    // Apply all updates
+    Object.keys(updatesByTeam).forEach(tStr => {
+      const t = Number(tStr);
+      const targetTeamDraft = { ...(updatedDrafts[t] || {}) };
+      
+      Object.keys(updatesByTeam[t]).forEach(bStr => {
+        const b = Number(bStr);
+        const val = updatesByTeam[t][b];
+        if (val === null) {
+          delete targetTeamDraft[b];
+        } else {
+          targetTeamDraft[b] = val;
+        }
+      });
+      
+      updatedDrafts[t] = targetTeamDraft;
+    });
+
+    setDraftCompositions(updatedDrafts);
+    saveState(availability, playerSettings, updatedDrafts);
+  };
+
   const clearDraft = (teamNumber?: number) => {
     let updated: { [teamNumber: number]: { [board: number]: number | null } };
     if (teamNumber) {
@@ -292,6 +352,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setPlayerSetting,
         draftCompositions,
         assignPlayerToBoard,
+        swapPlayers,
         clearDraft,
         autoFillTeam,
         autoFillAllTeams
