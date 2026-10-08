@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
@@ -60,6 +60,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   const boardCount = activeTeam ? getBoardCountForDivision(activeTeam.division) : 6;
 
   const teamScout = scouting.find((s) => s.ourTeamName === activeTeam?.name);
+  const isByeRound = teamScout?.opponentTeamName.toUpperCase().includes('BYE') || false;
 
   const currentDraft = draftCompositions[teamNumber] || {};
   const assignedBoards: AssignedBoard[] = [];
@@ -527,7 +528,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     <AlertOctagon className="h-5 w-5" /> Invalide (Moyennes Inter-équipes)
                   </div>
                   <ul className="text-sm space-y-1 text-[#B91C1C]">
-                    {crossTeamViolations.map((v, i) => <li key={i}>• {v.message}</li>)}
+                    {crossTeamViolations.map((v, i) => <li key={i}>â€¢ {v.message}</li>)}
                   </ul>
                 </div>
               )}
@@ -775,4 +776,6 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     </div>
   );
 };
+
+
 

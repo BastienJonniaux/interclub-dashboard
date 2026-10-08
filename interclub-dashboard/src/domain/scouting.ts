@@ -1,5 +1,5 @@
 import { DivisionFrbe } from '../modelsFRBE';
-import { PAIRINGS_12, PAIRINGS_10, PAIRINGS_6J } from '../season';
+import { PAIRINGS_12, PAIRINGS_10, PAIRINGS_6J, ROUND_DATES, DIVISION_SIX_DATES } from '../season';
 
 export type ReadinessColor = 'green' | 'yellow' | 'red';
 
@@ -75,12 +75,22 @@ export function scoutNextMatch(
 
   // Find next unplayed round
   let nextRoundNumber = 1;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
+
   for (let r = 1; r <= pairings.length; r++) {
     const roundData = division.rounds.find((rd) => rd.round === r);
     const encounter = roundData?.encounters.find(
       (e) => e.pairingnr_home === ourTeam.pairingnumber || e.pairingnr_visit === ourTeam.pairingnumber
     );
+    
     if (!encounter || !encounter.played) {
+      const isBye = encounter && (encounter.icclub_home === 0 || encounter.icclub_visit === 0);
+      const roundDate = division.division === 6 ? DIVISION_SIX_DATES[r - 1] : ROUND_DATES[r - 1];
+      
+      if (isBye && roundDate && roundDate < today) {
+        continue;
+      }
+      
       nextRoundNumber = r;
       break;
     }
