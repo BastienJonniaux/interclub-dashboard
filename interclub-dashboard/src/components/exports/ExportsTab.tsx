@@ -7,16 +7,18 @@ import {
   TeamMatchResultSummary,
 } from '../../domain/exporters';
 import { AssignedBoard } from '../../domain/rules/frbeValidator';
-import { getBoardCountForDivision } from '../../domain/scouting';
+import { NextMatchScout, getBoardCountForDivision } from '../../domain/scouting';
+import { CompositionEmail } from './CompositionEmail';
 import { Copy, Check, Printer, Mail, FileText } from 'lucide-react';
 
 interface Props {
   club: ClubFrbe;
   divisions: DivisionFrbe[];
   playerDirectory: Map<number, { name: string; rating: number; clubName?: string }>;
+  scouting?: NextMatchScout[];
 }
 
-export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }) => {
+export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, scouting }) => {
   const { draftCompositions } = useSimulator();
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedSheet, setCopiedSheet] = useState(false);
@@ -80,10 +82,18 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
     });
   });
 
+  const nextRoundScout = scouting && scouting.length > 0 ? scouting[0] : undefined;
+  let formattedNextDate: string | undefined = undefined;
+  if (nextRoundScout?.roundDate) {
+    const d = new Date(nextRoundScout.roundDate);
+    formattedNextDate = d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
   const emailText = generatePostRoundEmail(
     club.name,
     1,
-    roundResultsSummaries
+    roundResultsSummaries,
+    formattedNextDate
   );
 
   // Generate Match Day Sheet for selected team
@@ -119,6 +129,8 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
     window.print();
   };
 
+  const [activeSubTab, setActiveSubTab] = useState<'post-round' | 'pre-round'>('pre-round');
+
   return (
     <div className="space-y-6">
       <div className="bg-[#1A1918] text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#E2DFD8]">
@@ -132,8 +144,26 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Email Generator Card */}
+      <div className="flex space-x-4 border-b border-[#E2DFD8] pb-4">
+        <button
+          className={`pb-2 text-sm font-bold font-mono uppercase tracking-wider transition-colors ${
+            activeSubTab === 'pre-round' ? 'text-[#1A1918] border-b-2 border-[#1A1918]' : 'text-[#6E6A64] hover:text-[#1A1918]'
+          }`}
+          onClick={() => setActiveSubTab('pre-round')}
+        >
+          Email de compo pré-ronde
+        </button>
+        <button
+          className={`pb-2 text-sm font-bold font-mono uppercase tracking-wider transition-colors ${
+            activeSubTab === 'post-round' ? 'text-[#1A1918] border-b-2 border-[#1A1918]' : 'text-[#6E6A64] hover:text-[#1A1918]'
+          }`}
+          onClick={() => setActiveSubTab('post-round')}
+        >
+          Email récapitulatif
+        </button>
+      </div>
+
+      {activeSubTab === 'post-round' && (
         <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
           <div>
             <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
@@ -163,60 +193,15 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory }
             </pre>
           </div>
         </div>
+      )}
 
-        {/* Printable Match Day Sheet Card */}
-        <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
-          <div>
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 border border-[#1A1918] bg-[#F9F8F6]">
-                  <FileText className="h-5 w-5 text-[#1A1918]" />
-                </div>
-                <h3 className="font-bold font-serif text-[#1A1918] text-lg">
-                  Feuille de Match (Jour J)
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopySheet}
-                  className="inline-flex items-center gap-2 border border-[#E2DFD8] bg-white px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
-                >
-                  {copiedSheet ? <Check className="h-4 w-4 text-[#1E5E3A]" /> : <Copy className="h-4 w-4" />}
-                  <span className="hidden sm:inline">{copiedSheet ? 'Copié !' : 'Copier'}</span>
-                </button>
-                <button
-                  onClick={handlePrint}
-                  className="inline-flex items-center gap-2 bg-[#1A1918] border border-[#1A1918] px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-white hover:bg-black transition-all duration-300"
-                >
-                  <Printer className="h-4 w-4" />
-                  <span className="hidden sm:inline">Imprimer</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Team Picker */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {teams.map((t, idx) => (
-                <button
-                  key={t.name}
-                  onClick={() => setSelectedTeamIndex(idx)}
-                  className={`px-3 py-1.5 text-xs font-bold whitespace-nowrap transition-all duration-300 border ${
-                    selectedTeamIndex === idx
-                      ? 'bg-[#1A1918] text-white border-[#1A1918]'
-                      : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-
-            <pre className="mt-4 max-h-[450px] overflow-y-auto bg-[#F9F8F6] p-5 text-[11px] leading-relaxed font-mono text-[#1A1918] border border-[#E2DFD8] whitespace-pre-wrap select-text custom-scrollbar">
-              {matchSheetText}
-            </pre>
-          </div>
-        </div>
-      </div>
+      {activeSubTab === 'pre-round' && (
+        <CompositionEmail
+          club={club}
+          scouting={scouting || []}
+          draftCompositions={draftCompositions}
+        />
+      )}
     </div>
   );
 };

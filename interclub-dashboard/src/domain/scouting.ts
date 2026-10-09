@@ -293,10 +293,13 @@ export function scoutNextMatch(
     readinessReason = `En danger (${eloDiff} Elo) - Besoin de renforts !`;
   }
 
+  const roundDate = division.division === 6 ? DIVISION_SIX_DATES[nextRoundNumber - 1] : ROUND_DATES[nextRoundNumber - 1];
+
   return {
     ourTeamName: ourTeam.name,
     divisionLabel: `Division ${division.division}${division.index}`,
     roundNumber: nextRoundNumber,
+    roundDate,
     isHome,
     opponentClubId,
     opponentTeamName,
