@@ -26,7 +26,8 @@ export interface TeamMatchResultSummary {
 export function generatePostRoundEmail(
   clubName: string,
   roundNumber: number,
-  results: TeamMatchResultSummary[]
+  results: TeamMatchResultSummary[],
+  nextRoundDate?: string
 ): string {
   const lines: string[] = [];
 
@@ -57,7 +58,11 @@ export function generatePostRoundEmail(
   lines.push(`----------------------------------------------------------------------`);
   lines.push(`Bilan global de la ronde : ${totalWins} Victoire(s), ${totalDraws} Nul(s), ${totalLosses} Défaite(s).`);
   lines.push(``);
-  lines.push(`Bravo à tous pour vos parties et rendez-vous à la prochaine ronde !`);
+  if (nextRoundDate) {
+    lines.push(`Bravo à tous pour vos parties et rendez-vous à la prochaine ronde le ${nextRoundDate} !`);
+  } else {
+    lines.push(`Bravo à tous pour vos parties et rendez-vous à la prochaine ronde !`);
+  }
   lines.push(``);
   lines.push(`Le Directeur des Interclubs`);
 

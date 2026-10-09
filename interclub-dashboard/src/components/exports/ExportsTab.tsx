@@ -82,10 +82,18 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
     });
   });
 
+  const nextRoundScout = scouting && scouting.length > 0 ? scouting[0] : undefined;
+  let formattedNextDate: string | undefined = undefined;
+  if (nextRoundScout?.roundDate) {
+    const d = new Date(nextRoundScout.roundDate);
+    formattedNextDate = d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
   const emailText = generatePostRoundEmail(
     club.name,
     1,
-    roundResultsSummaries
+    roundResultsSummaries,
+    formattedNextDate
   );
 
   // Generate Match Day Sheet for selected team
