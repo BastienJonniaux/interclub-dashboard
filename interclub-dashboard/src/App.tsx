@@ -113,6 +113,7 @@ const DashboardContent: React.FC = () => {
               club={club}
               divisions={allDivisions}
               playerDirectory={playerDirectory}
+              scouting={scouting}
             />
           </div>
         )}
