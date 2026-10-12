@@ -168,7 +168,7 @@ export function calculateClubPlayerStats(
             isHome,
             color,
             score,
-            resultString: game.result,
+            resultString: score === 1 ? (game.result?.includes('FF') ? '1-0 FF' : '1-0') : score === 0.5 ? '½-½' : (game.result?.includes('FF') ? '0-1 FF' : '0-1'),
             opponentId: oppIdNum || 0,
             opponentName: oppInfo?.name || (oppIdNum ? `Matr. ${oppIdNum}` : 'Joueur inconnu'),
             opponentRating: oppRating,

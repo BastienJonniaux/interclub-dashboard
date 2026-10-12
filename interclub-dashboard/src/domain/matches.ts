@@ -96,6 +96,8 @@ export function extractLatestClubMatches(
 
       const isWhite = isHome ? board % 2 === 1 : board % 2 === 0;
       const score = getPlayerScoreFromFrbeResult(game.result, isHome);
+      const isFF = (game.result || '').includes('FF');
+      const resultString = score === 1 ? (isFF ? '1-0 FF' : '1-0') : score === 0.5 ? '½-½' : (isFF ? '0-1 FF' : '0-1');
 
       return {
         board,
@@ -106,7 +108,7 @@ export function extractLatestClubMatches(
         oppPlayerName: oppInfo?.name || (oppPlayerId ? `Matr. ${oppPlayerId}` : 'Inconnu'),
         oppPlayerRating: oppInfo?.rating || 0,
         color: isWhite ? 'white' : 'black',
-        resultString: game.result,
+        resultString,
         score,
         isHome,
       };
