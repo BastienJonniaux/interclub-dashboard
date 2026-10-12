@@ -36,6 +36,10 @@ interface Props {
 
 export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouting = [] }) => {
   const {
+    selectedRound,
+    setSelectedRound,
+    draftCompositionsByRound,
+    copyRoundDraft,
     availability,
     setPlayerAvailability,
     setAllPlayersAvailability,
@@ -256,6 +260,46 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
             Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner.
           </p>
         </div>
+      </div>
+
+      {/* Round Selector Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-[#E2DFD8]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#6E6A64]">
+            Ronde active :
+          </span>
+          <div className="flex flex-wrap gap-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((r) => {
+              const isSelected = selectedRound === r;
+              const hasDraft = Object.keys(draftCompositionsByRound[r] || {}).length > 0;
+              return (
+                <button
+                  key={r}
+                  onClick={() => setSelectedRound(r)}
+                  className={`px-3 py-1 text-xs font-mono font-bold border transition-all ${
+                    isSelected
+                      ? 'bg-[#1A1918] text-white border-[#1A1918] shadow-sm'
+                      : hasDraft
+                      ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30 hover:bg-[#1E5E3A]/20'
+                      : 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8] hover:bg-[#E2DFD8]'
+                  }`}
+                >
+                  R{r} {hasDraft && !isSelected && '•'}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {selectedRound > 1 && (
+          <button
+            onClick={() => copyRoundDraft(selectedRound - 1)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#1A1918] bg-[#F9F8F6] border border-[#E2DFD8] hover:bg-[#1A1918] hover:text-white transition-all shrink-0 cursor-pointer"
+            title={`Copier la composition de la Ronde ${selectedRound - 1} vers la Ronde ${selectedRound}`}
+          >
+            📋 Copier la Ronde {selectedRound - 1}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

@@ -13,6 +13,7 @@ import { calculateClubPlayerStats, PlayerStats } from '../domain/performance';
 import { calculateDivisionStandings, DivisionStandingTable } from '../domain/standings';
 import { scoutNextMatch, NextMatchScout } from '../domain/scouting';
 import { LatestTeamMatch, extractLatestClubMatches } from '../domain/matches';
+import { defaultRound, ACTIVE_SEASON } from '../season';
 
 export interface ClubDataState {
   loading: boolean;
@@ -71,25 +72,61 @@ export function useClubData(): ClubDataState {
       });
       setPlayerDirectory(directory);
 
-      // 4. Fetch round 1 results
-      const roundsToFetch = [1];
+      // 4. Fetch all played round results up to current date
+      const maxRound = Math.max(1, defaultRound(ACTIVE_SEASON));
+      const roundsToFetch = Array.from({ length: maxRound }, (_, i) => i + 1);
       const seriesPromises = roundsToFetch.map((r) =>
         fetchRoundSeries(r, bypassCache).catch(() => [] as DivisionFrbe[])
       );
       const seriesResults = await Promise.all(seriesPromises);
-      const currentRoundDivisions = seriesResults[0] || [];
-      setAllDivisions(currentRoundDivisions);
 
-      // 5. Calculate Player Stats
-      const stats = calculateClubPlayerStats(clubData.players || [], currentRoundDivisions, clubId, directory);
+      // Merge divisions across rounds so that each division has all played rounds
+      const divMap = new Map<string, DivisionFrbe>();
+      seriesResults.forEach((roundDivs) => {
+        roundDivs.forEach((div) => {
+          const key = `${div.division}_${div.index || 'A'}`;
+          const existing = divMap.get(key);
+          if (!existing) {
+            divMap.set(key, {
+              division: div.division,
+              index: div.index || 'A',
+              teams: [...div.teams],
+              rounds: [...(div.rounds || [])],
+            });
+          } else {
+            const existingRoundNumbers = new Set(existing.rounds.map((rd) => rd.round));
+            (div.rounds || []).forEach((rd) => {
+              if (!existingRoundNumbers.has(rd.round)) {
+                existing.rounds.push(rd);
+                existingRoundNumbers.add(rd.round);
+              } else {
+                const idx = existing.rounds.findIndex((r) => r.round === rd.round);
+                if (idx >= 0) {
+                  existing.rounds[idx] = rd;
+                }
+              }
+            });
+          }
+        });
+      });
+      const mergedDivisions = Array.from(divMap.values());
+      setAllDivisions(mergedDivisions);
+
+      // 5. Calculate Player Stats across all rounds
+      const stats = calculateClubPlayerStats(clubData.players || [], mergedDivisions, clubId, directory);
       setPlayerStats(stats);
 
       // 6. Calculate Division Standings & Scouting for each team
       const divisionStandingsList: DivisionStandingTable[] = [];
       const scoutingList: NextMatchScout[] = [];
 
+      const allDivisionsAcrossRounds = seriesResults.map((divs, idx) => ({
+        round: idx + 1,
+        divisions: divs,
+      }));
+
       (clubData.teams || []).forEach((team) => {
-        const matchingDiv = currentRoundDivisions.find(
+        const matchingDiv = mergedDivisions.find(
           (d) => d.division === team.division && (d.index || 'A') === (team.index || 'A')
         );
 
@@ -111,7 +148,7 @@ export function useClubData(): ClubDataState {
           const scout = scoutNextMatch(
             matchingDiv,
             clubId,
-            [{ round: 1, divisions: currentRoundDivisions }],
+            allDivisionsAcrossRounds,
             directory,
             ourAvg
           );
@@ -123,7 +160,7 @@ export function useClubData(): ClubDataState {
       setScouting(scoutingList);
 
       // 7. Extract Latest Played Matches with board-by-board detail
-      const latest = extractLatestClubMatches(currentRoundDivisions, clubId, directory);
+      const latest = extractLatestClubMatches(mergedDivisions, clubId, directory);
       setLatestMatches(latest);
 
       setIsFallback(isFallbackMode);

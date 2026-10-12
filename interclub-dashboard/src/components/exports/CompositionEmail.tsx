@@ -48,9 +48,19 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
   };
 
   const generatedEmail = useMemo(() => {
-    let email = introText ? introText + '\n\n' : '';
+    let email = introText ? introText.trim() + '\n\n' : '';
 
     const teams = club.teams || [];
+    
+    // Check if any team plays at home
+    const hasHomeMatches = teams.some(team => {
+      const scout = scouting.find(s => s.ourTeamName === team.name);
+      return scout && scout.isHome && !scout.opponentTeamName.toUpperCase().includes('BYE');
+    });
+
+    if (hasHomeMatches) {
+      email += `On joue à domicile donc début des parties à 14h au club.\n\n`;
+    }
     
     teams.forEach((team, idx) => {
       const tNum = idx + 1;
@@ -68,18 +78,27 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
       const venueIdx = selectedVenues[tNum] || 0;
       const venue = availableVenues[venueIdx];
 
-      const locationName = isHome ? club.name : oppName;
-      let header = `Equipe ${tNum} ${isHome ? 'au' : 'à'} ${locationName}`;
+      let header = '';
+      if (isHome) {
+        header = `Equipe ${tNum} à domicile vs ${oppName}`;
+      } else {
+        header = `Equipe ${tNum} à ${oppName}`;
+      }
 
       email += `${header}\n`;
       
-      if (venue) {
+      // Only include address line for away matches
+      if (!isHome && venue) {
         email += `Adresse : ${venue.address || ''}, ${venue.postalcode || ''} ${venue.city || ''}`.trim() + '\n';
       }
 
-      const customText = teamTexts[tNum] !== undefined ? teamTexts[tNum] : (isHome ? 'RDV au club à 12h30, je peux prendre tout le monde' : 'RDV sur place à 13h45');
-      if (customText) {
-        email += `${customText}\n`;
+      const defaultText = isHome
+        ? ''
+        : 'RDV au club à 12h30 pour covoiturage (ou sur place à 13h45)';
+
+      const customText = teamTexts[tNum] !== undefined ? teamTexts[tNum] : defaultText;
+      if (customText && customText.trim()) {
+        email += `${customText.trim()}\n`;
       }
 
       const draft = draftCompositions[tNum] || {};
@@ -153,16 +172,23 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                 const locationClubId = isHome ? club.idclub : scout.opponentClubId;
                 const availableVenues = venuesMap[locationClubId] || [];
                 
-                const defaultText = isHome ? 'RDV au club à 12h30, je peux prendre tout le monde' : 'RDV sur place à 13h45';
+                const defaultText = isHome ? '' : 'RDV au club à 12h30 pour covoiturage (ou sur place à 13h45)';
                 const currentText = teamTexts[tNum] !== undefined ? teamTexts[tNum] : defaultText;
 
                 return (
                   <div key={team.name} className="bg-white border border-[#E2DFD8] p-3">
-                    <div className="font-bold font-serif text-[#1A1918] text-sm mb-2">
-                      Équipe {tNum} {isHome ? '(Domicile)' : '(Extérieur)'} - vs {scout.opponentTeamName}
+                    <div className="font-bold font-serif text-[#1A1918] text-sm mb-2 flex items-center justify-between">
+                      <span>Équipe {tNum} - vs {scout.opponentTeamName}</span>
+                      <span className={`text-[10px] px-2 py-0.5 font-mono uppercase font-bold border ${
+                        isHome 
+                          ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/20' 
+                          : 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/20'
+                      }`}>
+                        {isHome ? '🏠 Domicile (14h au club)' : '🚗 Extérieur'}
+                      </span>
                     </div>
                     
-                    {availableVenues.length > 1 && (
+                    {!isHome && availableVenues.length > 1 && (
                       <div className="mb-2">
                         <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">Local (plusieurs disponibles)</label>
                         <select 
@@ -180,13 +206,15 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                     )}
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">Message équipe</label>
+                      <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">
+                        {isHome ? 'Message équipe (optionnel)' : 'Message équipe / Heure RDV'}
+                      </label>
                       <input 
                         type="text"
                         className="w-full text-xs p-1.5 border border-[#E2DFD8] bg-[#F9F8F6] focus:outline-none focus:border-[#1A1918]"
                         value={currentText}
                         onChange={e => handleTeamTextChange(tNum, e.target.value)}
-                        placeholder="Ex: RDV à 13h..."
+                        placeholder={isHome ? "Optionnel..." : "Ex: RDV à 12h30 pour covoiturage..."}
                       />
                     </div>
                   </div>
