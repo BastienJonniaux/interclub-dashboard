@@ -10,6 +10,10 @@ export interface PlayerSettings {
 }
 
 interface SimulatorContextType {
+  selectedRound: number;
+  setSelectedRound: (round: number) => void;
+  draftCompositionsByRound: { [round: number]: { [teamNumber: number]: { [board: number]: number | null } } };
+  copyRoundDraft: (fromRound: number) => void;
   availability: { [playerId: number]: AvailabilityStatus };
   setPlayerAvailability: (playerId: number, status: AvailabilityStatus) => void;
   setAllPlayersAvailability: (playerIds: number[], status: AvailabilityStatus) => void;
@@ -26,6 +30,10 @@ interface SimulatorContextType {
 }
 
 const SimulatorContext = createContext<SimulatorContextType>({
+  selectedRound: 2,
+  setSelectedRound: () => {},
+  draftCompositionsByRound: {},
+  copyRoundDraft: () => {},
   availability: {},
   setPlayerAvailability: () => {},
   setAllPlayersAvailability: () => {},
@@ -45,6 +53,10 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { clubId } = useClub();
   const storageKey = `interclub_sim_${clubId}`;
 
+  const [selectedRound, setSelectedRoundState] = useState<number>(2);
+  const [draftCompositionsByRound, setDraftCompositionsByRound] = useState<{
+    [round: number]: { [teamNumber: number]: { [board: number]: number | null } };
+  }>({});
   const [availability, setAvailability] = useState<{ [playerId: number]: AvailabilityStatus }>({});
   const [playerSettings, setPlayerSettings] = useState<{ [playerId: number]: PlayerSettings }>({});
   const [draftCompositions, setDraftCompositions] = useState<{
@@ -68,8 +80,6 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const previousState = prev[prev.length - 1];
       const newHistory = prev.slice(0, -1);
       setDraftCompositions(previousState);
-      // Wait to saveState? We can't access availability easily here without breaking dependencies, 
-      // but saveState is already available in the closure!
       saveState(availability, playerSettings, previousState);
       return newHistory;
     });
@@ -83,17 +93,34 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const parsed = JSON.parse(saved);
         setAvailability(parsed.availability || {});
         setPlayerSettings(parsed.playerSettings || {});
-        setDraftCompositions(parsed.draftCompositions || {});
+
+        const draftsByRound: { [round: number]: { [teamNumber: number]: { [board: number]: number | null } } } =
+          parsed.draftCompositionsByRound || {};
+
+        // Backward compatibility: If legacy draft exists and Round 1 is not yet defined, preserve it as Round 1!
+        if (parsed.draftCompositions && Object.keys(parsed.draftCompositions).length > 0 && !draftsByRound[1]) {
+          draftsByRound[1] = parsed.draftCompositions;
+        }
+
+        const savedRound = parsed.selectedRound || (draftsByRound[2] ? 2 : 1);
+
+        setDraftCompositionsByRound(draftsByRound);
+        setSelectedRoundState(savedRound);
+        setDraftCompositions(draftsByRound[savedRound] || parsed.draftCompositions || {});
         setDraftHistory([]);
       } else {
         setAvailability({});
         setPlayerSettings({});
+        setDraftCompositionsByRound({});
+        setSelectedRoundState(2);
         setDraftCompositions({});
         setDraftHistory([]);
       }
     } catch {
       setAvailability({});
       setPlayerSettings({});
+      setDraftCompositionsByRound({});
+      setSelectedRoundState(2);
       setDraftCompositions({});
       setDraftHistory([]);
     }
@@ -106,17 +133,60 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     newDrafts: { [teamNumber: number]: { [board: number]: number | null } }
   ) => {
     try {
+      const updatedByRound = {
+        ...draftCompositionsByRound,
+        [selectedRound]: newDrafts,
+      };
+      setDraftCompositionsByRound(updatedByRound);
       localStorage.setItem(
         storageKey,
         JSON.stringify({
           availability: newAvail,
           playerSettings: newSettings,
           draftCompositions: newDrafts,
+          selectedRound,
+          draftCompositionsByRound: updatedByRound,
         })
       );
     } catch {
       // Ignore
     }
+  };
+
+  const setSelectedRound = (newRound: number) => {
+    const updatedByRound = {
+      ...draftCompositionsByRound,
+      [selectedRound]: draftCompositions,
+    };
+    setDraftCompositionsByRound(updatedByRound);
+    setSelectedRoundState(newRound);
+    const targetDraft = updatedByRound[newRound] || {};
+    setDraftCompositions(targetDraft);
+    setDraftHistory([]);
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          availability,
+          playerSettings,
+          draftCompositions: targetDraft,
+          selectedRound: newRound,
+          draftCompositionsByRound: updatedByRound,
+        })
+      );
+    } catch {
+      // Ignore
+    }
+  };
+
+  const copyRoundDraft = (fromRound: number) => {
+    const source = draftCompositionsByRound[fromRound];
+    if (!source || Object.keys(source).length === 0) return;
+    pushHistory(draftCompositions);
+    const copiedDraft = JSON.parse(JSON.stringify(source));
+    setDraftCompositions(copiedDraft);
+    saveState(availability, playerSettings, copiedDraft);
   };
 
   const removePlayersFromDrafts = (
@@ -395,6 +465,10 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   return (
     <SimulatorContext.Provider
       value={{
+        selectedRound,
+        setSelectedRound,
+        draftCompositionsByRound,
+        copyRoundDraft,
         availability,
         setPlayerAvailability,
         setAllPlayersAvailability,

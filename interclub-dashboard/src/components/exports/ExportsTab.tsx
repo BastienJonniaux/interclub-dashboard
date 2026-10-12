@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ClubFrbe, DivisionFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
@@ -10,6 +10,7 @@ import { AssignedBoard } from '../../domain/rules/frbeValidator';
 import { NextMatchScout, getBoardCountForDivision } from '../../domain/scouting';
 import { CompositionEmail } from './CompositionEmail';
 import { Copy, Check, Printer, Mail, FileText } from 'lucide-react';
+import { ROUND_DATES } from '../../season';
 
 interface Props {
   club: ClubFrbe;
@@ -29,7 +30,36 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
   const teamNumber = selectedTeamIndex + 1;
   const boardCount = activeTeam ? getBoardCountForDivision(activeTeam.division) : 6;
 
-  // Build match results for round 1
+  // Find all played round numbers for our club
+  const playedRoundNumbers = useMemo(() => {
+    const rSet = new Set<number>();
+    divisions.forEach((div) => {
+      (div.rounds || []).forEach((rd) => {
+        const hasOurMatch = (rd.encounters || []).some(
+          (e) =>
+            e.played &&
+            (e.icclub_home === club.idclub || e.icclub_visit === club.idclub)
+        );
+        if (hasOurMatch) {
+          rSet.add(rd.round);
+        }
+      });
+    });
+    const arr = Array.from(rSet).sort((a, b) => a - b);
+    return arr.length > 0 ? arr : [1];
+  }, [divisions, club.idclub]);
+
+  const latestPlayedRound = playedRoundNumbers[playedRoundNumbers.length - 1] || 1;
+  const [selectedRecapRound, setSelectedRecapRound] = useState<number>(latestPlayedRound);
+
+  // Sync to latest round when data loads
+  useEffect(() => {
+    if (playedRoundNumbers.length > 0) {
+      setSelectedRecapRound(playedRoundNumbers[playedRoundNumbers.length - 1]);
+    }
+  }, [playedRoundNumbers]);
+
+  // Build match results for selected recap round
   const roundResultsSummaries: TeamMatchResultSummary[] = [];
 
   teams.forEach((team) => {
@@ -39,6 +69,8 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
     if (!matchingDiv) return;
 
     matchingDiv.rounds.forEach((rd) => {
+      if (rd.round !== selectedRecapRound) return;
+
       const encounter = rd.encounters.find(
         (e) =>
           e.played &&
@@ -82,16 +114,17 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
     });
   });
 
-  const nextRoundScout = scouting && scouting.length > 0 ? scouting[0] : undefined;
+  const nextRoundNumber = selectedRecapRound + 1;
+  const nextRoundDateStr = ROUND_DATES[nextRoundNumber - 1];
   let formattedNextDate: string | undefined = undefined;
-  if (nextRoundScout?.roundDate) {
-    const d = new Date(nextRoundScout.roundDate);
+  if (nextRoundDateStr) {
+    const d = new Date(nextRoundDateStr);
     formattedNextDate = d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   const emailText = generatePostRoundEmail(
     club.name,
-    1,
+    selectedRecapRound,
     roundResultsSummaries,
     formattedNextDate
   );
@@ -172,17 +205,40 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
                   <Mail className="h-5 w-5 text-[#1A1918]" />
                 </div>
                 <h3 className="font-bold font-serif text-[#1A1918] text-lg">
-                  Email Récapitulatif
+                  Email Récapitulatif (Ronde {selectedRecapRound})
                 </h3>
               </div>
               <button
                 onClick={handleCopyEmail}
-                className="inline-flex items-center justify-center gap-2 bg-[#1E5E3A]/10 border border-[#1E5E3A]/30 px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-all duration-300"
+                className="inline-flex items-center justify-center gap-2 bg-[#1E5E3A]/10 border border-[#1E5E3A]/30 px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-all duration-300 cursor-pointer"
               >
                 {copiedEmail ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 <span>{copiedEmail ? 'Copié !' : 'Copier le texte'}</span>
               </button>
             </div>
+
+            {playedRoundNumbers.length > 1 && (
+              <div className="flex items-center gap-2 mt-4 pb-2 border-b border-[#E2DFD8]">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#6E6A64]">
+                  Ronde à récapituler :
+                </span>
+                <div className="flex gap-1">
+                  {playedRoundNumbers.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setSelectedRecapRound(r)}
+                      className={`px-3 py-1 text-xs font-mono font-bold border transition-all cursor-pointer ${
+                        selectedRecapRound === r
+                          ? 'bg-[#1A1918] text-white border-[#1A1918]'
+                          : 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8] hover:bg-[#E2DFD8]'
+                      }`}
+                    >
+                      Ronde {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <p className="mt-4 text-xs font-mono text-[#6E6A64]">
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).

@@ -33,7 +33,7 @@ export function generatePostRoundEmail(
 
   lines.push(`Bonjour à tous,`);
   lines.push(``);
-  lines.push(`Voici le récapitulatif des résultats de la Ronde ${roundNumber} des Interclubs Nationaux pour ${clubName} :`);
+  lines.push(`Voici le récapitulatif des résultats du club lors de la ronde ${roundNumber} des interclubs nationaux :`);
   lines.push(`----------------------------------------------------------------------`);
 
   let totalWins = 0;
