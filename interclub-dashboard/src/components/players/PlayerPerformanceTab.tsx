@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats } from '../../domain/performance';
 import { Search, Flame, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { PlayerHoverCard } from '../common/PlayerHoverCard';
 
 interface Props {
   players: PlayerStats[];
@@ -207,7 +208,9 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                                                 : 'bg-[#1A1918] border-[#1A1918]'
                                             }`}
                                           />
-                                          <span className="truncate">{g.opponentName}</span>
+                                          <PlayerHoverCard playerName={g.opponentName || ''} expectedElo={g.opponentRating}>
+                                            <span className="truncate inline-block">{g.opponentName}</span>
+                                          </PlayerHoverCard>
                                           {g.opponentRating > 0 && (
                                             <span className="text-[10px] text-[#6E6A64] shrink-0 font-mono">
                                               ({g.opponentRating})

@@ -9,6 +9,7 @@ import {
 } from '../../domain/rules/frbeValidator';
 import { getBoardCountForDivision, NextMatchScout } from '../../domain/scouting';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
+import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import {
   CheckCircle,
   AlertOctagon,
@@ -429,9 +430,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className={`font-bold font-serif ${isSelected ? 'text-[#1E5E3A]' : isIgnored ? 'text-[#6E6A64] line-through' : isAbsent ? 'text-[#B91C1C]/70' : 'text-[#1A1918]'}`}>
-                          {p.last_name} {p.first_name}
-                        </div>
+                        <PlayerHoverCard playerName={`${p.last_name} ${p.first_name}`} expectedElo={p.assignedrating}>
+                          <div className={`font-bold font-serif ${isSelected ? 'text-[#1E5E3A]' : isIgnored ? 'text-[#6E6A64] line-through' : isAbsent ? 'text-[#B91C1C]/70' : 'text-[#1A1918]'}`}>
+                            {p.last_name} {p.first_name}
+                          </div>
+                        </PlayerHoverCard>
                         <div className="text-[11px] text-[#6E6A64] mt-1 flex flex-wrap items-center gap-1.5">
                           <span><strong className={`font-mono ${isIgnored ? '' : 'text-[#1A1918]'}`}>{p.assignedrating || 'NC'}</strong> Elo</span>
                           {p.titular && (
@@ -810,9 +813,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     <div className="flex-1 min-w-0">
                       {b.player ? (
                         <div>
-                          <div className={`font-bold font-serif text-sm truncate ${isThisPlayerSelected ? 'text-[#1E5E3A]' : willSwap ? 'text-[#6E6A64]' : 'text-[#1A1918]'}`}>
-                            {b.player.last_name} {b.player.first_name}
-                          </div>
+                          <PlayerHoverCard playerName={`${b.player.last_name} ${b.player.first_name}`} expectedElo={b.player.assignedrating}>
+                            <div className={`font-bold font-serif text-sm truncate ${isThisPlayerSelected ? 'text-[#1E5E3A]' : willSwap ? 'text-[#6E6A64]' : 'text-[#1A1918]'}`}>
+                              {b.player.last_name} {b.player.first_name}
+                            </div>
+                          </PlayerHoverCard>
                           <div className={`text-xs mt-0.5 font-mono ${isThisPlayerSelected ? 'text-[#1E5E3A]/80' : willSwap ? 'text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
                             {b.player.assignedrating || 'NC'} Elo
                           </div>

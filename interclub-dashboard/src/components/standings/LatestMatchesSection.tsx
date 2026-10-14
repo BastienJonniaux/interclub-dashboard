@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LatestTeamMatch } from '../../domain/matches';
 import { Trophy, ChevronDown, ChevronUp, Home, Plane, Swords } from 'lucide-react';
+import { PlayerHoverCard } from '../common/PlayerHoverCard';
 
 interface Props {
   matches: LatestTeamMatch[];
@@ -233,9 +234,11 @@ export const LatestMatchesSection: React.FC<Props> = ({ matches, clubName }) => 
                             {/* Our Player */}
                             <td className="px-3 py-1.5 border-r border-[#E2DFD8]">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-[#1A1918] truncate max-w-[130px] sm:max-w-[170px]">
-                                  {b.ourPlayerName}
-                                </span>
+                                <PlayerHoverCard playerName={b.ourPlayerName} expectedElo={b.ourPlayerRating}>
+                                  <span className="font-semibold text-[#1A1918] truncate max-w-[130px] sm:max-w-[170px] inline-block">
+                                    {b.ourPlayerName}
+                                  </span>
+                                </PlayerHoverCard>
                                 {b.ourPlayerRating > 0 && (
                                   <span className="text-[10px] text-[#6E6A64] font-mono">
                                     {b.ourPlayerRating}
@@ -267,9 +270,11 @@ export const LatestMatchesSection: React.FC<Props> = ({ matches, clubName }) => 
                                     {b.oppPlayerRating}
                                   </span>
                                 )}
-                                <span className="font-semibold text-[#6E6A64] truncate max-w-[130px] sm:max-w-[170px]">
-                                  {b.oppPlayerName}
-                                </span>
+                                <PlayerHoverCard playerName={b.oppPlayerName} expectedElo={b.oppPlayerRating}>
+                                  <span className="font-semibold text-[#6E6A64] truncate max-w-[130px] sm:max-w-[170px] inline-block">
+                                    {b.oppPlayerName}
+                                  </span>
+                                </PlayerHoverCard>
                               </div>
                             </td>
                           </tr>
