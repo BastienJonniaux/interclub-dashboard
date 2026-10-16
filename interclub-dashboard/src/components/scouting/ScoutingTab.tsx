@@ -1,5 +1,6 @@
 import React from 'react';
 import { NextMatchScout, ReadinessColor } from '../../domain/scouting';
+import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import {
   Compass,
   Home,
@@ -220,9 +221,11 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                                     </div>
                                   ) : b.frequentPlayer ? (
                                     <div className="flex items-center justify-between w-full">
-                                      <span className="font-semibold text-[#1A1918] truncate max-w-[150px]">
-                                        {b.frequentPlayer.name}
-                                      </span>
+                                      <PlayerHoverCard playerName={b.frequentPlayer.name} expectedElo={b.frequentPlayer.rating}>
+                                        <span className="font-semibold text-[#1A1918] truncate max-w-[150px] inline-block">
+                                          {b.frequentPlayer.name}
+                                        </span>
+                                      </PlayerHoverCard>
                                       {b.frequentPlayer.rating > 0 && (
                                         <span className="font-mono text-[10px] text-[#6E6A64]">
                                           {b.frequentPlayer.rating}

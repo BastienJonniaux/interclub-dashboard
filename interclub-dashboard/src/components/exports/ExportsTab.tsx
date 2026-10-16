@@ -8,6 +8,7 @@ import {
 } from '../../domain/exporters';
 import { AssignedBoard } from '../../domain/rules/frbeValidator';
 import { NextMatchScout, getBoardCountForDivision } from '../../domain/scouting';
+import { formatBoardResult } from '../../domain/performance';
 import { CompositionEmail } from './CompositionEmail';
 import { Copy, Check, Printer, Mail, FileText } from 'lucide-react';
 import { ROUND_DATES } from '../../season';
@@ -99,7 +100,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
           board: idx + 1,
           playerName: ourPlayer ? `${ourPlayer.last_name} ${ourPlayer.first_name}` : `Matr. ${ourPlayerId}`,
           playerRating: ourPlayer?.assignedrating || 0,
-          result: boardResult,
+          result: formatBoardResult(g.result, isHome),
           opponentName: oppPlayer ? oppPlayer.name : `Matr. ${oppPlayerId}`,
           opponentRating: oppPlayer ? oppPlayer.rating : 0,
         };

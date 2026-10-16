@@ -58,8 +58,45 @@ export function getPlayerScoreFromFrbeResult(rawResult: string, isHomePlayer: bo
   if (norm === '0-½') {
     return isHomePlayer ? 0 : 0.5;
   }
+  if (norm.startsWith('0-0')) {
+    return 0;
+  }
 
   return 0;
+}
+
+/**
+ * Formats the game result from the perspective of our player (displayed on the left).
+ * FRBE raw results are always "Home - Visit" (1-0 = Home won, 0-1 = Visit won).
+ * When our team is Away (isHomePlayer === false), the result must be flipped so that
+ * [Our Player] [Result] [Opponent] accurately reflects Our Player on the left.
+ */
+export function formatBoardResult(rawResult: string, isHomePlayer: boolean): string {
+  const norm = (rawResult || '').trim();
+  if (!norm) return '';
+
+  const isFF = norm.includes('FF');
+
+  if (norm.startsWith('1-0')) {
+    return isHomePlayer ? (isFF ? '1-0 FF' : '1-0') : (isFF ? '0-1 FF' : '0-1');
+  }
+  if (norm.startsWith('0-1')) {
+    return isHomePlayer ? (isFF ? '0-1 FF' : '0-1') : (isFF ? '1-0 FF' : '1-0');
+  }
+  if (norm.startsWith('½-0') || norm.startsWith('1/2-0')) {
+    return isHomePlayer ? '½-0' : '0-½';
+  }
+  if (norm.startsWith('0-½') || norm.startsWith('0-1/2')) {
+    return isHomePlayer ? '0-½' : '½-0';
+  }
+  if (norm === '½-½' || norm === '1/2-1/2' || norm === '0.5-0.5') {
+    return '½-½';
+  }
+  if (norm.startsWith('0-0')) {
+    return isFF ? '0-0 FF' : '0-0';
+  }
+
+  return norm;
 }
 
 /**
@@ -168,7 +205,7 @@ export function calculateClubPlayerStats(
             isHome,
             color,
             score,
-            resultString: score === 1 ? (game.result?.includes('FF') ? '1-0 FF' : '1-0') : score === 0.5 ? '½-½' : (game.result?.includes('FF') ? '0-1 FF' : '0-1'),
+            resultString: formatBoardResult(game.result, isHome),
             opponentId: oppIdNum || 0,
             opponentName: oppInfo?.name || (oppIdNum ? `Matr. ${oppIdNum}` : 'Joueur inconnu'),
             opponentRating: oppRating,

@@ -1,5 +1,5 @@
 import { DivisionFrbe } from '../modelsFRBE';
-import { getPlayerScoreFromFrbeResult } from './performance';
+import { getPlayerScoreFromFrbeResult, formatBoardResult } from './performance';
 
 export interface BoardResultDetail {
   board: number;
@@ -108,7 +108,7 @@ export function extractLatestClubMatches(
         oppPlayerName: oppInfo?.name || (oppPlayerId ? `Matr. ${oppPlayerId}` : 'Inconnu'),
         oppPlayerRating: oppInfo?.rating || 0,
         color: isWhite ? 'white' : 'black',
-        resultString,
+        resultString: formatBoardResult(game.result, isHome),
         score,
         isHome,
       };
