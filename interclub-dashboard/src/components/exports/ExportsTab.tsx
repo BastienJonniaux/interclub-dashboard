@@ -12,6 +12,7 @@ import { formatBoardResult } from '../../domain/performance';
 import { CompositionEmail } from './CompositionEmail';
 import { Copy, Check, Printer, Mail, FileText } from 'lucide-react';
 import { ROUND_DATES } from '../../season';
+import { getPlayerScoreFromFrbeResult } from '../../domain/performance';
 
 interface Props {
   club: ClubFrbe;
@@ -91,6 +92,9 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
         const oppPlayerId = isHome ? g.idnumber_visit : g.idnumber_home;
         const ourPlayer = club.players?.find((p) => p.idnumber === ourPlayerId);
         const oppPlayer = playerDirectory.get(oppPlayerId || 0);
+        const score = getPlayerScoreFromFrbeResult(g.result, isHome);
+        const isFF = (g.result || '').includes('FF');
+        const boardResult = score === 1 ? (isFF ? '1-0 FF' : '1-0') : score === 0.5 ? '½-½' : (isFF ? '0-1 FF' : '0-1');
 
         return {
           board: idx + 1,
