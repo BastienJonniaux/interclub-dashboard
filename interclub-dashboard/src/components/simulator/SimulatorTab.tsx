@@ -10,6 +10,16 @@ import {
 import { getBoardCountForDivision, NextMatchScout } from '../../domain/scouting';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
+import { DirectorAuthModal } from '../common/DirectorAuthModal';
+import {
+  checkServerHealth,
+  fetchRoundDrafts,
+  saveRoundDrafts,
+  lockRound,
+  fetchRoundAttendances,
+  saveRoundAttendances,
+  getStoredDirectorKey,
+} from '../../api/backendClient';
 import {
   CheckCircle,
   AlertOctagon,
@@ -25,7 +35,14 @@ import {
   UserCog,
   Eye,
   Settings,
-  Undo2
+  Undo2,
+  Cloud,
+  CloudUpload,
+  CloudDownload,
+  Lock,
+  Unlock,
+  KeyRound,
+  RefreshCw,
 } from 'lucide-react';
 
 interface Props {
@@ -52,13 +69,179 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     undoDraftChange,
     canUndo,
     autoFillTeam,
-    autoFillAllTeams
+    autoFillAllTeams,
+    applyRoundDraftsFromExternal,
+    applyAttendancesFromExternal,
   } = useSimulator();
 
   const [selectedTeamIndex, setSelectedTeamIndex] = useState(-1);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  // Server & DB Sync State
+  const [serverState, setServerState] = useState<{ checked: boolean; online: boolean; db: boolean }>({
+    checked: false,
+    online: false,
+    db: false,
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingServer, setIsLoadingServer] = useState(false);
+  const [isLocking, setIsLocking] = useState(false);
+  const [roundLocked, setRoundLocked] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  // Check backend server health on mount
+  useEffect(() => {
+    checkServerHealth().then(status => {
+      setServerState({ checked: true, online: status.online, db: status.database });
+    });
+  }, []);
+
+  // Check round lock status when selectedRound changes
+  useEffect(() => {
+    fetchRoundDrafts(selectedRound).then(res => {
+      if (res) {
+        setRoundLocked(res.isLocked);
+      }
+    });
+  }, [selectedRound]);
+
+  const handleSaveToServer = async (retryWithKey?: boolean) => {
+    const directorKey = getStoredDirectorKey();
+    if (!directorKey && !retryWithKey) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsSaving(true);
+    setSyncFeedback(null);
+
+    // Build drafts payload
+    const draftsPayload: Record<number, any> = {};
+    teams.forEach((t, i) => {
+      const tNum = i + 1;
+      const roundDraft =
+        draftCompositionsByRound[selectedRound]?.[tNum] ||
+        (selectedRound === 2 ? draftCompositions[tNum] : {}) ||
+        {};
+      const bCount = getBoardCountForDivision(t.division);
+      const boards: any[] = [];
+      for (let b = 1; b <= bCount; b++) {
+        const pid = roundDraft[b];
+        if (pid) {
+          const pl = players.find(p => p.idnumber === pid);
+          boards.push({
+            board: b,
+            playerId: pid,
+            playerName: pl ? `${pl.last_name} ${pl.first_name}` : `Matr. ${pid}`,
+            playerRating: pl?.assignedrating || 0,
+          });
+        }
+      }
+      draftsPayload[tNum] = {
+        divisionLabel: `${t.division}${t.index || 'A'}`,
+        boards,
+      };
+    });
+
+    const resDrafts = await saveRoundDrafts(selectedRound, draftsPayload);
+    if (!resDrafts.success) {
+      setIsSaving(false);
+      setSyncFeedback({ type: 'error', message: resDrafts.error || 'Erreur lors de la sauvegarde.' });
+      if (resDrafts.error?.includes('Clé') || resDrafts.error?.includes('refusé')) {
+        setIsAuthModalOpen(true);
+      }
+      return;
+    }
+
+    // Also persist attendances for the round
+    const attPayload: Record<number, any> = {};
+    players.forEach(p => {
+      const st = availability[p.idnumber] || 'tentative';
+      attPayload[p.idnumber] = {
+        status: st,
+        playerName: `${p.last_name} ${p.first_name}`,
+      };
+    });
+    await saveRoundAttendances(selectedRound, attPayload);
+
+    setIsSaving(false);
+    setSyncFeedback({
+      type: 'success',
+      message: `Compositions & présences de la ronde ${selectedRound} sauvegardées sur la base de données.`,
+    });
+    setTimeout(() => setSyncFeedback(null), 5000);
+  };
+
+  const handleLoadFromServer = async () => {
+    setIsLoadingServer(true);
+    setSyncFeedback(null);
+
+    const [draftRes, attRes] = await Promise.all([
+      fetchRoundDrafts(selectedRound),
+      fetchRoundAttendances(selectedRound),
+    ]);
+
+    if (!draftRes && !attRes) {
+      setIsLoadingServer(false);
+      setSyncFeedback({ type: 'error', message: 'Impossible de joindre le serveur ou aucune donnée trouvée.' });
+      return;
+    }
+
+    let loadedCount = 0;
+    if (draftRes && Object.keys(draftRes.drafts).length > 0) {
+      applyRoundDraftsFromExternal(selectedRound, draftRes.drafts);
+      setRoundLocked(draftRes.isLocked);
+      loadedCount = Object.keys(draftRes.drafts).length;
+    }
+
+    if (attRes && Object.keys(attRes).length > 0) {
+      const newAvail: Record<number, any> = {};
+      for (const [k, v] of Object.entries(attRes)) {
+        newAvail[Number(k)] = (v as any).status || v;
+      }
+      applyAttendancesFromExternal(newAvail);
+    }
+
+    setIsLoadingServer(false);
+    setSyncFeedback({
+      type: 'success',
+      message:
+        loadedCount > 0
+          ? `Compositions officielles de la ronde ${selectedRound} chargées (${loadedCount} équipes).`
+          : `Aucune composition officielle trouvée sur le serveur pour la ronde ${selectedRound}.`,
+    });
+    setTimeout(() => setSyncFeedback(null), 4000);
+  };
+
+  const handleToggleLock = async () => {
+    const directorKey = getStoredDirectorKey();
+    if (!directorKey) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsLocking(true);
+    const newLockState = !roundLocked;
+    const res = await lockRound(selectedRound, newLockState);
+    setIsLocking(false);
+
+    if (res.success) {
+      setRoundLocked(!!res.isLocked);
+      setSyncFeedback({
+        type: 'success',
+        message: res.message || (newLockState ? 'Ronde verrouillée.' : 'Ronde déverrouillée.'),
+      });
+      setTimeout(() => setSyncFeedback(null), 4000);
+    } else {
+      setSyncFeedback({ type: 'error', message: res.error || 'Erreur lors du verrouillage.' });
+      if (res.error?.includes('Clé') || res.error?.includes('refusé')) {
+        setIsAuthModalOpen(true);
+      }
+    }
+  };
   
   const activeTeam = teams[selectedTeamIndex] || teams[0];
   const teamNumber = selectedTeamIndex + 1;
@@ -302,6 +485,111 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           </button>
         )}
       </div>
+
+      <DirectorAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => handleSaveToServer(true)}
+      />
+
+      {/* Server & DB Sync Bar */}
+      <div className="bg-[#F9F8F6] border border-[#E2DFD8] p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="flex items-center gap-1.5 font-mono text-[#6E6A64]">
+            <Cloud className="h-4 w-4" />
+            Base de données :
+          </span>
+          {serverState.checked && serverState.online && serverState.db ? (
+            <span className="inline-flex items-center gap-1 bg-[#1E5E3A]/10 text-[#1E5E3A] px-2 py-0.5 border border-[#1E5E3A]/20 font-bold font-mono">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1E5E3A] animate-pulse" />
+              Connectée (PostgreSQL)
+            </span>
+          ) : serverState.checked ? (
+            <span className="inline-flex items-center gap-1 bg-[#6E6A64]/10 text-[#6E6A64] px-2 py-0.5 border border-[#E2DFD8] font-mono">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#6E6A64]" />
+              Local (Hors-ligne)
+            </span>
+          ) : (
+            <span className="text-[#6E6A64] font-mono">Vérification...</span>
+          )}
+
+          {roundLocked ? (
+            <span className="inline-flex items-center gap-1 bg-[#1A1918] text-white px-2 py-0.5 font-bold uppercase font-mono tracking-wider">
+              <Lock className="h-3 w-3" /> Ronde officielle verrouillée
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 bg-white text-[#6E6A64] px-2 py-0.5 border border-[#E2DFD8] font-mono">
+              <Unlock className="h-3 w-3 text-[#B45309]" /> Brouillon modifiable
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Load from server */}
+          <button
+            onClick={handleLoadFromServer}
+            disabled={isLoadingServer}
+            className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-2.5 py-1 text-xs font-mono font-bold text-[#1A1918] hover:bg-[#F0EFF0] transition-colors disabled:opacity-50 cursor-pointer"
+            title="Télécharger la composition officielle et les disponibilités de cette ronde depuis la base de données"
+          >
+            <CloudDownload className={`h-3.5 w-3.5 ${isLoadingServer ? 'animate-bounce' : ''}`} />
+            {isLoadingServer ? 'Chargement...' : 'Charger du serveur'}
+          </button>
+
+          {/* Save to server (Director) */}
+          <button
+            onClick={() => handleSaveToServer(false)}
+            disabled={isSaving || roundLocked}
+            className="inline-flex items-center gap-1.5 bg-[#1E5E3A] text-white border border-[#16482C] px-3 py-1 text-xs font-mono font-bold hover:bg-[#16482C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            title={roundLocked ? 'Cette ronde est verrouillée. Déverrouillez-la pour modifier.' : 'Enregistrer la composition actuelle sur la base de données'}
+          >
+            <CloudUpload className={`h-3.5 w-3.5 ${isSaving ? 'animate-spin' : ''}`} />
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder (Serveur)'}
+          </button>
+
+          {/* Toggle lock */}
+          <button
+            onClick={handleToggleLock}
+            disabled={isLocking}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
+              roundLocked
+                ? 'bg-white text-[#B91C1C] border-[#B91C1C]/30 hover:bg-[#B91C1C]/10'
+                : 'bg-white text-[#1A1918] border-[#E2DFD8] hover:bg-[#F9F8F6]'
+            }`}
+            title={roundLocked ? 'Déverrouiller pour permettre de nouvelles modifications' : 'Verrouiller pour figer la composition officielle'}
+          >
+            {roundLocked ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+            {roundLocked ? 'Déverrouiller' : 'Verrouiller'}
+          </button>
+
+          {/* Director Key Settings */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="p-1 text-[#6E6A64] hover:text-[#1A1918] hover:bg-white border border-transparent hover:border-[#E2DFD8] transition-colors cursor-pointer"
+            title="Configurer la clé secrète du Directeur"
+          >
+            <KeyRound className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Feedback Banner */}
+      {syncFeedback && (
+        <div
+          className={`p-3 text-xs border flex items-center justify-between animate-in fade-in duration-150 ${
+            syncFeedback.type === 'success'
+              ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30'
+              : syncFeedback.type === 'error'
+              ? 'bg-[#B91C1C]/10 text-[#B91C1C] border-[#B91C1C]/30'
+              : 'bg-blue-50 text-blue-800 border-blue-200'
+          }`}
+        >
+          <span>{syncFeedback.message}</span>
+          <button onClick={() => setSyncFeedback(null)} className="font-bold underline ml-2 cursor-pointer">
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Player Deck (5 cols) */}
