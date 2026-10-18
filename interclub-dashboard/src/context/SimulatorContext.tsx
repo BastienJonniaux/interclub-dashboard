@@ -27,6 +27,8 @@ interface SimulatorContextType {
   canUndo: boolean;
   autoFillTeam: (teamNumber: number, boardCount: number, availablePlayers: number[]) => void;
   autoFillAllTeams: (teams: { teamNumber: number; boardCount: number; division: number }[], availablePlayersList: any[]) => void;
+  applyRoundDraftsFromExternal: (roundNumber: number, drafts: { [teamNumber: number]: { [board: number]: number | null } }) => void;
+  applyAttendancesFromExternal: (newAvail: { [playerId: number]: AvailabilityStatus }) => void;
 }
 
 const SimulatorContext = createContext<SimulatorContextType>({
@@ -47,6 +49,8 @@ const SimulatorContext = createContext<SimulatorContextType>({
   canUndo: false,
   autoFillTeam: () => {},
   autoFillAllTeams: () => {},
+  applyRoundDraftsFromExternal: () => {},
+  applyAttendancesFromExternal: () => {},
 });
 
 export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -462,6 +466,45 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveState(availability, playerSettings, updatedDrafts);
   };
 
+  const applyRoundDraftsFromExternal = (
+    roundNumber: number,
+    newDrafts: { [teamNumber: number]: { [board: number]: number | null } }
+  ) => {
+    setDraftCompositionsByRound(prev => {
+      const updatedByRound = {
+        ...prev,
+        [roundNumber]: newDrafts,
+      };
+      if (selectedRound === roundNumber) {
+        setDraftCompositions(newDrafts);
+        setDraftHistory([]);
+      }
+      try {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            availability,
+            playerSettings,
+            draftCompositions: selectedRound === roundNumber ? newDrafts : draftCompositions,
+            selectedRound,
+            draftCompositionsByRound: updatedByRound,
+          })
+        );
+      } catch {
+        // Ignore
+      }
+      return updatedByRound;
+    });
+  };
+
+  const applyAttendancesFromExternal = (newAvail: { [playerId: number]: AvailabilityStatus }) => {
+    setAvailability(prev => {
+      const merged = { ...prev, ...newAvail };
+      saveState(merged, playerSettings, draftCompositions);
+      return merged;
+    });
+  };
+
   return (
     <SimulatorContext.Provider
       value={{
@@ -481,7 +524,9 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         undoDraftChange,
         canUndo: draftHistory.length > 0,
         autoFillTeam,
-        autoFillAllTeams
+        autoFillAllTeams,
+        applyRoundDraftsFromExternal,
+        applyAttendancesFromExternal,
       }}
     >
       {children}

@@ -1,0 +1,70 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Season {
+  id        String   @id @default(uuid())
+  year      String   @unique // ex: "2026-2027"
+  isCurrent Boolean  @default(true)
+  createdAt DateTime @default(now())
+  rounds    Round[]
+}
+
+model Round {
+  id          String             @id @default(uuid())
+  seasonId    String
+  season      Season             @relation(fields: [seasonId], references: [id])
+  roundNumber Int                // 1 à 11
+  date        DateTime?
+  isLocked    Boolean            @default(false)
+  lockedAt    DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  drafts      TeamDraft[]
+  attendances PlayerAttendance[]
+
+  @@unique([seasonId, roundNumber])
+}
+
+model TeamDraft {
+  id            String            @id @default(uuid())
+  roundId       String
+  round         Round             @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  teamNumber    Int               // 1 à 6
+  divisionLabel String?           // ex: "3C", "5B"
+  updatedAt     DateTime          @updatedAt
+  boards        BoardAssignment[]
+
+  @@unique([roundId, teamNumber])
+}
+
+model BoardAssignment {
+  id           String    @id @default(uuid())
+  teamDraftId  String
+  teamDraft    TeamDraft @relation(fields: [teamDraftId], references: [id], onDelete: Cascade)
+  boardNumber  Int       // 1 à 8
+  playerId     Int       // Matricule FRBE
+  playerName   String
+  playerRating Int
+
+  @@unique([teamDraftId, boardNumber])
+}
+
+model PlayerAttendance {
+  id         String   @id @default(uuid())
+  roundId    String
+  round      Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  playerId   Int      // Matricule FRBE
+  playerName String
+  status     String   // "available" | "tentative" | "unavailable"
+  note       String?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([roundId, playerId])
+}
+
