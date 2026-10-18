@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
+import { isDirectorAuthenticated } from '../middleware/auth';
+import { isRoundInPast } from '../utils/calendar';
 
 const DEFAULT_SEASON = '2026-2027';
 
@@ -20,6 +22,18 @@ export async function getRoundAttendances(req: Request, res: Response) {
 
     if (isNaN(roundNumber)) {
       return res.status(400).json({ error: 'Numéro de ronde invalide.' });
+    }
+
+    const isPast = isRoundInPast(roundNumber);
+    const isAuth = isDirectorAuthenticated(req);
+
+    // Confidentiality protection: upcoming rounds are exclusively visible to the Director
+    if (!isPast && !isAuth) {
+      return res.status(403).json({
+        error: `La ronde ${roundNumber} est à venir. Les disponibilités sont confidentielles et réservées au Directeur des Interclubs.`,
+        isRestricted: true,
+        isUpcoming: true,
+      });
     }
 
     const season = await getOrCreateSeason(seasonYear);
@@ -162,8 +176,10 @@ export async function getSeasonAttendanceStats(req: Request, res: Response) {
     const seasonYear = (req.query.season as string) || DEFAULT_SEASON;
     const season = await getOrCreateSeason(seasonYear);
 
+    const isAuth = isDirectorAuthenticated(req);
+
     // Retrieve all rounds with attendances and team drafts
-    const rounds = await prisma.round.findMany({
+    const allRounds = await prisma.round.findMany({
       where: { seasonId: season.id },
       include: {
         attendances: true,
@@ -175,6 +191,9 @@ export async function getSeasonAttendanceStats(req: Request, res: Response) {
       },
       orderBy: { roundNumber: 'asc' },
     });
+
+    // Public privacy: Only completed / past rounds are shown to visitors; Director sees all
+    const rounds = isAuth ? allRounds : allRounds.filter((r) => isRoundInPast(r.roundNumber));
 
     const playerMap: Record<number, {
       playerId: number;
