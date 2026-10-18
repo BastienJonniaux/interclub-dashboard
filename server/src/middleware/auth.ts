@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 
-export function requireDirectorAuth(req: Request, res: Response, next: NextFunction) {
+export function isDirectorAuthenticated(req: Request): boolean {
   const directorKey = process.env.DIRECTOR_KEY || 'director1234';
+  const providedKey = req.headers['x-director-key'] || req.query.directorKey;
+
+  return Boolean(providedKey && providedKey === directorKey);
+}
+
+export function requireDirectorAuth(req: Request, res: Response, next: NextFunction) {
   const providedKey = req.headers['x-director-key'] || req.query.directorKey;
 
   if (!providedKey) {
@@ -10,7 +16,7 @@ export function requireDirectorAuth(req: Request, res: Response, next: NextFunct
     });
   }
 
-  if (providedKey !== directorKey) {
+  if (!isDirectorAuthenticated(req)) {
     return res.status(403).json({
       error: 'Clé Directeur invalide. Accès refusé.',
     });

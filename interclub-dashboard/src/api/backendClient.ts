@@ -14,6 +14,9 @@ export interface ServerDraftResponse {
       playerRating: number;
     }>
   >;
+  isRestricted?: boolean;
+  isUpcoming?: boolean;
+  error?: string;
 }
 
 export interface PlayerAttendanceStat {
@@ -121,9 +124,31 @@ export async function fetchRoundDrafts(
     const url = new URL(`${getServerBaseUrl()}/api/rounds/${roundNumber}/drafts`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
 
+    const key = getStoredDirectorKey();
+    const headers: Record<string, string> = {};
+    if (key) {
+      headers['x-director-key'] = key;
+    }
+
     const res = await fetch(url.toString(), {
+      headers,
       signal: AbortSignal.timeout(5000),
     });
+
+    if (res.status === 403) {
+      const errData = await res.json().catch(() => ({}));
+      return {
+        roundNumber,
+        seasonYear: seasonYear || '2026-2027',
+        isLocked: false,
+        lockedAt: null,
+        drafts: {},
+        isRestricted: true,
+        isUpcoming: !!errData.isUpcoming,
+        error: errData.error || 'Ronde à venir confidentielle : réservée au Directeur des Interclubs.',
+      };
+    }
+
     if (!res.ok) return null;
     return await res.json();
   } catch (err) {
@@ -220,7 +245,14 @@ export async function fetchRoundAttendances(
     const url = new URL(`${getServerBaseUrl()}/api/rounds/${roundNumber}/attendances`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
 
+    const key = getStoredDirectorKey();
+    const headers: Record<string, string> = {};
+    if (key) {
+      headers['x-director-key'] = key;
+    }
+
     const res = await fetch(url.toString(), {
+      headers,
       signal: AbortSignal.timeout(4000),
     });
     if (!res.ok) return null;
@@ -274,7 +306,14 @@ export async function fetchSeasonAttendanceStats(
     const url = new URL(`${getServerBaseUrl()}/api/stats/attendance`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
 
+    const key = getStoredDirectorKey();
+    const headers: Record<string, string> = {};
+    if (key) {
+      headers['x-director-key'] = key;
+    }
+
     const res = await fetch(url.toString(), {
+      headers,
       signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return null;

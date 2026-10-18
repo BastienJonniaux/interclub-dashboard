@@ -86,6 +86,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     db: false,
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authAction, setAuthAction] = useState<'save' | 'load' | 'lock' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingServer, setIsLoadingServer] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
@@ -102,8 +103,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   // Check round lock status when selectedRound changes
   useEffect(() => {
     fetchRoundDrafts(selectedRound).then(res => {
-      if (res) {
+      if (res && !res.isRestricted) {
         setRoundLocked(res.isLocked);
+      } else {
+        setRoundLocked(false);
       }
     });
   }, [selectedRound]);
@@ -111,6 +114,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   const handleSaveToServer = async (retryWithKey?: boolean) => {
     const directorKey = getStoredDirectorKey();
     if (!directorKey && !retryWithKey) {
+      setAuthAction('save');
       setIsAuthModalOpen(true);
       return;
     }
@@ -151,6 +155,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       setIsSaving(false);
       setSyncFeedback({ type: 'error', message: resDrafts.error || 'Erreur lors de la sauvegarde.' });
       if (resDrafts.error?.includes('Clé') || resDrafts.error?.includes('refusé')) {
+        setAuthAction('save');
         setIsAuthModalOpen(true);
       }
       return;
@@ -183,6 +188,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       fetchRoundDrafts(selectedRound),
       fetchRoundAttendances(selectedRound),
     ]);
+
+    if (draftRes && draftRes.isRestricted) {
+      setIsLoadingServer(false);
+      setSyncFeedback({
+        type: 'error',
+        message: draftRes.error || `La ronde ${selectedRound} est confidentielle. Accès Directeur requis.`,
+      });
+      setAuthAction('load');
+      setIsAuthModalOpen(true);
+      return;
+    }
 
     if (!draftRes && !attRes) {
       setIsLoadingServer(false);
@@ -219,6 +235,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   const handleToggleLock = async () => {
     const directorKey = getStoredDirectorKey();
     if (!directorKey) {
+      setAuthAction('lock');
       setIsAuthModalOpen(true);
       return;
     }
@@ -238,6 +255,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
     } else {
       setSyncFeedback({ type: 'error', message: res.error || 'Erreur lors du verrouillage.' });
       if (res.error?.includes('Clé') || res.error?.includes('refusé')) {
+        setAuthAction('lock');
         setIsAuthModalOpen(true);
       }
     }
@@ -488,8 +506,24 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
       <DirectorAuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={() => handleSaveToServer(true)}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthAction(null);
+        }}
+        onSuccess={() => {
+          if (authAction === 'save') {
+            handleSaveToServer(true);
+          } else if (authAction === 'load') {
+            handleLoadFromServer();
+          } else if (authAction === 'lock') {
+            handleToggleLock();
+          } else {
+            fetchRoundDrafts(selectedRound).then((res) => {
+              if (res && !res.isRestricted) setRoundLocked(res.isLocked);
+            });
+          }
+          setAuthAction(null);
+        }}
       />
 
       {/* Server & DB Sync Bar */}
@@ -564,7 +598,10 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
           {/* Director Key Settings */}
           <button
-            onClick={() => setIsAuthModalOpen(true)}
+            onClick={() => {
+              setAuthAction(null);
+              setIsAuthModalOpen(true);
+            }}
             className="p-1 text-[#6E6A64] hover:text-[#1A1918] hover:bg-white border border-transparent hover:border-[#E2DFD8] transition-colors cursor-pointer"
             title="Configurer la clé secrète du Directeur"
           >

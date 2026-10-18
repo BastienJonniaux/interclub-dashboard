@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
+import { isDirectorAuthenticated } from '../middleware/auth';
+import { isRoundInPast } from '../utils/calendar';
 
 const DEFAULT_SEASON = '2026-2027';
 
@@ -23,6 +25,18 @@ export async function getRoundDrafts(req: Request, res: Response) {
 
     if (isNaN(roundNumber) || roundNumber < 1 || roundNumber > 11) {
       return res.status(400).json({ error: 'Numéro de ronde invalide (1 à 11 attendu).' });
+    }
+
+    const isPast = isRoundInPast(roundNumber);
+    const isAuth = isDirectorAuthenticated(req);
+
+    // Confidentiality protection: upcoming rounds are exclusively visible to the Director
+    if (!isPast && !isAuth) {
+      return res.status(403).json({
+        error: `La ronde ${roundNumber} est à venir. Les compositions préparatoires sont confidentielles et réservées au Directeur des Interclubs.`,
+        isRestricted: true,
+        isUpcoming: true,
+      });
     }
 
     const season = await getOrCreateSeason(seasonYear);
