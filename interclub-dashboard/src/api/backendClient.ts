@@ -46,7 +46,11 @@ export interface SeasonAttendanceResponse {
 const STORAGE_DIRECTOR_KEY = 'interclub_director_key';
 
 export function getServerBaseUrl(): string {
-  return (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+  const envUrl = import.meta.env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl.trim().replace(/\/+$/, '');
+  }
+  return 'http://localhost:3001';
 }
 
 export function getStoredDirectorKey(): string | null {
@@ -74,9 +78,11 @@ export async function checkServerHealth(): Promise<{
   database: boolean;
   message?: string;
 }> {
+  const baseUrl = getServerBaseUrl();
   try {
-    const res = await fetch(`${getServerBaseUrl()}/api/health`, {
-      signal: AbortSignal.timeout(3000),
+    console.info(`[Backend] Connecting to ${baseUrl}/api/health`);
+    const res = await fetch(`${baseUrl}/api/health`, {
+      signal: AbortSignal.timeout(4000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -84,6 +90,7 @@ export async function checkServerHealth(): Promise<{
     }
     return { online: false, database: false };
   } catch (err: any) {
+    console.warn(`[Backend] Health check failed for ${baseUrl}:`, err);
     return { online: false, database: false, message: err.message };
   }
 }
