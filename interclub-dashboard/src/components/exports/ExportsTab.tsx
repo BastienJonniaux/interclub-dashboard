@@ -171,29 +171,33 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#1A1918] text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#E2DFD8]">
+      <div className="bg-slate-900 text-white p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Exports & Mails — {club.name}
           </h2>
-          <p className="text-sm text-[#E2DFD8] mt-2 max-w-3xl leading-relaxed">
+          <p className="text-sm text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
             Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
           </p>
         </div>
       </div>
 
-      <div className="flex space-x-4 border-b border-[#E2DFD8] pb-4">
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit shadow-xs">
         <button
-          className={`pb-2 text-sm font-bold font-mono uppercase tracking-wider transition-colors ${
-            activeSubTab === 'pre-round' ? 'text-[#1A1918] border-b-2 border-[#1A1918]' : 'text-[#6E6A64] hover:text-[#1A1918]'
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            activeSubTab === 'pre-round'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
           onClick={() => setActiveSubTab('pre-round')}
         >
           Email de compo pré-ronde
         </button>
         <button
-          className={`pb-2 text-sm font-bold font-mono uppercase tracking-wider transition-colors ${
-            activeSubTab === 'post-round' ? 'text-[#1A1918] border-b-2 border-[#1A1918]' : 'text-[#6E6A64] hover:text-[#1A1918]'
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            activeSubTab === 'post-round'
+              ? 'bg-white text-slate-900 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
           onClick={() => setActiveSubTab('post-round')}
         >
@@ -202,20 +206,20 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
       </div>
 
       {activeSubTab === 'post-round' && (
-        <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
+        <div className="flex flex-col justify-between bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
           <div>
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-slate-100 gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 border border-[#1A1918] bg-[#F9F8F6]">
-                  <Mail className="h-5 w-5 text-[#1A1918]" />
+                <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-xs">
+                  <Mail className="h-5 w-5" />
                 </div>
-                <h3 className="font-bold font-serif text-[#1A1918] text-lg">
+                <h3 className="font-bold text-slate-900 text-lg tracking-tight">
                   Email Récapitulatif (Ronde {selectedRecapRound})
                 </h3>
               </div>
               <button
                 onClick={handleCopyEmail}
-                className="inline-flex items-center justify-center gap-2 bg-[#1E5E3A]/10 border border-[#1E5E3A]/30 px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-all duration-300 cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-700 px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
               >
                 {copiedEmail ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 <span>{copiedEmail ? 'Copié !' : 'Copier le texte'}</span>
@@ -223,19 +227,19 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
             </div>
 
             {playedRoundNumbers.length > 1 && (
-              <div className="flex items-center gap-2 mt-4 pb-2 border-b border-[#E2DFD8]">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#6E6A64]">
+              <div className="flex items-center gap-3 mt-4 pb-3 border-b border-slate-100">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
                   Ronde à récapituler :
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
                   {playedRoundNumbers.map((r) => (
                     <button
                       key={r}
                       onClick={() => setSelectedRecapRound(r)}
-                      className={`px-3 py-1 text-xs font-mono font-bold border transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer tabular-nums ${
                         selectedRecapRound === r
-                          ? 'bg-[#1A1918] text-white border-[#1A1918]'
-                          : 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8] hover:bg-[#E2DFD8]'
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                       }`}
                     >
                       Ronde {r}
@@ -245,11 +249,11 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
               </div>
             )}
 
-            <p className="mt-4 text-xs font-mono text-[#6E6A64]">
+            <p className="mt-4 text-xs font-mono text-slate-500">
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).
             </p>
 
-            <pre className="mt-4 max-h-[500px] overflow-y-auto bg-[#F9F8F6] p-5 text-[11px] leading-relaxed font-mono text-[#1A1918] border border-[#E2DFD8] whitespace-pre-wrap select-text custom-scrollbar">
+            <pre className="mt-3 max-h-[500px] overflow-y-auto bg-slate-50 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
               {emailText}
             </pre>
           </div>

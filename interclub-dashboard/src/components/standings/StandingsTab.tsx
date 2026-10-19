@@ -3,7 +3,7 @@ import { DivisionStandingTable, getDivisionBadgeStyle } from '../../domain/stand
 import { LatestTeamMatch } from '../../domain/matches';
 import { LatestMatchesSection } from './LatestMatchesSection';
 import { TeamHoverCard } from '../common/TeamHoverCard';
-import { Trophy, ChevronDown, ChevronUp, Award } from 'lucide-react';
+import { Trophy, ChevronDown, ChevronUp, Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Props {
   standings: DivisionStandingTable[];
@@ -16,9 +16,9 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
 
   if (standings.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+      <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center bg-white shadow-xs">
         <Trophy className="mx-auto h-12 w-12 text-slate-300" />
-        <h3 className="mt-3 text-base font-semibold text-slate-800">
+        <h3 className="mt-3 text-base font-bold text-slate-900 tracking-tight">
           Aucun classement disponible
         </h3>
         <p className="mt-1 text-sm text-slate-500">
@@ -38,70 +38,177 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 100); // small delay to allow DOM render
+      }, 100);
     }
+  };
+
+  const renderRankDiffBadge = (diff?: number) => {
+    if (diff === undefined) return null;
+    if (diff > 0) {
+      return (
+        <span
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 rounded-md tabular-nums"
+          title={`+${diff} place${diff > 1 ? 's' : ''} gagnée${diff > 1 ? 's' : ''}`}
+        >
+          <TrendingUp className="h-3 w-3" />
+          +{diff}
+        </span>
+      );
+    }
+    if (diff < 0) {
+      return (
+        <span
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200/80 rounded-md tabular-nums"
+          title={`${diff} place${Math.abs(diff) > 1 ? 's' : ''} perdue${Math.abs(diff) > 1 ? 's' : ''}`}
+        >
+          <TrendingDown className="h-3 w-3" />
+          {diff}
+        </span>
+      );
+    }
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-md tabular-nums"
+        title="Position inchangée"
+      >
+        <Minus className="h-2.5 w-2.5" />
+      </span>
+    );
+  };
+
+  const renderFormPills = (history: { round: number; matchOutcome: 'win' | 'draw' | 'loss'; teamScore: number; oppScore: number; opponentTeamName: string }[]) => {
+    if (!history || history.length === 0) {
+      return <span className="text-xs text-slate-400 font-mono">-</span>;
+    }
+
+    const recent = history.slice(-5);
+    return (
+      <div className="flex items-center gap-1">
+        {recent.map((m, idx) => {
+          let style = 'bg-slate-200 text-slate-700';
+          let letter = 'N';
+          if (m.matchOutcome === 'win') {
+            style = 'bg-emerald-500 text-white';
+            letter = 'V';
+          } else if (m.matchOutcome === 'draw') {
+            style = 'bg-amber-500 text-white';
+            letter = 'N';
+          } else if (m.matchOutcome === 'loss') {
+            style = 'bg-rose-500 text-white';
+            letter = 'D';
+          }
+
+          return (
+            <span
+              key={idx}
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shadow-xs cursor-default ${style}`}
+              title={`Ronde ${m.round}: ${letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'} (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
+            >
+              {letter}
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
     <div className="space-y-8">
       {/* Top Banner / Summary Cards */}
       <div>
-        <h2 className="text-3xl font-bold font-serif text-[#1A1918] tracking-tight">
-          Vue d'ensemble des Équipes — {clubName}
-        </h2>
-        <p className="text-sm text-[#6E6A64] mt-2 max-w-3xl leading-relaxed">
-          Classement en direct de chaque équipe de votre club dans sa division respective.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Vue d'ensemble des Équipes — {clubName}
+            </h2>
+            <p className="text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+              Classement en direct, forme récente et progression de chaque équipe dans sa division respective.
+            </p>
+          </div>
+        </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {standings.map((divTable) => {
             const our = divTable.ourTeam;
             const rank = our?.rank || '-';
             const totalTeams = divTable.teams.length;
             const isLeader = rank === 1;
 
+            const maxMatchPoints = (our?.played || 0) * 2;
+            const matchPoints = our?.matchPoints ?? 0;
+            const matchPointsPercent = maxMatchPoints > 0 ? (matchPoints / maxMatchPoints) * 100 : 0;
+
             return (
               <div
                 key={`${divTable.division}${divTable.index}`}
                 onClick={() => toggleExpand(`${divTable.division}${divTable.index}`)}
-                className="group cursor-pointer chess-panel p-5"
+                className="group cursor-pointer bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col justify-between"
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(divTable.division)}`}>
-                      {divTable.divisionLabel}
-                    </span>
-                    <h3 className="mt-3 text-lg font-bold font-serif text-[#1A1918] group-hover:text-[#1E5E3A] transition-colors">
-                      {our?.teamName || `Équipe ${divTable.divisionLabel}`}
-                    </h3>
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1.5 min-w-0">
+                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase rounded-md ${getDivisionBadgeStyle(divTable.division)}`}>
+                        {divTable.divisionLabel}
+                      </span>
+                      <h3 className="text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                        {our?.teamName || `Équipe ${divTable.divisionLabel}`}
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center font-mono font-bold text-base rounded-xl border ${
+                          isLeader
+                            ? 'bg-amber-50 text-amber-700 border-amber-300 shadow-xs'
+                            : 'bg-slate-50 text-slate-800 border-slate-200'
+                        }`}
+                      >
+                        {isLeader ? <Award className="h-5 w-5 text-amber-600" /> : rank}
+                      </div>
+                      {renderRankDiffBadge(our?.rankDiff)}
+                    </div>
                   </div>
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center font-mono font-bold text-base border ${
-                      isLeader
-                        ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
-                        : 'bg-[#F9F8F6] text-[#1A1918] border-[#E2DFD8]'
-                    }`}
-                  >
-                    {isLeader ? <Award className="h-5 w-5 text-[#B45309]" /> : `${rank}`}
+
+                  {/* Recent Form Pills */}
+                  <div className="mt-4 flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+                    <span className="font-medium text-slate-600">Forme récente :</span>
+                    {our ? renderFormPills(our.matchHistory) : <span className="font-mono text-slate-400">-</span>}
+                  </div>
+
+                  {/* Match Points Visual Progress Bar */}
+                  <div className="mt-3.5 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono tabular-nums">
+                      <span className="text-slate-500 font-sans">Points de match :</span>
+                      <span className="font-bold text-slate-900">
+                        {matchPoints} <span className="text-slate-400 font-normal">/ {maxMatchPoints} pts</span>
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(0, matchPointsPercent))}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-[#E2DFD8] pt-3 text-center font-mono">
-                  <div>
-                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Rang</div>
-                    <div className="text-base font-bold text-[#1A1918]">
-                      {rank} <span className="text-xs text-[#6E6A64] font-normal">/ {totalTeams}</span>
+                {/* Bottom stats row */}
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center font-mono tabular-nums">
+                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Rang</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      {rank} <span className="text-[10px] text-slate-400 font-normal">/{totalTeams}</span>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Pts Match</div>
-                    <div className="text-base font-bold text-[#1A1918]">
-                      {our?.matchPoints ?? 0}
+                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pts Match</div>
+                    <div className="text-sm font-bold text-emerald-700">
+                      {matchPoints}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] uppercase font-bold text-[#6E6A64] mb-0.5">Pts Échiq.</div>
-                    <div className="text-base font-bold text-[#1A1918]">
+                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pts Échiq.</div>
+                    <div className="text-sm font-bold text-slate-900">
                       {our?.boardPoints ?? 0}
                     </div>
                   </div>
@@ -118,10 +225,15 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
       )}
 
       {/* Detailed Division Tables Accordion */}
-      <div className="space-y-4 pt-8 border-t border-[#E2DFD8]">
-        <h3 className="text-2xl font-bold font-serif text-[#1A1918] tracking-tight">
-          Détail des Divisions
-        </h3>
+      <div className="space-y-4 pt-6 border-t border-slate-200/80">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+            Détail des Divisions
+          </h3>
+          <span className="text-xs text-slate-500">
+            Cliquez pour inspecter la grille complète
+          </span>
+        </div>
 
         {standings.map((divTable) => {
           const key = `${divTable.division}${divTable.index}`;
@@ -131,46 +243,49 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
             <div
               key={key}
               id={`details-${key}`}
-              className="chess-panel p-0 overflow-hidden"
+              className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden transition-all"
             >
               <button
                 onClick={() => toggleExpand(key)}
-                className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-[#F9F8F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1A1918]"
+                className="flex w-full items-center justify-between p-4 sm:p-5 text-left bg-white hover:bg-slate-50/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900 cursor-pointer"
               >
-                <div className="flex items-center gap-4">
-                  <span className={`px-2 py-0.5 text-xs font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(divTable.division)}`}>
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                  <span className={`px-2.5 py-0.5 text-xs font-mono font-bold tracking-wider uppercase rounded-md ${getDivisionBadgeStyle(divTable.division)}`}>
                     {divTable.divisionLabel}
                   </span>
-                  <span className="text-base font-bold text-[#1A1918]">{divTable.ourTeam?.teamName || divTable.divisionLabel}</span>
-                  <span className="text-sm text-[#6E6A64]">
+                  <span className="text-base font-bold text-slate-900">
+                    {divTable.ourTeam?.teamName || divTable.divisionLabel}
+                  </span>
+                  <span className="text-xs sm:text-sm text-slate-500">
                     ({divTable.teams.length} équipes)
                   </span>
                 </div>
                 {isExpanded ? (
-                  <ChevronUp className="h-5 w-5 text-[#1A1918]" />
+                  <ChevronUp className="h-5 w-5 text-slate-800 shrink-0" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#6E6A64]" />
+                  <ChevronDown className="h-5 w-5 text-slate-400 shrink-0" />
                 )}
               </button>
 
               {isExpanded && (
-                <div className="overflow-x-auto border-t border-[#E2DFD8] bg-white">
-                  <table className="w-full text-left text-sm text-[#1A1918]">
-                    <thead className="bg-[#F9F8F6] text-[10px] uppercase tracking-wider font-semibold text-[#6E6A64] border-b border-[#E2DFD8]">
+                <div className="overflow-x-auto border-t border-slate-200/80 bg-white">
+                  <table className="w-full text-left text-sm text-slate-900">
+                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider font-semibold text-slate-500 border-b border-slate-200/80">
                       <tr>
-                        <th className="px-4 py-2 text-center border-r border-[#E2DFD8]">Rang</th>
-                        <th className="px-4 py-2 border-r border-[#E2DFD8]">Équipe</th>
-                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Joués">J</th>
-                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Gagnés">G</th>
-                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Nuls">N</th>
-                        <th className="px-3 py-2 text-center border-r border-[#E2DFD8]" title="Perdus">P</th>
-                        <th className="px-4 py-2 text-center font-bold text-[#1A1918] border-r border-[#E2DFD8]">
+                        <th className="px-4 py-3 text-center border-r border-slate-200/60 w-24">Rang</th>
+                        <th className="px-4 py-3 border-r border-slate-200/60">Équipe</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200/60 hidden md:table-cell">Forme</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Joués">J</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Gagnés">G</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Nuls">N</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Perdus">P</th>
+                        <th className="px-4 py-3 text-center font-bold text-slate-900 border-r border-slate-200/60">
                           Pts Match
                         </th>
-                        <th className="px-4 py-2 text-center font-bold text-[#1A1918]">Pts Échiq.</th>
+                        <th className="px-4 py-3 text-center font-bold text-slate-900">Pts Échiq.</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E2DFD8]">
+                    <tbody className="divide-y divide-slate-100">
                       {divTable.teams.map((t) => {
                         const isOur = t.isOurClub;
                         return (
@@ -178,51 +293,59 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                             key={t.pairingNumber}
                             className={`transition-colors ${
                               isOur
-                                ? 'bg-[#1E5E3A]/5 font-bold'
-                                : 'hover:bg-[#F9F8F6]'
+                                ? 'bg-emerald-50/60 font-semibold'
+                                : 'hover:bg-slate-50/80'
                             }`}
                           >
-                            <td className="px-4 py-2.5 text-center border-r border-[#E2DFD8] font-mono">
-                              <span
-                                className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs border ${
-                                  t.rank === 1
-                                    ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/30'
-                                    : t.rank === 2
-                                    ? 'bg-[#F9F8F6] text-[#1A1918] border-[#E2DFD8]'
-                                    : t.rank === 3
-                                    ? 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8]'
-                                    : 'bg-transparent text-[#6E6A64] border-transparent'
-                                }`}
-                              >
-                                {t.rank}
-                              </span>
+                            <td className="px-4 py-3 text-center border-r border-slate-200/60 font-mono tabular-nums">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span
+                                  className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs rounded-md border ${
+                                    t.rank === 1
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                      : t.rank === 2
+                                      ? 'bg-slate-200/80 text-slate-800 border-slate-300'
+                                      : t.rank === 3
+                                      ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                                  }`}
+                                >
+                                  {t.rank}
+                                </span>
+                                {renderRankDiffBadge(t.rankDiff)}
+                              </div>
                             </td>
-                            <td className="px-4 py-2.5 border-r border-[#E2DFD8]">
-                              <div className="flex items-center gap-3">
+                            <td className="px-4 py-3 border-r border-slate-200/60">
+                              <div className="flex items-center gap-2.5">
                                 <TeamHoverCard team={t} divisionLabel={divTable.divisionLabel}>
                                   <span
-                                    className={`text-sm ${
-                                      isOur ? 'font-bold text-[#1E5E3A]' : 'font-medium text-[#1A1918]'
-                                    } hover:underline underline-offset-2 decoration-[#1A1918]/40 transition-colors`}
+                                    className={`text-sm cursor-pointer ${
+                                      isOur ? 'font-bold text-emerald-800' : 'font-medium text-slate-800'
+                                    } hover:underline underline-offset-2 transition-colors`}
                                   >
                                     {t.teamName}
                                   </span>
                                 </TeamHoverCard>
                                 {isOur && (
-                                  <span className="bg-[#1E5E3A] px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
+                                  <span className="bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider rounded-md shadow-xs">
                                     Notre Équipe
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 text-center border-r border-[#E2DFD8] text-[#6E6A64] font-mono">{t.played}</td>
-                            <td className="px-3 py-2.5 text-center font-bold text-[#1E5E3A] border-r border-[#E2DFD8] font-mono">{t.won}</td>
-                            <td className="px-3 py-2.5 text-center border-r border-[#E2DFD8] text-[#6E6A64] font-mono">{t.drawn}</td>
-                            <td className="px-3 py-2.5 text-center font-bold text-[#B91C1C] border-r border-[#E2DFD8] font-mono">{t.lost}</td>
-                            <td className="px-4 py-2.5 text-center font-bold text-[#1A1918] border-r border-[#E2DFD8] font-mono">
+                            <td className="px-3 py-3 text-center border-r border-slate-200/60 hidden md:table-cell">
+                              <div className="flex justify-center">
+                                {renderFormPills(t.matchHistory)}
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.played}</td>
+                            <td className="px-3 py-3 text-center font-bold text-emerald-600 border-r border-slate-200/60 font-mono tabular-nums">{t.won}</td>
+                            <td className="px-3 py-3 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.drawn}</td>
+                            <td className="px-3 py-3 text-center font-bold text-rose-600 border-r border-slate-200/60 font-mono tabular-nums">{t.lost}</td>
+                            <td className="px-4 py-3 text-center font-bold text-slate-900 border-r border-slate-200/60 font-mono tabular-nums">
                               {t.matchPoints}
                             </td>
-                            <td className="px-4 py-2.5 text-center font-bold text-[#1A1918] font-mono">
+                            <td className="px-4 py-3 text-center font-bold text-slate-900 font-mono tabular-nums">
                               {t.boardPoints}
                             </td>
                           </tr>
@@ -239,4 +362,3 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
     </div>
   );
 };
-

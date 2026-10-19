@@ -43,6 +43,8 @@ import {
   Unlock,
   KeyRound,
   RefreshCw,
+  Plus,
+  Copy,
 } from 'lucide-react';
 
 interface Props {
@@ -453,24 +455,24 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#1A1918] text-white p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-[#E2DFD8]">
+      <div className="bg-slate-900 text-white p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Simulateur de Composition & Règles FRBE
           </h2>
-          <p className="text-sm text-[#E2DFD8] mt-2 max-w-3xl leading-relaxed">
-            Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner.
+          <p className="text-sm text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
+            Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner. Validation en direct des règles FRBE et force théorique.
           </p>
         </div>
       </div>
 
-      {/* Round Selector Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-[#E2DFD8]">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#6E6A64]">
-            Ronde active :
+      {/* Round Stepper Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
+            Ronde :
           </span>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl overflow-x-auto no-scrollbar">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((r) => {
               const isSelected = selectedRound === r;
               const hasDraft = Object.keys(draftCompositionsByRound[r] || {}).length > 0;
@@ -478,15 +480,18 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 <button
                   key={r}
                   onClick={() => setSelectedRound(r)}
-                  className={`px-3 py-1 text-xs font-mono font-bold border transition-all ${
+                  className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer inline-flex items-center gap-1.5 tabular-nums ${
                     isSelected
-                      ? 'bg-[#1A1918] text-white border-[#1A1918] shadow-sm'
+                      ? 'bg-slate-900 text-white shadow-xs'
                       : hasDraft
-                      ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30 hover:bg-[#1E5E3A]/20'
-                      : 'bg-[#F9F8F6] text-[#6E6A64] border-[#E2DFD8] hover:bg-[#E2DFD8]'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                   }`}
                 >
-                  R{r} {hasDraft && !isSelected && '•'}
+                  <span>R{r}</span>
+                  {hasDraft && !isSelected && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -496,10 +501,11 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         {selectedRound > 1 && (
           <button
             onClick={() => copyRoundDraft(selectedRound - 1)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#1A1918] bg-[#F9F8F6] border border-[#E2DFD8] hover:bg-[#1A1918] hover:text-white transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg shadow-xs transition-all shrink-0 cursor-pointer"
             title={`Copier la composition de la Ronde ${selectedRound - 1} vers la Ronde ${selectedRound}`}
           >
-            📋 Copier la Ronde {selectedRound - 1}
+            <Copy className="h-3.5 w-3.5 text-slate-500" />
+            <span>Copier R{selectedRound - 1}</span>
           </button>
         )}
       </div>
@@ -527,33 +533,33 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       />
 
       {/* Server & DB Sync Bar */}
-      <div className="bg-[#F9F8F6] border border-[#E2DFD8] p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="flex items-center gap-1.5 font-mono text-[#6E6A64]">
-            <Cloud className="h-4 w-4" />
+          <span className="flex items-center gap-1.5 font-mono text-slate-500">
+            <Cloud className="h-4 w-4 text-slate-600" />
             Base de données :
           </span>
           {serverState.checked && serverState.online && serverState.db ? (
-            <span className="inline-flex items-center gap-1 bg-[#1E5E3A]/10 text-[#1E5E3A] px-2 py-0.5 border border-[#1E5E3A]/20 font-bold font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#1E5E3A] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200/80 font-bold font-mono shadow-xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
               Connectée (PostgreSQL)
             </span>
           ) : serverState.checked ? (
-            <span className="inline-flex items-center gap-1 bg-[#6E6A64]/10 text-[#6E6A64] px-2 py-0.5 border border-[#E2DFD8] font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#6E6A64]" />
+            <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
               Local (Hors-ligne)
             </span>
           ) : (
-            <span className="text-[#6E6A64] font-mono">Vérification...</span>
+            <span className="text-slate-500 font-mono">Vérification...</span>
           )}
 
           {roundLocked ? (
-            <span className="inline-flex items-center gap-1 bg-[#1A1918] text-white px-2 py-0.5 font-bold uppercase font-mono tracking-wider">
-              <Lock className="h-3 w-3" /> Ronde officielle verrouillée
+            <span className="inline-flex items-center gap-1.5 bg-slate-900 text-white px-2.5 py-1 rounded-lg font-bold uppercase font-mono tracking-wider shadow-xs">
+              <Lock className="h-3 w-3 text-amber-400" /> Ronde verrouillée
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 bg-white text-[#6E6A64] px-2 py-0.5 border border-[#E2DFD8] font-mono">
-              <Unlock className="h-3 w-3 text-[#B45309]" /> Brouillon modifiable
+            <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 font-mono shadow-xs">
+              <Unlock className="h-3 w-3 text-amber-600" /> Brouillon modifiable
             </span>
           )}
         </div>
@@ -563,37 +569,37 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           <button
             onClick={handleLoadFromServer}
             disabled={isLoadingServer}
-            className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-2.5 py-1 text-xs font-mono font-bold text-[#1A1918] hover:bg-[#F0EFF0] transition-colors disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 text-xs font-mono font-bold text-slate-800 hover:bg-slate-100 rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
             title="Télécharger la composition officielle et les disponibilités de cette ronde depuis la base de données"
           >
-            <CloudDownload className={`h-3.5 w-3.5 ${isLoadingServer ? 'animate-bounce' : ''}`} />
-            {isLoadingServer ? 'Chargement...' : 'Charger du serveur'}
+            <CloudDownload className={`h-3.5 w-3.5 text-slate-600 ${isLoadingServer ? 'animate-bounce' : ''}`} />
+            <span>{isLoadingServer ? 'Chargement...' : 'Charger du serveur'}</span>
           </button>
 
           {/* Save to server (Director) */}
           <button
             onClick={() => handleSaveToServer(false)}
             disabled={isSaving || roundLocked}
-            className="inline-flex items-center gap-1.5 bg-[#1E5E3A] text-white border border-[#16482C] px-3 py-1 text-xs font-mono font-bold hover:bg-[#16482C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-emerald-600 text-white border border-emerald-700 px-3.5 py-1.5 text-xs font-mono font-bold hover:bg-emerald-700 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title={roundLocked ? 'Cette ronde est verrouillée. Déverrouillez-la pour modifier.' : 'Enregistrer la composition actuelle sur la base de données'}
           >
             <CloudUpload className={`h-3.5 w-3.5 ${isSaving ? 'animate-spin' : ''}`} />
-            {isSaving ? 'Sauvegarde...' : 'Sauvegarder (Serveur)'}
+            <span>{isSaving ? 'Sauvegarde...' : 'Sauvegarder (Serveur)'}</span>
           </button>
 
           {/* Toggle lock */}
           <button
             onClick={handleToggleLock}
             disabled={isLocking}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold border transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-lg border shadow-xs transition-colors cursor-pointer ${
               roundLocked
-                ? 'bg-white text-[#B91C1C] border-[#B91C1C]/30 hover:bg-[#B91C1C]/10'
-                : 'bg-white text-[#1A1918] border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                ? 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50'
+                : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
             }`}
             title={roundLocked ? 'Déverrouiller pour permettre de nouvelles modifications' : 'Verrouiller pour figer la composition officielle'}
           >
-            {roundLocked ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-            {roundLocked ? 'Déverrouiller' : 'Verrouiller'}
+            {roundLocked ? <Unlock className="h-3.5 w-3.5 text-rose-600" /> : <Lock className="h-3.5 w-3.5 text-slate-600" />}
+            <span>{roundLocked ? 'Déverrouiller' : 'Verrouiller'}</span>
           </button>
 
           {/* Director Key Settings */}
@@ -602,7 +608,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               setAuthAction(null);
               setIsAuthModalOpen(true);
             }}
-            className="p-1 text-[#6E6A64] hover:text-[#1A1918] hover:bg-white border border-transparent hover:border-[#E2DFD8] transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Configurer la clé secrète du Directeur"
           >
             <KeyRound className="h-4 w-4" />
@@ -613,12 +619,12 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       {/* Feedback Banner */}
       {syncFeedback && (
         <div
-          className={`p-3 text-xs border flex items-center justify-between animate-in fade-in duration-150 ${
+          className={`p-3 text-xs rounded-xl border flex items-center justify-between shadow-xs animate-in fade-in duration-150 ${
             syncFeedback.type === 'success'
-              ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/30'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : syncFeedback.type === 'error'
-              ? 'bg-[#B91C1C]/10 text-[#B91C1C] border-[#B91C1C]/30'
-              : 'bg-blue-50 text-blue-800 border-blue-200'
+              ? 'bg-rose-50 text-rose-800 border-rose-200'
+              : 'bg-sky-50 text-sky-800 border-sky-200'
           }`}
         >
           <span>{syncFeedback.message}</span>
@@ -631,51 +637,57 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Player Deck (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="chess-panel p-4 h-full flex flex-col bg-white border border-[#E2DFD8]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-2 shrink-0">
+          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-4 h-full flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-2 shrink-0">
               <div className="flex flex-col">
-                <h3 className="font-bold text-[#1A1918] text-sm flex items-center gap-2 font-serif">
-                  <UserPlus className="h-4 w-4 text-[#1E5E3A]" />
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-emerald-600" />
                   Deck des joueurs ({deckPlayers.length})
                 </h3>
-                <div className="text-[10px] text-[#6E6A64] flex gap-2 mt-0.5 ml-6">
-                  <span className="flex items-center gap-1" title="Présents"><Check className="h-3 w-3 text-[#1E5E3A]" strokeWidth={3} /> {deckCounts.present}</span>
-                  <span className="flex items-center gap-1" title="À confirmer"><HelpCircle className="h-3 w-3 text-[#B45309]" strokeWidth={3} /> {deckCounts.unknown}</span>
-                  <span className="flex items-center gap-1" title="Absents"><X className="h-3 w-3 text-[#B91C1C]" strokeWidth={3} /> {deckCounts.absent}</span>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tabular-nums" title="Présents">
+                    <Check className="h-3 w-3" strokeWidth={3} /> {deckCounts.present}
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/80 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tabular-nums" title="À confirmer">
+                    <HelpCircle className="h-3 w-3" strokeWidth={3} /> {deckCounts.unknown}
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200/80 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tabular-nums" title="Absents">
+                    <X className="h-3 w-3" strokeWidth={3} /> {deckCounts.absent}
+                  </span>
                 </div>
               </div>
               
               <div className="flex flex-col xl:flex-row xl:items-center gap-2">
                 {/* Bulk availability actions */}
-                <div className="flex items-center border border-[#E2DFD8] bg-white divide-x divide-[#E2DFD8] mr-1">
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 divide-x divide-slate-200 shadow-xs">
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'available')}
-                    className="flex items-center justify-center p-2 text-[#1E5E3A] hover:bg-[#1E5E3A]/10 transition-colors"
+                    className="flex items-center justify-center p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-l-md transition-colors cursor-pointer"
                     title="Mettre tous les joueurs (non ignorés) présents"
                   >
-                    <Check className="h-3 w-3 md:h-5 md:w-5" strokeWidth={3} />
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </button>
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'tentative')}
-                    className="flex items-center justify-center p-2 text-[#B45309] hover:bg-[#B45309]/10 transition-colors"
+                    className="flex items-center justify-center p-1.5 text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
                     title="Mettre tous les joueurs (non ignorés) à confirmer"
                   >
-                    <HelpCircle className="h-3 w-3  md:h-5 md:w-5" strokeWidth={3} />
+                    <HelpCircle className="h-3.5 w-3.5" strokeWidth={3} />
                   </button>
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'unavailable')}
-                    className="flex items-center justify-center p-2 text-[#B91C1C] hover:bg-[#B91C1C]/10 transition-colors"
+                    className="flex items-center justify-center p-1.5 text-rose-700 hover:bg-rose-50 rounded-r-md transition-colors cursor-pointer"
                     title="Mettre tous les joueurs (non ignorés) absents"
                   >
-                    <X className="h-3 w-3 md:h-5 md:w-5" strokeWidth={3} />
+                    <X className="h-3.5 w-3.5" strokeWidth={3} />
                   </button>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowIgnored(!showIgnored)}
-                    className={`text-[10px] uppercase font-bold px-2 py-1.5 rounded-none transition-colors border ${
-                      showIgnored ? 'bg-[#1A1918] text-white border-[#1A1918]' : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                    className={`text-xs font-mono font-bold p-1.5 rounded-lg transition-colors border shadow-xs cursor-pointer ${
+                      showIgnored ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                     title="Afficher/Masquer les joueurs ignorés"
                   >
@@ -683,16 +695,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   </button>
                   <button
                     onClick={() => setIsSettingsModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold bg-white border border-[#E2DFD8] px-2 py-1.5 rounded-none text-[#1A1918] hover:bg-[#F9F8F6] transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono font-bold bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
                     title="Gérer les joueurs (Saison)"
                   >
-                    <Settings className="h-4 w-4" /> Config
+                    <Settings className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Config</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div id="deck-container" className="mt-4 flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar relative bg-[#F9F8F6] p-2" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
+            <div id="deck-container" className="mt-3 flex-1 overflow-y-auto space-y-2 pr-1.5 custom-scrollbar relative bg-slate-50/70 border border-slate-100 rounded-xl p-2.5" style={{ maxHeight: 'calc(100vh - 250px)', minHeight: '400px' }}>
               {deckPlayers.map((p) => {
                 const status = availability[p.idnumber] || 'tentative';
                 const isSelected = selectedPlayerId === p.idnumber;
@@ -735,95 +748,120 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         setSelectedPlayerId(isSelected ? null : p.idnumber);
                       }
                     }}
-                    className={`cursor-pointer flex flex-col rounded-none border p-3 transition-all duration-200 ${
+                    className={`cursor-pointer flex flex-col rounded-xl border p-2.5 transition-all duration-150 ${
                       isSelected
-                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-2 ring-[#1E5E3A]'
+                        ? 'bg-emerald-50/60 border-emerald-500 ring-2 ring-emerald-500 shadow-xs'
                         : isIgnored
-                        ? 'bg-[#F9F8F6] border-[#E2DFD8] opacity-50 grayscale hover:opacity-80'
+                        ? 'bg-slate-100/70 border-slate-200 opacity-50 grayscale hover:opacity-80'
                         : isAbsent
-                        ? 'bg-[#B91C1C]/10 border-l-8 border-[#B91C1C] opacity-75 hover:opacity-100'
+                        ? 'bg-rose-50/30 border-slate-200 opacity-70 hover:opacity-100'
                         : isAssignedHere
-                        ? 'bg-[#1A1918]/10 border-l-8 border-[#1A1918] opacity-75 hover:opacity-100'
+                        ? 'bg-emerald-50/40 border-emerald-200'
                         : assignmentStr
-                        ? 'bg-white border-[#E2DFD8] opacity-70 hover:opacity-100'
+                        ? 'bg-white border-slate-200 opacity-70 hover:opacity-100'
                         : isBackup
-                        ? 'bg-[#B45309]/10 border-l-8 border-[#B45309] opacity-90 hover:opacity-100'
+                        ? 'bg-amber-50/30 border-amber-200'
                         : status === 'available'
-                        ? 'bg-white border-l-8 border-[#1E5E3A] shadow-sm hover:shadow-md hover:bg-[#F9F8F6]'
-                        : 'bg-white border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                        ? 'bg-white border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm'
+                        : 'bg-white border-slate-200/80 hover:bg-slate-50'
                     } ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'opacity-50 grayscale' : ''}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <PlayerHoverCard playerName={`${p.last_name} ${p.first_name}`} expectedElo={p.assignedrating}>
-                          <div className={`font-bold font-serif ${isSelected ? 'text-[#1E5E3A]' : isIgnored ? 'text-[#6E6A64] line-through' : isAbsent ? 'text-[#B91C1C]/70' : 'text-[#1A1918]'}`}>
-                            {p.last_name} {p.first_name}
-                          </div>
-                        </PlayerHoverCard>
-                        <div className="text-[11px] text-[#6E6A64] mt-1 flex flex-wrap items-center gap-1.5">
-                          <span><strong className={`font-mono ${isIgnored ? '' : 'text-[#1A1918]'}`}>{p.assignedrating || 'NC'}</strong> Elo</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {/* Luminous availability dot */}
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full shrink-0 shadow-xs ${
+                              status === 'available'
+                                ? 'bg-emerald-500 ring-2 ring-emerald-500/20'
+                                : status === 'tentative'
+                                ? 'bg-amber-400 ring-2 ring-amber-400/20'
+                                : 'bg-rose-500 ring-2 ring-rose-500/20'
+                            }`}
+                            title={status === 'available' ? 'Présent' : status === 'tentative' ? 'À confirmer' : 'Absent'}
+                          />
+
+                          <PlayerHoverCard playerName={`${p.last_name} ${p.first_name}`} expectedElo={p.assignedrating}>
+                            <div className={`font-semibold text-sm truncate ${
+                              isSelected
+                                ? 'text-emerald-800'
+                                : isIgnored
+                                ? 'text-slate-400 line-through'
+                                : isAbsent
+                                ? 'text-rose-700/80'
+                                : 'text-slate-900'
+                            }`}>
+                              {p.last_name} {p.first_name}
+                            </div>
+                          </PlayerHoverCard>
+                        </div>
+
+                        <div className="text-[11px] text-slate-500 mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <span className="font-mono tabular-nums font-bold text-xs bg-slate-100 text-slate-800 border border-slate-200/80 px-1.5 py-0.5 rounded-md">
+                            {p.assignedrating || 'NC'}
+                          </span>
                           {p.titular && (
-                             <span className="bg-[#1A1918] text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase">
+                            <span className="bg-slate-900 text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded-md shadow-xs">
                               Tit. {p.titular}
                             </span>
                           )}
                           {isBackup && (
-                            <span className="bg-white border border-[#E2DFD8] px-1.5 py-0.5 text-[9px] text-[#1A1918] font-bold uppercase">
+                            <span className="bg-white border border-slate-200 px-1.5 py-0.5 text-[9px] text-slate-700 font-bold uppercase rounded-md shadow-xs">
                               Réserve
                             </span>
                           )}
                           {isAbsent && !isIgnored && (
-                            <span className="bg-[#B91C1C]/10 text-[#B91C1C] border border-[#B91C1C]/20 px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                              Absent Ronde
+                            <span className="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md">
+                              Absent
                             </span>
                           )}
                           {!isEligible && !isIgnored && !isAbsent && (
-                            <span className="text-[9px] font-bold text-[#B91C1C] uppercase">
+                            <span className="text-[9px] font-bold text-rose-600 uppercase bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200">
                               Inéligible
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'available'); }}
-                          className={`rounded-none p-1.5 transition-all border ${
+                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
                             status === 'available'
-                              ? 'bg-[#1E5E3A]/20 text-[#1E5E3A] border-[#1E5E3A]'
-                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shadow-xs'
+                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
                           }`}
                           title="Présent pour cette ronde"
                         >
-                          <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'tentative'); }}
-                          className={`rounded-none p-1.5 transition-all border ${
+                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
                             status === 'tentative'
-                              ? 'bg-[#B45309]/20 text-[#B45309] border-[#B45309]'
-                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold shadow-xs'
+                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
                           }`}
                           title="À confirmer"
                         >
-                          <HelpCircle className="h-3.5 w-3.5" strokeWidth={2} />
+                          <HelpCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'unavailable'); }}
-                          className={`rounded-none p-1.5 transition-all border ${
+                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
                             status === 'unavailable'
-                              ? 'bg-[#B91C1C]/20 text-[#B91C1C] border-[#B91C1C]'
-                              : 'bg-white text-[#6E6A64] border-transparent hover:border-[#E2DFD8] hover:bg-[#F9F8F6]'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300 font-bold shadow-xs'
+                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
                           }`}
                           title="Absent pour cette ronde"
                         >
-                          <X className="h-3.5 w-3.5" strokeWidth={2} />
+                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                         </button>
                       </div>
                     </div>
 
                     {assignmentStr && !isIgnored && (
-                      <div className={`mt-2 text-[10px] font-bold font-mono uppercase tracking-wider ${isAssignedHere ? 'text-[#1E5E3A]' : 'text-[#B45309]'}`}>
+                      <div className={`mt-2 text-[10px] font-bold font-mono uppercase tracking-wider ${isAssignedHere ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {isAssignedHere ? 'Assigné à cette équipe' : `Déjà placé : ${assignmentStr}`}
                       </div>
                     )}
@@ -836,15 +874,15 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
         {/* Right Column: Teams Builder (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Team Tabs (Flex Wrap) */}
-          <div className="bg-white border border-[#E2DFD8] p-3 flex flex-wrap items-center gap-2">
+          {/* Team Tabs (Segmented Control) */}
+          <div className="bg-slate-100/80 border border-slate-200/80 p-1.5 rounded-2xl flex flex-wrap items-center gap-1.5 shadow-xs">
             <button
               type="button"
               onClick={() => { setSelectedTeamIndex(-1); }}
-              className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
+              className={`px-3.5 py-1.5 text-xs font-bold transition-all rounded-xl cursor-pointer ${
                 selectedTeamIndex === -1
-                  ? 'bg-[#1A1918] text-white border-[#1A1918]'
-                  : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               Aperçu Global
@@ -854,38 +892,38 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 key={t.name}
                 type="button"
                 onClick={() => { setSelectedTeamIndex(idx); }}
-                className={`px-4 py-2 text-sm font-bold transition-all duration-300 border ${
+                className={`px-3.5 py-1.5 text-xs font-bold transition-all rounded-xl flex items-center gap-2 cursor-pointer ${
                   selectedTeamIndex === idx
-                    ? 'bg-[#1A1918] text-white border-[#1A1918]'
-                    : 'bg-white text-[#6E6A64] border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
                 }`}
               >
-                Équipe {idx + 1}
-                <span className={`ml-2 text-[10px] font-mono ${selectedTeamIndex === idx ? 'text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
+                <span>Équipe {idx + 1}</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                  selectedTeamIndex === idx ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-600'
+                }`}>
                   Div {t.division}{t.index}
                 </span>
               </button>
             ))}
           </div>
 
-
-
           {selectedTeamIndex === -1 ? (
-            <div className="chess-panel p-5 bg-white border border-[#E2DFD8] space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DFD8] pb-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h3 className="font-bold text-[#1A1918] text-lg font-serif">Aperçu Global des Équipes</h3>
-                  <p className="text-sm text-[#6E6A64]">Vue d'ensemble de toutes les compositions.</p>
+                  <h3 className="font-bold text-slate-900 text-lg tracking-tight">Aperçu Global des Équipes</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Vue d'ensemble de toutes les compositions du club.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={undoDraftChange}
                     disabled={!canUndo}
-                    className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#6E6A64] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     title="Annuler la dernière action (Ctrl+Z)"
                   >
                     <Undo2 className="h-3.5 w-3.5" />
-                    Annuler
+                    <span>Annuler</span>
                   </button>
                   <button
                     onClick={() => {
@@ -902,41 +940,41 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                       }));
                       autoFillAllTeams(teamsSpec, eligiblePlayers);
                     }}
-                    className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors"
+                    className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-200 rounded-lg shadow-xs transition-colors cursor-pointer"
                   >
                     <Wand2 className="h-3.5 w-3.5" />
-                    Auto-fill Tout
+                    <span>Auto-fill Tout</span>
                   </button>
                   <button
                     onClick={() => clearDraft()}
-                    className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors"
+                    className="inline-flex items-center gap-1.5 bg-white border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-lg shadow-xs transition-colors cursor-pointer"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
-                    Vider Tout
+                    <span>Vider Tout</span>
                   </button>
                 </div>
               </div>
 
               {/* Cross-team validation banner for Global View */}
               {crossTeamViolations.length > 0 && (
-                <div className="bg-[#B91C1C]/5 border border-[#B91C1C] p-4">
-                  <div className="flex items-center gap-2 font-bold font-serif text-[#B91C1C] mb-2">
-                    <AlertOctagon className="h-5 w-5" /> Invalide (Moyennes Inter-équipes)
+                <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 shadow-xs">
+                  <div className="flex items-center gap-2 font-bold text-rose-800 text-sm mb-2">
+                    <AlertOctagon className="h-5 w-5 text-rose-600" /> Non conforme (Moyennes Inter-équipes)
                   </div>
-                  <ul className="text-sm space-y-1 text-[#B91C1C]">
-                    {crossTeamViolations.map((v, i) => <li key={i}>â€¢ {v.message}</li>)}
+                  <ul className="text-xs space-y-1 text-rose-700">
+                    {crossTeamViolations.map((v, i) => <li key={i}>• {v.message}</li>)}
                   </ul>
                 </div>
               )}
 
               {selectedPlayerId !== null && (
-                <div className="bg-[#1E5E3A]/10 border border-[#1E5E3A] p-2 flex items-center justify-between">
-                  <div className="text-xs font-bold text-[#1E5E3A]">
-                    Mode sélection actif : allez dans une équipe pour échanger ou assigner le joueur.
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                  <div className="text-xs font-bold text-emerald-800">
+                    Mode sélection actif : cliquez sur une équipe pour échanger ou assigner le joueur.
                   </div>
                   <button 
                     onClick={() => setSelectedPlayerId(null)}
-                    className="bg-white border border-[#1E5E3A] px-2 py-1 text-[10px] uppercase font-bold text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-colors"
+                    className="bg-white border border-emerald-300 px-2.5 py-1 text-[10px] uppercase font-bold text-emerald-800 hover:bg-emerald-600 hover:text-white rounded-lg shadow-xs transition-colors cursor-pointer"
                   >
                     Annuler
                   </button>
@@ -963,21 +1001,29 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                     : null;
 
                   return (
-                    <div key={tNum} className="border border-[#E2DFD8] p-3 hover:bg-[#F9F8F6] transition-colors cursor-pointer" onClick={() => setSelectedTeamIndex(idx)}>
+                    <div
+                      key={tNum}
+                      className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer"
+                      onClick={() => setSelectedTeamIndex(idx)}
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <div className="font-bold text-[#1A1918] font-serif">Équipe {tNum} <span className="text-xs text-[#6E6A64] font-mono font-normal">Div {t.division}</span></div>
-                        <div className="text-xs font-mono font-bold">{assignedPlayers.length}/{bCount} Joueurs</div>
+                        <div className="font-bold text-slate-900 text-sm">
+                          Équipe {tNum} <span className="text-xs text-slate-500 font-mono font-normal">Div {t.division}{t.index}</span>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md tabular-nums">
+                          {assignedPlayers.length}/{bCount} Joueurs
+                        </div>
                       </div>
-                      <div className="text-[10px] text-[#6E6A64] mb-2">
-                        Moyenne: <span className="font-bold text-[#1A1918]">{avgElo || 'NC'}</span>
+                      <div className="text-xs text-slate-500 mb-2.5 font-mono tabular-nums">
+                        Moyenne: <span className="font-bold text-slate-900">{avgElo || 'NC'} Elo</span>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {assignedPlayers.map(p => (
-                          <span key={p.idnumber} className="text-[10px] bg-white border border-[#E2DFD8] px-1.5 py-0.5 truncate max-w-[100px]">
+                          <span key={p.idnumber} className="text-[10px] bg-slate-100 border border-slate-200/80 text-slate-800 px-2 py-0.5 rounded-md truncate max-w-[120px] font-medium">
                             {p.last_name}
                           </span>
                         ))}
-                        {assignedPlayers.length === 0 && <span className="text-[10px] text-[#6E6A64] italic">Vide</span>}
+                        {assignedPlayers.length === 0 && <span className="text-[11px] text-slate-400 italic">Aucun joueur assigné</span>}
                       </div>
                     </div>
                   );
@@ -988,191 +1034,231 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
             <>
               {/* Validation & Scouting Banner */}
               <div
-            className={`border p-5 transition-colors ${
-              !validation.isValid
-                ? 'bg-[#B91C1C]/5 border-[#B91C1C]'
-                : validation.hasWarnings
-                ? 'bg-[#B45309]/5 border-[#B45309]'
-                : 'bg-[#1E5E3A]/5 border-[#1E5E3A]'
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className={`flex items-center gap-3 font-bold font-serif text-lg ${
-                  !validation.isValid ? 'text-[#B91C1C]' : validation.hasWarnings ? 'text-[#B45309]' : 'text-[#1E5E3A]'
-                }`}>
-                  {!validation.isValid ? (
-                    <><AlertOctagon className="h-6 w-6" /><span>Non conforme (Règles FRBE)</span></>
-                  ) : validation.hasWarnings ? (
-                    <><AlertTriangle className="h-6 w-6" /><span>Avertissements FRBE</span></>
-                  ) : (
-                    <><CheckCircle className="h-6 w-6" /><span>Composition valide</span></>
-                  )}
-                </div>
-                
-                {/* List of violations / warnings */}
-                {validation.violations.length > 0 && (
-                  <div className="mt-4 space-y-2 text-xs">
-                    {validation.violations.map((v, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-2 font-medium ${
-                          v.type === 'error' ? 'text-[#B91C1C]' : 'text-[#B45309]'
-                        }`}
-                      >
-                        <span className="font-bold mt-0.5">•</span>
-                        <span>{v.message}</span>
+                className={`border rounded-2xl p-4 sm:p-5 shadow-xs transition-colors ${
+                  !validation.isValid
+                    ? 'bg-rose-50/80 border-rose-200'
+                    : validation.hasWarnings
+                    ? 'bg-amber-50/80 border-amber-200'
+                    : 'bg-emerald-50/80 border-emerald-200'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className={`flex items-center gap-2.5 font-bold text-base sm:text-lg tracking-tight ${
+                      !validation.isValid ? 'text-rose-800' : validation.hasWarnings ? 'text-amber-800' : 'text-emerald-800'
+                    }`}>
+                      {!validation.isValid ? (
+                        <><AlertOctagon className="h-5 w-5 text-rose-600 shrink-0" /><span>Non conforme (Règles FRBE)</span></>
+                      ) : validation.hasWarnings ? (
+                        <><AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" /><span>Avertissements FRBE</span></>
+                      ) : (
+                        <><CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" /><span>Composition conforme FRBE</span></>
+                      )}
+                    </div>
+                    
+                    {/* List of violations / warnings */}
+                    {validation.violations.length > 0 && (
+                      <div className="mt-3 space-y-1.5 text-xs">
+                        {validation.violations.map((v, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-start gap-2 font-medium ${
+                              v.type === 'error' ? 'text-rose-700' : 'text-amber-700'
+                            }`}
+                          >
+                            <span className="font-bold mt-0.5">•</span>
+                            <span>{v.message}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+
+                  {/* Matchup Stats */}
+                  <div className="flex items-center gap-4 bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs shrink-0">
+                    <div className="text-center font-mono tabular-nums">
+                      <div className="text-[10px] uppercase font-bold text-slate-500 font-sans tracking-wider">Moyenne {clubName}</div>
+                      <div className="text-lg sm:text-xl font-bold text-slate-900">{validation.averageElo || 'NC'}</div>
+                    </div>
+                    {teamScout && (
+                      <>
+                        <Swords className="h-5 w-5 text-slate-300" />
+                        <div className="text-center font-mono tabular-nums">
+                          <div className="text-[10px] uppercase font-bold text-slate-500 font-sans tracking-wider truncate max-w-[110px]">{teamScout.opponentTeamName}</div>
+                          <div className="text-lg sm:text-xl font-bold text-slate-700">{teamScout.opponentAverageElo || 'NC'}</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Matchup Stats */}
-              <div className="flex items-center gap-4 bg-white border border-[#E2DFD8] rounded-none p-3 shrink-0">
-                <div className="text-center">
-                  <div className="text-[10px] uppercase font-bold text-[#6E6A64]">Moyenne {clubName}</div>
-                  <div className="text-xl font-bold font-mono text-[#1A1918]">{validation.averageElo || 'NC'}</div>
+              {/* Selection banner */}
+              {selectedPlayerId !== null && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                  <div className="text-xs font-bold text-emerald-800">
+                    Mode sélection : cliquez sur un autre joueur (ou un échiquier vide) pour échanger ou assigner.
+                  </div>
+                  <button 
+                    onClick={() => setSelectedPlayerId(null)}
+                    className="bg-white border border-emerald-300 px-2.5 py-1 text-[10px] uppercase font-bold text-emerald-800 hover:bg-emerald-600 hover:text-white rounded-lg shadow-xs transition-colors cursor-pointer"
+                  >
+                    Annuler
+                  </button>
                 </div>
-                {teamScout && (
+              )}
+
+              {/* Boards Assignment Grid */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm tracking-tight">
+                      Échiquiers ({validation.assignedCount} / {validation.totalBoards})
+                    </h3>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={undoDraftChange}
+                      disabled={!canUndo}
+                      className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      title="Annuler la dernière action (Ctrl+Z)"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      <span>Annuler</span>
+                    </button>
+                    <button
+                      onClick={handleAutoFill}
+                      disabled={isByeRound}
+                      className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-800 hover:bg-slate-200 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      title="Remplit automatiquement les places vides de cette équipe avec les joueurs du deck (triés par Elo)"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      <span>Auto-fill</span>
+                    </button>
+                    <button
+                      onClick={() => clearDraft(teamNumber)}
+                      disabled={isByeRound}
+                      className="inline-flex items-center gap-1.5 bg-white border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Vider l'équipe</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isByeRound ? (
+                  <div className="mt-6 p-8 flex flex-col items-center justify-center text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
+                    <div className="text-3xl font-bold font-mono text-slate-400 mb-2">BYE</div>
+                    <div className="text-sm text-slate-500 font-medium max-w-md">
+                      L'équipe est exempte (BYE) pour cette ronde. Aucun joueur ne doit être aligné.
+                    </div>
+                  </div>
+                ) : (
                   <>
-                    <Swords className="h-5 w-5 text-[#E2DFD8]" />
-                    <div className="text-center">
-                      <div className="text-[10px] uppercase font-bold text-[#6E6A64]">{teamScout.opponentTeamName}</div>
-                      <div className="text-xl font-bold font-mono text-[#1A1918]">{teamScout.opponentAverageElo || 'NC'}</div>
+                    {/* Segmented completion gauge (crans) */}
+                    <div className="mt-4 mb-4 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-700">Taux de complétion</span>
+                        <span className="font-mono tabular-nums font-bold text-slate-900">
+                          {validation.assignedCount} / {validation.totalBoards} échiquiers ({Math.round((validation.assignedCount / Math.max(1, validation.totalBoards)) * 100)}%)
+                        </span>
+                      </div>
+                      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${validation.totalBoards}, minmax(0, 1fr))` }}>
+                        {Array.from({ length: validation.totalBoards }).map((_, idx) => {
+                          const isFilled = idx < validation.assignedCount;
+                          return (
+                            <div
+                              key={idx}
+                              className={`h-2.5 rounded-sm transition-all duration-300 ${
+                                isFilled ? 'bg-emerald-500 shadow-xs' : 'bg-slate-200'
+                              }`}
+                              title={`Échiquier ${idx + 1} : ${isFilled ? 'Rempli' : 'Vide'}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Board station slots */}
+                    <div className="space-y-3">
+                      {assignedBoards.map((b) => {
+                        const isThisPlayerSelected = b.player?.idnumber === selectedPlayerId;
+                        const isSelectedForDrop = selectedPlayerId !== null && !b.player;
+                        const willSwap = selectedPlayerId !== null && !isThisPlayerSelected && b.player;
+                        
+                        return (
+                          <div
+                            key={b.board}
+                            onClick={() => handleBoardClick(b.board, b.player?.idnumber)}
+                            className={`flex items-center gap-3.5 rounded-xl border p-3 transition-all duration-200 ${
+                              isThisPlayerSelected 
+                                ? 'bg-emerald-50/70 border-emerald-500 ring-2 ring-emerald-500 cursor-pointer shadow-xs'
+                                : selectedPlayerId !== null
+                                ? 'cursor-pointer hover:bg-slate-50 hover:border-slate-300'
+                                : b.player
+                                ? 'cursor-pointer hover:border-slate-300 bg-white border-slate-200/80 shadow-xs'
+                                : 'border-2 border-dashed border-slate-200 bg-slate-50/60 hover:border-emerald-400 hover:bg-emerald-50/30'
+                            }`}
+                          >
+                            <span className={`flex h-9 w-9 items-center justify-center font-mono font-bold text-sm shrink-0 rounded-lg border shadow-xs ${
+                              isThisPlayerSelected
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : b.player 
+                                ? 'bg-slate-900 border-slate-900 text-white' 
+                                : 'bg-white border-slate-200 text-slate-500'
+                            }`}>
+                              {b.board}
+                            </span>
+
+                            <div className="flex-1 min-w-0">
+                              {b.player ? (
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <PlayerHoverCard playerName={`${b.player.last_name} ${b.player.first_name}`} expectedElo={b.player.assignedrating}>
+                                      <div className={`font-semibold text-sm truncate ${
+                                        isThisPlayerSelected ? 'text-emerald-800' : willSwap ? 'text-slate-500' : 'text-slate-900'
+                                      }`}>
+                                        {b.player.last_name} {b.player.first_name}
+                                      </div>
+                                    </PlayerHoverCard>
+                                    <div className="text-xs mt-0.5 font-mono tabular-nums text-slate-500">
+                                      <span className="font-bold text-slate-800 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200/80">
+                                        {b.player.assignedrating || 'NC'}
+                                      </span> Elo
+                                    </div>
+                                  </div>
+
+                                  <div 
+                                    className={`text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                      isThisPlayerSelected ? 'opacity-0 pointer-events-none' : ''
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      assignPlayerToBoard(teamNumber, b.board, null);
+                                    }}
+                                    title="Retirer ce joueur"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className={`flex items-center gap-2 text-xs sm:text-sm font-medium transition-colors ${
+                                  isSelectedForDrop ? 'text-emerald-700 font-bold' : 'text-slate-400 hover:text-slate-600'
+                                }`}>
+                                  <Plus className="h-4 w-4 text-slate-400" />
+                                  <span>{isSelectedForDrop ? 'Cliquer pour assigner le joueur sélectionné' : `Échiquier ${b.board} libre — Cliquer pour assigner`}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Boards Assignment Grid */}
-          {selectedPlayerId !== null && (
-            <div className="bg-[#1E5E3A]/10 border border-[#1E5E3A] p-2 flex items-center justify-between mb-4 mt-4">
-              <div className="text-xs font-bold text-[#1E5E3A]">
-                Mode sélection : cliquez sur un autre joueur (ou un échiquier) pour échanger ou assigner.
-              </div>
-              <button 
-                onClick={() => setSelectedPlayerId(null)}
-                className="bg-white border border-[#1E5E3A] px-2 py-1 text-[10px] uppercase font-bold text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
-          )}
-          <div className="chess-panel p-5 bg-white border border-[#E2DFD8]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-3">
-              <h3 className="font-bold text-[#1A1918] text-sm font-serif">
-                Échiquiers ({validation.assignedCount} / {validation.totalBoards})
-              </h3>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={undoDraftChange}
-                  disabled={!canUndo}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#6E6A64] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Annuler la dernière action (Ctrl+Z)"
-                >
-                  <Undo2 className="h-3.5 w-3.5" />
-                  Annuler
-                </button>
-                <button
-                  onClick={handleAutoFill}
-                  disabled={isByeRound}
-                  className="inline-flex items-center gap-1.5 bg-[#F9F8F6] border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#1A1918] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Remplit automatiquement les places vides de cette équipe avec les joueurs du deck (triés par Elo)"
-                >
-                  <Wand2 className="h-3.5 w-3.5" />
-                  Auto-fill
-                </button>
-                <button
-                  onClick={() => clearDraft(teamNumber)}
-                  disabled={isByeRound}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#E2DFD8] px-3 py-1.5 text-xs font-bold text-[#B91C1C] hover:bg-[#F9F8F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Vider l'équipe
-                </button>
-              </div>
-            </div>
-
-            {isByeRound ? (
-              <div className="mt-8 p-8 flex flex-col items-center justify-center text-center bg-[#F9F8F6] border-2 border-dashed border-[#E2DFD8]">
-                <div className="text-4xl font-serif text-[#1A1918] opacity-20 mb-2">BYE</div>
-                <div className="text-sm text-[#6E6A64] font-medium max-w-md">
-                  L'équipe est exempte (BYE) pour cette ronde. Aucun joueur ne doit être aligné.
-                </div>
-              </div>
-            ) : (
-            <div className="mt-4 space-y-3">
-              {assignedBoards.map((b) => {
-                const isThisPlayerSelected = b.player?.idnumber === selectedPlayerId;
-                const isSelectedForDrop = selectedPlayerId !== null && !b.player;
-                const willSwap = selectedPlayerId !== null && !isThisPlayerSelected && b.player;
-                
-                return (
-                  <div
-                    key={b.board}
-                    onClick={() => handleBoardClick(b.board, b.player?.idnumber)}
-                    className={`flex items-center gap-4 rounded-none border p-3 transition-all duration-200 ${
-                      isThisPlayerSelected 
-                        ? 'bg-[#1E5E3A]/10 border-[#1E5E3A] ring-2 ring-[#1E5E3A] cursor-pointer'
-                        : selectedPlayerId !== null
-                        ? 'cursor-pointer hover:bg-[#F9F8F6] hover:border-[#1A1918]'
-                        : b.player ? 'cursor-pointer hover:bg-[#F9F8F6] hover:border-[#1A1918]' : 'bg-[#F9F8F6] border-[#E2DFD8]'
-                    } ${
-                      !b.player ? 'border-dashed border-[#E2DFD8] bg-[#F9F8F6]' : 'border-[#E2DFD8] bg-white'
-                    }`}
-                  >
-                    <span className={`flex h-8 w-8 items-center justify-center font-mono font-bold text-sm shrink-0 border ${
-                      isThisPlayerSelected
-                        ? 'bg-[#1E5E3A] border-[#1E5E3A] text-white'
-                        : b.player 
-                        ? 'bg-[#1A1918] border-[#1A1918] text-white' 
-                        : 'bg-white border-[#E2DFD8] text-[#6E6A64]'
-                    }`}>
-                      {b.board}
-                    </span>
-
-                    <div className="flex-1 min-w-0">
-                      {b.player ? (
-                        <div>
-                          <PlayerHoverCard playerName={`${b.player.last_name} ${b.player.first_name}`} expectedElo={b.player.assignedrating}>
-                            <div className={`font-bold font-serif text-sm truncate ${isThisPlayerSelected ? 'text-[#1E5E3A]' : willSwap ? 'text-[#6E6A64]' : 'text-[#1A1918]'}`}>
-                              {b.player.last_name} {b.player.first_name}
-                            </div>
-                          </PlayerHoverCard>
-                          <div className={`text-xs mt-0.5 font-mono ${isThisPlayerSelected ? 'text-[#1E5E3A]/80' : willSwap ? 'text-[#E2DFD8]' : 'text-[#6E6A64]'}`}>
-                            {b.player.assignedrating || 'NC'} Elo
-                          </div>
-                        </div>
-                      ) : (
-                        <div className={`text-sm italic ${isSelectedForDrop ? 'text-[#1E5E3A] font-bold' : 'text-[#6E6A64]'}`}>
-                          {isSelectedForDrop ? 'Cliquer pour assigner' : 'Échiquier vide'}
-                        </div>
-                      )}
-                    </div>
-
-                    {b.player && (
-                      <div 
-                        className={`text-[#6E6A64] hover:text-[#B91C1C] transition-colors p-2 ${isThisPlayerSelected ? 'opacity-0 pointer-events-none' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          assignPlayerToBoard(teamNumber, b.board, null);
-                        }}
-                        title="Retirer ce joueur"
-                      >
-                        <X className="h-5 w-5" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            )}
-          </div>
-          </>
+            </>
           )}
         </div>
       </div>

@@ -15,6 +15,8 @@ export interface TeamMatchHistory {
 
 export interface TeamStanding {
   rank: number;
+  previousRank?: number;
+  rankDiff?: number;
   clubId: number;
   teamName: string;
   pairingNumber: number;
@@ -44,19 +46,19 @@ export interface DivisionStandingTable {
 export function getDivisionBadgeStyle(division: number): string {
   switch (division) {
     case 1:
-      return 'bg-[#B45309] text-white border border-[#92400E]'; // Div 1: Gold / Amber
+      return 'bg-amber-500 text-white border border-amber-600 shadow-xs'; // Div 1: Gold / Amber
     case 2:
-      return 'bg-[#3730A3] text-white border border-[#312E81]'; // Div 2: Royal Indigo
+      return 'bg-indigo-600 text-white border border-indigo-700 shadow-xs'; // Div 2: Royal Indigo
     case 3:
-      return 'bg-[#1E5E3A] text-white border border-[#16482C]'; // Div 3: Forest Green
+      return 'bg-emerald-600 text-white border border-emerald-700 shadow-xs'; // Div 3: Forest Green
     case 4:
-      return 'bg-[#C2410C] text-white border border-[#9A3412]'; // Div 4: Terracotta / Orange
+      return 'bg-orange-600 text-white border border-orange-700 shadow-xs'; // Div 4: Terracotta / Orange
     case 5:
-      return 'bg-[#0F766E] text-white border border-[#115E59]'; // Div 5: Teal
+      return 'bg-teal-600 text-white border border-teal-700 shadow-xs'; // Div 5: Teal
     case 6:
-      return 'bg-[#831843] text-white border border-[#701A75]'; // Div 6: Burgundy
+      return 'bg-rose-700 text-white border border-rose-800 shadow-xs'; // Div 6: Burgundy
     default:
-      return 'bg-[#1A1918] text-white border border-[#1A1918]';
+      return 'bg-slate-800 text-white border border-slate-900 shadow-xs';
   }
 }
 
@@ -217,6 +219,37 @@ export function calculateDivisionStandings(
   sortedTeams.forEach((team, index) => {
     team.rank = index + 1;
   });
+
+  // Calculate previous rank and rank progression (if at least round 2 has been reached)
+  const maxRoundPlayed = Math.max(
+    0,
+    ...sortedTeams.flatMap((t) => t.matchHistory.map((m) => m.round))
+  );
+
+  if (maxRoundPlayed >= 2) {
+    const teamsWithPrevScores = sortedTeams.map((team) => {
+      const lastMatch = team.matchHistory.find((m) => m.round === maxRoundPlayed);
+      const prevMatchPoints = team.matchPoints - (lastMatch ? lastMatch.matchPoints : 0);
+      const prevBoardPoints = team.boardPoints - (lastMatch ? lastMatch.teamScore : 0);
+      return { team, prevMatchPoints, prevBoardPoints };
+    });
+
+    teamsWithPrevScores.sort(
+      (a, b) => b.prevMatchPoints - a.prevMatchPoints || b.prevBoardPoints - a.prevBoardPoints
+    );
+
+    teamsWithPrevScores.forEach((item, index) => {
+      const prevRank = index + 1;
+      item.team.previousRank = prevRank;
+      // Positive diff means gained positions (e.g. was 4, now 2 => diff is +2)
+      item.team.rankDiff = prevRank - item.team.rank;
+    });
+  } else {
+    sortedTeams.forEach((team) => {
+      team.previousRank = team.rank;
+      team.rankDiff = 0;
+    });
+  }
 
   const ourTeam = sortedTeams.find((t) => t.isOurClub);
 

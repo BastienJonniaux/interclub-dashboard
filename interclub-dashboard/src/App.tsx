@@ -29,12 +29,12 @@ const DashboardContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#F9F8F6]">
-        <Loader2 className="h-10 w-10 text-[#1E5E3A] animate-spin" />
-        <h3 className="mt-4 text-lg font-bold font-serif text-[#1A1918]">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-50">
+        <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
+        <h3 className="mt-4 text-lg font-bold text-slate-900 tracking-tight">
           Chargement de l'Échiquier...
         </h3>
-        <p className="mt-1 text-sm font-mono text-[#6E6A64]">
+        <p className="mt-1 text-sm font-mono text-slate-500">
           Synchronisation FRBE pour le matricule {clubId}
         </p>
       </div>
@@ -43,12 +43,12 @@ const DashboardContent: React.FC = () => {
 
   if (error || !club) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-[#F9F8F6]">
-        <div className="h-16 w-16 bg-white border border-[#E2DFD8] flex items-center justify-center text-[#B91C1C] mb-4 shadow-sm">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-slate-50">
+        <div className="h-16 w-16 bg-white border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 mb-4 shadow-xs">
           <AlertCircle className="h-8 w-8" />
         </div>
-        <h3 className="text-2xl font-bold font-serif text-[#1A1918]">Erreur de connexion</h3>
-        <p className="mt-2 max-w-md text-base text-[#6E6A64]">
+        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Erreur de connexion</h3>
+        <p className="mt-2 max-w-md text-base text-slate-600">
           {error || 'Impossible de charger les données du club.'}
         </p>
         <button
@@ -63,7 +63,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-[#F9F8F6]">
+    <div className="min-h-screen flex flex-col relative bg-slate-50">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -72,14 +72,14 @@ const DashboardContent: React.FC = () => {
       />
 
       {isFallback && (
-        <div className="bg-[#B45309]/10 border-b border-[#B45309] px-4 py-3 text-center text-sm font-semibold text-[#B45309]">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center text-sm font-semibold text-amber-800">
           Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
         </div>
       )}
 
       <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative">
         {activeTab === 'standings' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <StandingsTab
               standings={standings}
               clubName={club.name}
@@ -88,17 +88,17 @@ const DashboardContent: React.FC = () => {
           </div>
         )}
         {activeTab === 'players' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <PlayerPerformanceTab players={playerStats} clubName={club.name} />
           </div>
         )}
         {activeTab === 'scouting' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <ScoutingTab scouting={scouting} clubName={club.name} />
           </div>
         )}
         {activeTab === 'simulator' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <SimulatorTab
               players={club.players || []}
               teams={club.teams || []}
@@ -108,7 +108,7 @@ const DashboardContent: React.FC = () => {
           </div>
         )}
         {activeTab === 'exports' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <ExportsTab
               club={club}
               divisions={allDivisions}
@@ -119,9 +119,9 @@ const DashboardContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="mt-auto border-t border-[#E2DFD8] bg-white py-8 text-center text-sm text-[#6E6A64]">
-        <div className="font-serif font-bold text-[#1A1918] mb-1">INTERCLUBS FRBE</div>
-        Tableau de bord tactique officiel
+      <footer className="mt-auto border-t border-slate-200/80 bg-white py-6 text-center text-sm text-slate-500">
+        <div className="font-bold text-slate-900 tracking-tight mb-1">INTERCLUBS FRBE</div>
+        Tableau de bord tactique officiel &bull; Fédération Royale Belge des Échecs
       </footer>
     </div>
   );
@@ -138,4 +138,3 @@ export function App() {
 }
 
 export default App;
-

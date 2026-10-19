@@ -64,66 +64,66 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-      <div className="bg-white border border-[#1A1918] max-w-md w-full p-6 shadow-2xl animate-in fade-in duration-150">
-        <div className="flex items-start justify-between border-b border-[#E2DFD8] pb-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-[#1E5E3A]" />
-            <h3 className="font-serif font-bold text-base text-[#1A1918]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+      <div className="bg-white border border-slate-200/80 max-w-md w-full p-6 shadow-2xl rounded-2xl animate-in fade-in duration-150">
+        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            <h3 className="font-bold text-base text-slate-900 tracking-tight">
               Accès Directeur des Interclubs
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-[#6E6A64] hover:text-[#1A1918] transition-colors"
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded-lg hover:bg-slate-50 cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="text-xs text-[#6E6A64] mt-3">
+        <p className="text-xs text-slate-500 mt-3 leading-relaxed">
           Renseignez le mot de passe / clé secrète du Directeur pour autoriser
           l'enregistrement et le verrouillage officiel des compositions en base de données.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#1A1918] font-bold mb-1.5">
+            <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
               Mot de passe / Clé secrète
             </label>
             <div className="relative">
-              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6E6A64]" />
+              <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="password"
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 placeholder="Entrez votre clé directeur..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-[#E2DFD8] bg-[#F9F8F6] focus:bg-white focus:outline-hidden focus:border-[#1E5E3A] font-mono"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 font-mono transition-colors"
                 autoFocus
               />
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-xs text-[#B91C1C] bg-[#B91C1C]/10 border border-[#B91C1C]/20 p-2.5">
+            <div className="flex items-center gap-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="flex items-center gap-2 text-xs text-[#1E5E3A] bg-[#1E5E3A]/10 border border-[#1E5E3A]/20 p-2.5">
+            <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded-lg">
               <Check className="h-4 w-4 shrink-0" />
               <span>Authentification réussie !</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-[#E2DFD8]">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             {getStoredDirectorKey() ? (
               <button
                 type="button"
                 onClick={handleForget}
-                className="text-xs text-[#B91C1C] hover:underline"
+                className="text-xs text-rose-600 hover:underline cursor-pointer"
               >
                 Oublier la clé
               </button>
@@ -133,14 +133,14 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 text-xs text-[#6E6A64] hover:bg-[#F9F8F6] border border-[#E2DFD8] transition-colors"
+                className="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-[#1E5E3A] hover:bg-[#16482C] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 {loading ? 'Vérification...' : 'Valider'}
               </button>
@@ -151,4 +151,3 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
     </div>
   );
 };
-

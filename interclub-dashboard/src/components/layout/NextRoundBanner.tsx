@@ -58,23 +58,22 @@ export const NextRoundBanner: React.FC = () => {
 
   return (
     <div 
-      className="hidden md:flex items-center gap-3 bg-white border border-[#E2DFD8] px-3 py-1.5" 
+      className="hidden md:flex items-center gap-2.5 bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-1.5 shadow-xs" 
       title={`Ronde ${roundNumber} : ${nextDate.toLocaleDateString('fr-BE')}`}
     >
-      <div className="flex items-center gap-1.5 text-[#1A1918]">
-        <Calendar className="h-3.5 w-3.5 text-[#1E5E3A]" />
-        <span className="text-[10px] uppercase font-bold tracking-wider">
+      <div className="flex items-center gap-1.5 text-slate-800">
+        <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+        <span className="text-[11px] uppercase font-bold tracking-wider text-slate-700">
           Ronde {roundNumber}
         </span>
       </div>
-      <div className="w-[1px] h-4 bg-[#E2DFD8]"></div>
-      <div className="flex items-center gap-1.5 text-[#1A1918]">
-        <Clock className="h-3.5 w-3.5 text-[#B45309]" />
-        <span className="font-mono text-[11px] font-bold">
+      <div className="w-px h-3.5 bg-slate-200"></div>
+      <div className="flex items-center gap-1.5 text-slate-800">
+        <Clock className="h-3.5 w-3.5 text-amber-500" />
+        <span className="font-mono tabular-nums text-xs font-bold text-slate-800">
           {timeLeft.days}j {timeLeft.hours.toString().padStart(2, '0')}h {timeLeft.mins.toString().padStart(2, '0')}m
         </span>
       </div>
     </div>
   );
 };
-

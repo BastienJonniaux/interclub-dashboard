@@ -27,21 +27,21 @@ export const PlayerSettingsModal: React.FC<Props> = ({ isOpen, onClose, players 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-[#1A1918]/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-none bg-[#F9F8F6] border border-[#E2DFD8] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-[#E2DFD8] shrink-0">
+      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-white border border-slate-200/80 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-[#1A1918] font-serif">Gestion de l'Effectif (Saison)</h3>
-            <p className="text-xs text-[#6E6A64] mt-1 font-mono">
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight">Gestion de l'Effectif (Saison)</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
               Définissez les paramètres permanents pour chaque joueur (ignoré, réserve par défaut).
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-none p-2 text-[#6E6A64] hover:bg-[#E2DFD8] hover:text-[#1A1918] transition-colors border border-transparent hover:border-[#E2DFD8]"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -49,13 +49,13 @@ export const PlayerSettingsModal: React.FC<Props> = ({ isOpen, onClose, players 
 
         <div className="mt-4 mb-4 shrink-0">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6E6A64]" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Rechercher un joueur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-none border border-[#E2DFD8] bg-white pl-10 pr-4 py-2 text-sm text-[#1A1918] placeholder-[#6E6A64] focus:border-[#1A1918] focus:outline-none focus:ring-1 focus:ring-[#1A1918] transition-colors font-medium"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-2 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-hidden transition-colors font-medium"
             />
           </div>
         </div>
@@ -68,42 +68,42 @@ export const PlayerSettingsModal: React.FC<Props> = ({ isOpen, onClose, players 
             return (
               <div
                 key={p.idnumber}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-none border transition-colors ${
-                  isIgnored ? 'bg-[#F9F8F6] border-[#E2DFD8] opacity-75' : isBackup ? 'bg-white border-[#E2DFD8]' : 'bg-white border-[#E2DFD8]'
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
+                  isIgnored ? 'bg-slate-50/70 border-slate-200 opacity-60' : 'bg-white border-slate-200/80 shadow-xs'
                 }`}
               >
                 <div>
-                  <div className={`font-bold font-serif ${isIgnored ? 'text-[#6E6A64] line-through' : 'text-[#1A1918]'}`}>
+                  <div className={`font-semibold text-sm ${isIgnored ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
                     {p.last_name} {p.first_name}
                   </div>
-                  <div className="text-xs text-[#6E6A64] mt-0.5 font-mono">
-                    {p.assignedrating || 'NC'} Elo {p.titular ? ` • Titulaire ${p.titular}` : ''}
+                  <div className="text-xs text-slate-500 mt-0.5 font-mono tabular-nums">
+                    <span className="font-bold text-slate-700">{p.assignedrating || 'NC'}</span> Elo {p.titular ? ` • Titulaire ${p.titular}` : ''}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPlayerSetting(p.idnumber, 'isBackup', !isBackup)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                       isBackup
-                        ? 'bg-[#1A1918] text-white border border-[#1A1918]'
-                        : 'bg-white text-[#6E6A64] border border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <UserCog className="h-3.5 w-3.5" />
-                    Toujours Réserve
+                    <span>Toujours Réserve</span>
                   </button>
 
                   <button
                     onClick={() => setPlayerSetting(p.idnumber, 'isIgnored', !isIgnored)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                       isIgnored
-                        ? 'bg-[#B91C1C]/10 text-[#B91C1C] border border-[#B91C1C]/30'
-                        : 'bg-white text-[#6E6A64] border border-[#E2DFD8] hover:bg-[#F9F8F6] hover:text-[#1A1918]'
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <EyeOff className="h-3.5 w-3.5" />
-                    Ignorer
+                    <span>{isIgnored ? 'Ignoré' : 'Ignorer'}</span>
                   </button>
                 </div>
               </div>

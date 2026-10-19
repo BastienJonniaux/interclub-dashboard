@@ -102,23 +102,26 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
       }
 
       const draft = draftCompositions[tNum] || {};
-      const boardCount = scout.boardCount || 4;
-
+      const boardCount = scout.boardCount;
+      const boardLines: string[] = [];
+      
       for (let b = 1; b <= boardCount; b++) {
-        const playerId = draft[b];
-        const p = playerId ? club.players?.find(pl => pl.idnumber === playerId) : null;
+        const pid = draft[b];
+        const p = pid ? club.players?.find(x => x.idnumber === pid) : null;
         if (p) {
-          email += `${b} | ${p.idnumber} | ${p.last_name} ${p.first_name} | ${p.assignedrating || 'NC'} |\n`;
+          boardLines.push(`Éch. ${b}: ${p.last_name} ${p.first_name} (${p.assignedrating || 'NC'})`);
         } else {
-          email += `${b} | | A désigner | NC |\n`;
+          boardLines.push(`Éch. ${b}: [À déterminer]`);
         }
       }
-      
-      email += '\n';
+
+      email += boardLines.join('\n');
+      email += '\n\n';
     });
 
-    return email.trim();
-  }, [introText, teamTexts, club, scouting, draftCompositions, venuesMap, selectedVenues]);
+    email += `Bon match à tous !\n`;
+    return email;
+  }, [introText, club, scouting, venuesMap, selectedVenues, teamTexts, draftCompositions]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedEmail);
@@ -127,42 +130,42 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
   };
 
   return (
-    <div className="flex flex-col justify-between chess-panel p-6 bg-white border border-[#E2DFD8]">
+    <div className="flex flex-col justify-between bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
       <div>
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-[#E2DFD8] gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-slate-100 gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 border border-[#1A1918] bg-[#F9F8F6]">
-              <Mail className="h-5 w-5 text-[#1A1918]" />
+            <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-xs">
+              <Mail className="h-5 w-5" />
             </div>
-            <h3 className="font-bold font-serif text-[#1A1918] text-lg">
+            <h3 className="font-bold text-slate-900 text-lg tracking-tight">
               Email de Composition (Pré-ronde)
             </h3>
           </div>
           <button
             onClick={handleCopy}
-            className="inline-flex items-center justify-center gap-2 bg-[#1E5E3A]/10 border border-[#1E5E3A]/30 px-4 py-2 text-xs font-bold font-mono uppercase tracking-wider text-[#1E5E3A] hover:bg-[#1E5E3A] hover:text-white transition-all duration-300"
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             <span>{copied ? 'Copié !' : "Copier l'email"}</span>
           </button>
         </div>
 
-        <p className="mt-4 text-xs font-mono text-[#6E6A64]">
+        <p className="mt-3 text-xs font-mono text-slate-500">
           Générez un brouillon d'e-mail avec les compositions du simulateur et les adresses des locaux.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">Texte d'introduction</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Texte d'introduction</label>
               <textarea
-                className="w-full text-xs p-2 border border-[#E2DFD8] bg-[#F9F8F6] focus:outline-none focus:border-[#1A1918] custom-scrollbar min-h-[60px]"
+                className="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 custom-scrollbar min-h-[70px] transition-colors"
                 value={introText}
                 onChange={e => setIntroText(e.target.value)}
               />
             </div>
 
-            <div className="space-y-4 border-t border-[#E2DFD8] pt-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-4 border-t border-slate-100 pt-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
               {(club.teams || []).map((team, idx) => {
                 const tNum = idx + 1;
                 const scout = scouting.find(s => s.ourTeamName === team.name);
@@ -176,13 +179,13 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                 const currentText = teamTexts[tNum] !== undefined ? teamTexts[tNum] : defaultText;
 
                 return (
-                  <div key={team.name} className="bg-white border border-[#E2DFD8] p-3">
-                    <div className="font-bold font-serif text-[#1A1918] text-sm mb-2 flex items-center justify-between">
+                  <div key={team.name} className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-xs">
+                    <div className="font-bold text-slate-900 text-sm mb-2 flex items-center justify-between">
                       <span>Équipe {tNum} - vs {scout.opponentTeamName}</span>
-                      <span className={`text-[10px] px-2 py-0.5 font-mono uppercase font-bold border ${
+                      <span className={`text-[10px] px-2 py-0.5 font-mono uppercase font-bold rounded-md border ${
                         isHome 
-                          ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/20' 
-                          : 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/20'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
                       }`}>
                         {isHome ? '🏠 Domicile (14h au club)' : '🚗 Extérieur'}
                       </span>
@@ -190,9 +193,9 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                     
                     {!isHome && availableVenues.length > 1 && (
                       <div className="mb-2">
-                        <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">Local (plusieurs disponibles)</label>
+                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Local (plusieurs disponibles)</label>
                         <select 
-                          className="w-full text-xs p-1.5 border border-[#E2DFD8] bg-[#F9F8F6]"
+                          className="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white"
                           value={selectedVenues[tNum] || 0}
                           onChange={e => handleVenueChange(tNum, parseInt(e.target.value))}
                         >
@@ -206,12 +209,12 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                     )}
 
                     <div>
-                      <label className="block text-[10px] uppercase font-bold text-[#6E6A64] mb-1">
+                      <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">
                         {isHome ? 'Message équipe (optionnel)' : 'Message équipe / Heure RDV'}
                       </label>
                       <input 
                         type="text"
-                        className="w-full text-xs p-1.5 border border-[#E2DFD8] bg-[#F9F8F6] focus:outline-none focus:border-[#1A1918]"
+                        className="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 transition-colors"
                         value={currentText}
                         onChange={e => handleTeamTextChange(tNum, e.target.value)}
                         placeholder={isHome ? "Optionnel..." : "Ex: RDV à 12h30 pour covoiturage..."}
@@ -225,9 +228,9 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
 
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] uppercase font-bold text-[#6E6A64]">Aperçu du mail</span>
+              <span className="text-[10px] uppercase font-bold text-slate-500 font-mono tracking-wider">Aperçu du mail</span>
             </div>
-            <pre className="flex-1 min-h-[400px] max-h-[600px] overflow-y-auto bg-[#F9F8F6] p-4 text-[11px] leading-relaxed font-mono text-[#1A1918] border border-[#E2DFD8] whitespace-pre-wrap select-text custom-scrollbar">
+            <pre className="flex-1 min-h-[400px] max-h-[600px] overflow-y-auto bg-slate-50 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
               {generatedEmail}
             </pre>
           </div>

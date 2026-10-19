@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { TeamStanding, getDivisionBadgeStyle } from '../../domain/standings';
-import { Swords, Home, Plane, Trophy, Users, Shield } from 'lucide-react';
+import { Swords, Home, Plane, Trophy, Users } from 'lucide-react';
 
 interface Props {
   team: TeamStanding;
@@ -58,17 +58,6 @@ export const TeamHoverCard: React.FC<Props> = ({
     setCoords({ top, left, placeAbove, maxHeight });
   }, []);
 
-  const clearTimers = () => {
-    if (openTimerRef.current) {
-      clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  };
-
   const handleMouseEnter = () => {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -98,7 +87,7 @@ export const TeamHoverCard: React.FC<Props> = ({
         ref={triggerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`inline-block cursor-help transition-colors ${className}`}
+        className={`inline-block ${className}`}
       >
         {children}
       </span>
@@ -122,80 +111,80 @@ export const TeamHoverCard: React.FC<Props> = ({
               maxHeight: coords.maxHeight,
               zIndex: 99999,
             }}
-            className="w-[360px] bg-white border border-[#1A1918] shadow-2xl p-4 flex flex-col pointer-events-auto animate-in fade-in duration-150 overflow-hidden text-left"
+            className="w-[360px] bg-white border border-slate-200/80 shadow-2xl rounded-2xl p-4 flex flex-col pointer-events-auto animate-in fade-in duration-150 overflow-hidden text-left"
           >
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-[#E2DFD8] pb-3 shrink-0">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3 shrink-0">
               <div className="min-w-0 pr-2">
                 <div className="flex items-center gap-2">
                   {divisionLabel && (
-                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(parseInt((divisionLabel.match(/\d+/) || ['0'])[0], 10))}`}>
+                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase rounded-md ${getDivisionBadgeStyle(parseInt((divisionLabel.match(/\d+/) || ['0'])[0], 10))}`}>
                       {divisionLabel}
                     </span>
                   )}
                   {team.isOurClub && (
-                    <span className="bg-[#1E5E3A] text-white px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                    <span className="bg-emerald-600 text-white px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded shadow-xs">
                       Notre Club
                     </span>
                   )}
                 </div>
-                <h4 className="mt-1 font-serif font-bold text-base text-[#1A1918] truncate">
+                <h4 className="mt-1 font-bold tracking-tight text-base text-slate-900 truncate">
                   {team.teamName}
                 </h4>
               </div>
 
               {/* Rank Pill */}
-              <div className="flex items-center gap-1 bg-[#F9F8F6] border border-[#E2DFD8] px-2.5 py-1 shrink-0">
-                <Trophy className="h-3.5 w-3.5 text-[#B45309]" />
-                <span className="text-xs font-mono font-bold text-[#1A1918]">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 shrink-0 font-mono tabular-nums">
+                <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-xs font-bold text-slate-900">
                   #{team.rank}
                 </span>
               </div>
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-4 gap-1.5 py-2.5 border-b border-[#E2DFD8] bg-[#F9F8F6] -mx-4 px-4 text-center shrink-0">
+            <div className="grid grid-cols-4 gap-1.5 py-2.5 border-b border-slate-100 bg-slate-50 -mx-4 px-4 text-center shrink-0 font-mono tabular-nums">
               <div>
-                <div className="text-[9px] uppercase font-bold text-[#6E6A64]">Bilan</div>
-                <div className="text-xs font-mono font-bold text-[#1A1918]">
-                  <span className="text-[#1E5E3A]">{team.won}V</span>{' '}
-                  <span className="text-[#6E6A64]">{team.drawn}N</span>{' '}
-                  <span className="text-[#B91C1C]">{team.lost}D</span>
+                <div className="text-[9px] uppercase font-bold text-slate-500 font-sans">Bilan</div>
+                <div className="text-xs font-bold text-slate-800">
+                  <span className="text-emerald-600">{team.won}V</span>{' '}
+                  <span className="text-slate-500">{team.drawn}N</span>{' '}
+                  <span className="text-rose-600">{team.lost}D</span>
                 </div>
               </div>
               <div>
-                <div className="text-[9px] uppercase font-bold text-[#6E6A64]">Pts Match</div>
-                <div className="text-xs font-mono font-bold text-[#1A1918]">
+                <div className="text-[9px] uppercase font-bold text-slate-500 font-sans">Pts Match</div>
+                <div className="text-xs font-bold text-slate-900">
                   {team.matchPoints}
                 </div>
               </div>
               <div>
-                <div className="text-[9px] uppercase font-bold text-[#6E6A64]">Pts Éch.</div>
-                <div className="text-xs font-mono font-bold text-[#1A1918]">
+                <div className="text-[9px] uppercase font-bold text-slate-500 font-sans">Pts Éch.</div>
+                <div className="text-xs font-bold text-slate-900">
                   {team.boardPoints}
                 </div>
               </div>
               <div>
-                <div className="text-[9px] uppercase font-bold text-[#6E6A64]">Moy. Elo</div>
-                <div className="text-xs font-mono font-bold text-[#1A1918]">
+                <div className="text-[9px] uppercase font-bold text-slate-500 font-sans">Moy. Elo</div>
+                <div className="text-xs font-bold text-slate-900">
                   {team.seasonAvgElo > 0 ? team.seasonAvgElo : 'NC'}
                 </div>
               </div>
             </div>
 
             {/* Opponent Elo Facing Bar */}
-            <div className="py-2 border-b border-[#E2DFD8] flex items-center justify-between text-[11px] font-mono shrink-0">
-              <span className="text-[#6E6A64] flex items-center gap-1">
-                <Users className="h-3 w-3 text-[#1A1918]" /> Moy. Elo affronté :
+            <div className="py-2 border-b border-slate-100 flex items-center justify-between text-[11px] font-mono tabular-nums shrink-0">
+              <span className="text-slate-500 flex items-center gap-1 font-sans">
+                <Users className="h-3 w-3 text-slate-700" /> Moy. Elo affronté :
               </span>
-              <span className="font-bold text-[#1A1918]">
+              <span className="font-bold text-slate-900">
                 {team.seasonOppAvgElo > 0 ? `${team.seasonOppAvgElo} Elo` : 'NC'}
               </span>
             </div>
 
             {/* Match History List */}
             <div className="mt-2.5 flex-1 overflow-y-auto pr-1 space-y-2">
-              <div className="text-[10px] uppercase font-bold tracking-wider text-[#6E6A64] flex items-center gap-1">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 flex items-center gap-1 font-sans">
                 <Swords className="h-3 w-3" />
                 Historique des Rencontres
               </div>
@@ -208,22 +197,22 @@ export const TeamHoverCard: React.FC<Props> = ({
                   return (
                     <div
                       key={m.round}
-                      className="border border-[#E2DFD8] p-2 hover:bg-[#F9F8F6] transition-colors bg-white flex flex-col gap-1.5"
+                      className="border border-slate-200/80 rounded-xl p-2.5 hover:bg-slate-50 transition-colors bg-white flex flex-col gap-1.5 shadow-xs"
                     >
                       {/* Top match line: Round, Location, Result */}
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-xs font-mono tabular-nums">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-[10px] bg-[#1A1918] text-white px-1.5 py-0.2">
+                          <span className="font-bold text-[10px] bg-slate-900 text-white px-1.5 py-0.2 rounded">
                             R{m.round}
                           </span>
-                          <span className="text-[10px] font-mono text-[#6E6A64] flex items-center gap-0.5">
+                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
                             {m.isHome ? (
                               <>
-                                <Home className="h-3 w-3 text-[#1A1918]" /> Dom.
+                                <Home className="h-3 w-3 text-slate-700" /> Dom.
                               </>
                             ) : (
                               <>
-                                <Plane className="h-3 w-3 text-[#6E6A64]" /> Ext.
+                                <Plane className="h-3 w-3 text-slate-500" /> Ext.
                               </>
                             )}
                           </span>
@@ -231,12 +220,12 @@ export const TeamHoverCard: React.FC<Props> = ({
 
                         {/* Match Outcome Badge */}
                         <span
-                          className={`font-mono text-[10px] font-bold px-2 py-0.5 border ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded border tabular-nums ${
                             isWin
-                              ? 'bg-[#1E5E3A]/10 text-[#1E5E3A] border-[#1E5E3A]/25'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : isDraw
-                              ? 'bg-[#B45309]/10 text-[#B45309] border-[#B45309]/25'
-                              : 'bg-[#B91C1C]/10 text-[#B91C1C] border-[#B91C1C]/25'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-rose-50 text-rose-700 border-rose-200'
                           }`}
                         >
                           {isWin ? 'Victoire' : isDraw ? 'Nul' : 'Défaite'} ({m.teamScore} - {m.oppScore})
@@ -244,13 +233,13 @@ export const TeamHoverCard: React.FC<Props> = ({
                       </div>
 
                       {/* Opponent & Elo Details */}
-                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[#E2DFD8]/60">
-                        <span className="font-semibold text-[#1A1918] truncate max-w-[190px]" title={m.opponentTeamName}>
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                        <span className="font-semibold text-slate-800 truncate max-w-[190px]" title={m.opponentTeamName}>
                           vs {m.opponentTeamName}
                         </span>
-                        <div className="text-[10px] font-mono text-[#6E6A64] shrink-0">
-                          <span className="font-bold text-[#1A1918]">{m.teamAvgElo || 'NC'}</span>
-                          <span className="mx-1 text-[#E2DFD8]">/</span>
+                        <div className="text-[10px] font-mono tabular-nums text-slate-500 shrink-0">
+                          <span className="font-bold text-slate-900">{m.teamAvgElo || 'NC'}</span>
+                          <span className="mx-1 text-slate-300">/</span>
                           <span>{m.oppAvgElo || 'NC'}</span>
                         </div>
                       </div>
@@ -258,16 +247,16 @@ export const TeamHoverCard: React.FC<Props> = ({
                   );
                 })
               ) : (
-                <div className="p-4 text-center text-xs text-[#6E6A64] italic bg-[#F9F8F6] border border-dashed border-[#E2DFD8]">
+                <div className="p-4 text-center text-xs text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl">
                   Aucun match encore joué cette saison.
                 </div>
               )}
             </div>
 
             {/* Footer tip */}
-            <div className="pt-2 mt-2 border-t border-[#E2DFD8] text-[9px] text-[#6E6A64] font-mono flex items-center justify-between shrink-0">
-              <span>Moy. Elo calculée sur échiquiers joués</span>
-              <span className="font-bold text-[#1A1918]">{team.played} match(s)</span>
+            <div className="pt-2 mt-2 border-t border-slate-100 text-[9px] text-slate-500 font-mono tabular-nums flex items-center justify-between shrink-0">
+              <span className="font-sans">Moy. Elo calculée sur échiquiers joués</span>
+              <span className="font-bold text-slate-800">{team.played} match(s)</span>
             </div>
           </div>,
           document.body
