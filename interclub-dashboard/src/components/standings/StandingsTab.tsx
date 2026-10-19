@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { DivisionStandingTable } from '../../domain/standings';
+import { DivisionStandingTable, getDivisionBadgeStyle } from '../../domain/standings';
 import { LatestTeamMatch } from '../../domain/matches';
 import { LatestMatchesSection } from './LatestMatchesSection';
+import { TeamHoverCard } from '../common/TeamHoverCard';
 import { Trophy, ChevronDown, ChevronUp, Award } from 'lucide-react';
 
 interface Props {
@@ -67,7 +68,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="chess-badge">
+                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(divTable.division)}`}>
                       {divTable.divisionLabel}
                     </span>
                     <h3 className="mt-3 text-lg font-bold font-serif text-[#1A1918] group-hover:text-[#1E5E3A] transition-colors">
@@ -137,7 +138,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                 className="flex w-full items-center justify-between p-4 text-left bg-white hover:bg-[#F9F8F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1A1918]"
               >
                 <div className="flex items-center gap-4">
-                  <span className="chess-badge">
+                  <span className={`px-2 py-0.5 text-xs font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(divTable.division)}`}>
                     {divTable.divisionLabel}
                   </span>
                   <span className="text-base font-bold text-[#1A1918]">{divTable.ourTeam?.teamName || divTable.divisionLabel}</span>
@@ -198,7 +199,15 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                             </td>
                             <td className="px-4 py-2.5 border-r border-[#E2DFD8]">
                               <div className="flex items-center gap-3">
-                                <span className={`text-sm ${isOur ? 'font-bold text-[#1E5E3A]' : 'font-medium'}`}>{t.teamName}</span>
+                                <TeamHoverCard team={t} divisionLabel={divTable.divisionLabel}>
+                                  <span
+                                    className={`text-sm ${
+                                      isOur ? 'font-bold text-[#1E5E3A]' : 'font-medium text-[#1A1918]'
+                                    } hover:underline underline-offset-2 decoration-[#1A1918]/40 transition-colors`}
+                                  >
+                                    {t.teamName}
+                                  </span>
+                                </TeamHoverCard>
                                 {isOur && (
                                   <span className="bg-[#1E5E3A] px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
                                     Notre Équipe

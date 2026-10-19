@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
-import { X, Search } from 'lucide-react';
+import { X, Search, Shield, Check } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -15,7 +15,7 @@ const COMMON_CLUBS = [
   { id: 109, name: 'Borgerhout' },
   { id: 901, name: 'Namur Échecs' },
   { id: 501, name: 'Tournai' },
-  { id: 207, name: 'Echiquier Mosan' },
+  { id: 207, name: 'Échiquier Mosan' },
 ];
 
 export const ClubSelectorModal: React.FC<Props> = ({ isOpen, onClose }) => {
@@ -42,64 +42,84 @@ export const ClubSelectorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md rounded-2xl glass-panel p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
-          <h3 className="text-lg font-semibold text-slate-100">Changer de Club FRBE</h3>
+      <div className="relative w-full max-w-md bg-white border border-[#1A1918] p-6 shadow-2xl animate-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#E2DFD8]">
+          <div className="flex items-center gap-2.5">
+            <Shield className="h-5 w-5 text-[#1E5E3A]" />
+            <h3 className="font-serif font-bold text-lg text-[#1A1918]">
+              Changer de Club FRBE
+            </h3>
+          </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-colors"
+            className="p-1 text-[#6E6A64] hover:text-[#1A1918] transition-colors cursor-pointer"
+            aria-label="Fermer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5">
-          <label className="block text-sm font-medium text-slate-300">
-            Numéro de club FRBE (Matricule)
+        {/* Custom Club Form */}
+        <form onSubmit={handleSubmit} className="mt-4">
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-[#1A1918] font-bold mb-1.5">
+            Numéro de Club FRBE (Matricule)
           </label>
-          <div className="mt-2 flex gap-2">
+          <div className="flex gap-2">
             <input
               type="number"
               placeholder="Ex: 541"
               value={customId}
               onChange={(e) => setCustomId(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-colors"
+              className="flex-1 border border-[#E2DFD8] bg-[#F9F8F6] px-3.5 py-2 text-sm text-[#1A1918] placeholder-[#6E6A64]/70 focus:bg-white focus:outline-hidden focus:border-[#1E5E3A] font-mono"
+              autoFocus
             />
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-5 py-2.5 text-sm font-semibold text-indigo-300 shadow-lg hover:bg-indigo-500/30 hover:text-indigo-200 transition-all duration-300"
+              className="inline-flex items-center gap-1.5 bg-[#1A1918] text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider hover:bg-[#33312E] transition-colors cursor-pointer"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-3.5 w-3.5" />
               Valider
             </button>
           </div>
         </form>
 
-        <div className="mt-8">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+        {/* Quick Selection Grid */}
+        <div className="mt-6 pt-5 border-t border-[#E2DFD8]">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#6E6A64] mb-3">
             Clubs Fréquents
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {COMMON_CLUBS.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleSelect(c.id)}
-                className={`flex flex-col items-start rounded-xl p-3 text-left transition-all duration-300 border ${
-                  clubId === c.id
-                    ? 'border-indigo-500/50 bg-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                    : 'border-white/5 bg-black/20 hover:border-white/20 hover:bg-white/5'
-                }`}
-              >
-                <span className={`font-bold ${clubId === c.id ? 'text-indigo-300' : 'text-slate-200'}`}>
-                  {c.id}
-                </span>
-                <span className="truncate w-full text-xs text-slate-400 mt-0.5">{c.name}</span>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-2.5">
+            {COMMON_CLUBS.map((c) => {
+              const isSelected = clubId === c.id;
+
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleSelect(c.id)}
+                  className={`flex flex-col items-start p-3 text-left border transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-[#1E5E3A] bg-[#1E5E3A]/10 ring-2 ring-[#1E5E3A]'
+                      : 'border-[#E2DFD8] bg-[#F9F8F6] hover:bg-white hover:border-[#1A1918]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className={`font-mono font-bold text-xs ${isSelected ? 'text-[#1E5E3A]' : 'text-[#6E6A64]'}`}>
+                      Matr. {c.id}
+                    </span>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-[#1E5E3A]" />}
+                  </div>
+                  <span className="font-serif font-bold text-sm text-[#1A1918] truncate w-full mt-1">
+                    {c.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

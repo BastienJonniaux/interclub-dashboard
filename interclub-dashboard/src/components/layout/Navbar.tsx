@@ -29,6 +29,11 @@ export const Navbar: React.FC<Props> = ({
 }) => {
   const { clubId, clubName } = useClub();
   const [modalOpen, setModalOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [clubId]);
 
   const navItems = [
     { id: 'standings', label: 'Classements Équipes', icon: Trophy },
@@ -44,8 +49,17 @@ export const Navbar: React.FC<Props> = ({
         <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-[#E2DFD8]">
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center bg-[#1A1918] text-white">
-                <Trophy className="h-6 w-6" />
+              <div className="flex h-12 w-12 items-center justify-center bg-[#1A1918] text-white border border-[#1A1918] overflow-hidden shrink-0 shadow-xs">
+                {!logoError ? (
+                  <img
+                    src={`/clubs/${clubId}.png`}
+                    alt={`Logo Club ${clubId}`}
+                    className="h-full w-full object-contain p-1"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <Trophy className="h-6 w-6" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">

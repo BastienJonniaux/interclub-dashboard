@@ -131,7 +131,7 @@ export function useClubData(): ClubDataState {
         );
 
         if (matchingDiv) {
-          const divStandings = calculateDivisionStandings(matchingDiv, clubId);
+          const divStandings = calculateDivisionStandings(matchingDiv, clubId, directory);
           divisionStandingsList.push(divStandings);
 
           // Calculate our team average Elo from titulars

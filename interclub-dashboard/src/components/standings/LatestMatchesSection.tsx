@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LatestTeamMatch } from '../../domain/matches';
+import { getDivisionBadgeStyle } from '../../domain/standings';
 import { Trophy, ChevronDown, ChevronUp, Home, Plane, Swords } from 'lucide-react';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 
@@ -125,7 +126,7 @@ export const LatestMatchesSection: React.FC<Props> = ({ matches, clubName }) => 
       </div>
 
       {/* Grid of Team Matches */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
         {matches.map((m) => {
           const matchKey = `${m.division}${m.index}`;
           const isExpanded = !!expandedMatches[matchKey];
@@ -138,11 +139,13 @@ export const LatestMatchesSection: React.FC<Props> = ({ matches, clubName }) => 
               {/* Match Header Bar */}
               <div
                 onClick={() => toggleExpand(matchKey)}
-                className="flex cursor-pointer items-center justify-between p-4 bg-[#F9F8F6] border-b border-[#E2DFD8] hover:bg-[#F0EFF0] transition-colors"
+                className={`flex cursor-pointer items-center justify-between p-4 bg-[#F9F8F6] hover:bg-[#F0EFF0] transition-colors gap-3 ${
+                  isExpanded ? 'border-b border-[#E2DFD8]' : ''
+                }`}
               >
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
-                    <span className="bg-[#1A1918] text-white px-2 py-0.5 text-[10px] font-semibold tracking-wide">
+                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase ${getDivisionBadgeStyle(m.division)}`}>
                       {m.divisionLabel}
                     </span>
                     <span className="text-[10px] text-[#6E6A64] flex items-center gap-1.5 font-bold uppercase tracking-wider">
@@ -158,14 +161,18 @@ export const LatestMatchesSection: React.FC<Props> = ({ matches, clubName }) => 
                     </span>
                   </div>
 
-                  <div className="mt-2.5 flex items-baseline gap-2.5">
-                    <span className="font-bold text-[#1A1918] text-lg">{m.ourTeamName}</span>
+                  <div className="mt-2.5 flex items-baseline gap-2 flex-wrap">
+                    <span className="font-bold text-[#1A1918] text-base sm:text-lg whitespace-nowrap">
+                      {m.ourTeamName}
+                    </span>
                     <span className="text-xs text-[#6E6A64] font-medium font-serif italic">vs</span>
-                    <span className="font-semibold text-[#6E6A64] text-base">{m.opponentTeamName}</span>
+                    <span className="font-semibold text-[#6E6A64] text-sm sm:text-base whitespace-nowrap">
+                      {m.opponentTeamName}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 shrink-0">
                   <div>
                     {m.matchOutcome === 'win' && (
                       <span className="inline-flex items-center gap-1 bg-[#1E5E3A]/10 text-[#1E5E3A] border border-[#1E5E3A]/20 px-2.5 py-1 text-[10px] font-bold font-mono">
