@@ -72,12 +72,14 @@ const DashboardContent: React.FC = () => {
       />
 
       {isFallback && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center text-sm font-semibold text-amber-800">
-          Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-amber-800">
+            Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
+          </div>
         </div>
       )}
 
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 relative">
         {activeTab === 'standings' && (
           <div className="animate-in fade-in duration-300">
             <StandingsTab

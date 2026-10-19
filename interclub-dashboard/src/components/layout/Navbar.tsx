@@ -45,8 +45,9 @@ export const Navbar: React.FC<Props> = ({
 
   return (
     <>
-      <header className="relative mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-slate-100">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6">
+        <header className="relative bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-slate-100">
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-3.5">
               <div className="flex h-11 w-11 items-center justify-center bg-slate-900 text-white rounded-xl overflow-hidden shrink-0 shadow-xs border border-slate-800">
@@ -135,8 +136,9 @@ export const Navbar: React.FC<Props> = ({
           </nav>
         </div>
       </header>
+    </div>
 
-      <ClubSelectorModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+    <ClubSelectorModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 };

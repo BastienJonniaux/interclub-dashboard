@@ -633,9 +633,9 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column: Player Deck (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
+      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
+        {/* Left Column: Player Deck (Fixed elegant width) */}
+        <div className="w-full lg:w-96 shrink-0 space-y-4">
           <div className="bg-white border border-slate-200/70 rounded-xl shadow-sm p-4 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-2 shrink-0">
               <div className="flex flex-col">
@@ -868,8 +868,8 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           </div>
         </div>
 
-        {/* Right Column: Teams Builder (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* Right Column: Teams Builder (Takes all remaining width) */}
+        <div className="flex-1 min-w-0 w-full space-y-4">
           {/* Team Tabs (Segmented Control) */}
           <div className="bg-slate-100/80 border border-slate-200/80 p-1.5 rounded-2xl flex flex-wrap items-center gap-1.5 shadow-xs">
             <button
@@ -977,7 +977,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                 </div>
               )}
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {teams.map((t, idx) => {
                   const tNum = idx + 1;
                   const bCount = getBoardCountForDivision(t.division);

@@ -131,7 +131,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-6">
           {standings.map((divTable) => {
             const our = divTable.ourTeam;
             const rank = our?.rank || '-';
@@ -276,19 +276,19 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
               {isExpanded && (
                 <div className="overflow-x-auto border-t border-slate-200/80 bg-white">
                   <table className="w-full text-left text-sm text-slate-900">
-                    <thead className="bg-slate-50 text-[10px] uppercase tracking-wider font-semibold text-slate-500 border-b border-slate-200/80">
+                    <thead className="bg-slate-50 text-[11px] uppercase tracking-wider font-semibold text-slate-500 border-b border-slate-200/80">
                       <tr>
-                        <th className="px-4 py-3 text-center border-r border-slate-200/60 w-24">Rang</th>
-                        <th className="px-4 py-3 border-r border-slate-200/60">Équipe</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200/60 hidden md:table-cell">Forme</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Joués">J</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Gagnés">G</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Nuls">N</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200/60" title="Perdus">P</th>
-                        <th className="px-4 py-3 text-center font-bold text-slate-900 border-r border-slate-200/60">
+                        <th className="px-6 py-4 text-center border-r border-slate-200/60 w-28">Rang</th>
+                        <th className="px-6 py-4 border-r border-slate-200/60">Équipe</th>
+                        <th className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">Forme</th>
+                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Joués">J</th>
+                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Gagnés">G</th>
+                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Nuls">N</th>
+                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Perdus">P</th>
+                        <th className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60">
                           Pts Match
                         </th>
-                        <th className="px-4 py-3 text-center font-bold text-slate-900">Pts Échiq.</th>
+                        <th className="px-6 py-4 text-center font-bold text-slate-900">Pts Échiq.</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -303,7 +303,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                                 : 'hover:bg-slate-50/80'
                             }`}
                           >
-                            <td className="px-4 py-3 text-center border-r border-slate-200/60 font-mono tabular-nums">
+                            <td className="px-6 py-4 text-center border-r border-slate-200/60 font-mono tabular-nums">
                               <div className="flex items-center justify-center gap-1.5">
                                 <span
                                   className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs rounded-md border ${
@@ -321,7 +321,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                                 {renderRankDiffBadge(t.rankDiff)}
                               </div>
                             </td>
-                            <td className="px-4 py-3 border-r border-slate-200/60">
+                            <td className="px-6 py-4 border-r border-slate-200/60">
                               <div className="flex items-center gap-2.5">
                                 <TeamHoverCard team={t} divisionLabel={divTable.divisionLabel}>
                                   <span
@@ -339,19 +339,19 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 py-3 text-center border-r border-slate-200/60 hidden md:table-cell">
+                            <td className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">
                               <div className="flex justify-center">
                                 {renderFormPills(t.matchHistory)}
                               </div>
                             </td>
-                            <td className="px-3 py-3 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.played}</td>
-                            <td className="px-3 py-3 text-center font-bold text-emerald-600 border-r border-slate-200/60 font-mono tabular-nums">{t.won}</td>
-                            <td className="px-3 py-3 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.drawn}</td>
-                            <td className="px-3 py-3 text-center font-bold text-rose-600 border-r border-slate-200/60 font-mono tabular-nums">{t.lost}</td>
-                            <td className="px-4 py-3 text-center font-bold text-slate-900 border-r border-slate-200/60 font-mono tabular-nums">
+                            <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.played}</td>
+                            <td className="px-4 py-4 text-center font-bold text-emerald-600 border-r border-slate-200/60 font-mono tabular-nums">{t.won}</td>
+                            <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.drawn}</td>
+                            <td className="px-4 py-4 text-center font-bold text-rose-600 border-r border-slate-200/60 font-mono tabular-nums">{t.lost}</td>
+                            <td className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60 font-mono tabular-nums text-base">
                               {t.matchPoints}
                             </td>
-                            <td className="px-4 py-3 text-center font-bold text-slate-900 font-mono tabular-nums">
+                            <td className="px-6 py-4 text-center font-bold text-slate-900 font-mono tabular-nums text-base">
                               {t.boardPoints}
                             </td>
                           </tr>
