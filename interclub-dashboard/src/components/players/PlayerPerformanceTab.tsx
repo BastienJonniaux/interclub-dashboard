@@ -117,11 +117,11 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                   return (
                     <React.Fragment key={p.id}>
                       <tr
-                        className={`transition-colors h-[44px] ${
-                          isHot
-                            ? 'bg-amber-50/50 hover:bg-amber-50'
-                            : isExpanded
+                        className={`transition-colors h-[48px] ${
+                          isExpanded
                             ? 'bg-slate-50'
+                            : isHot
+                            ? 'bg-emerald-50/25 hover:bg-emerald-50/40'
                             : 'bg-white hover:bg-slate-50/80'
                         }`}
                       >
@@ -138,11 +138,15 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                             }`}
                           >
                             <div>
-                              <div className="font-semibold text-slate-900 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors">
-                                {p.fullName}
+                              <div className="font-semibold text-slate-900 flex items-center gap-2 group-hover:text-emerald-700 transition-colors">
+                                <span>{p.fullName}</span>
                                 {isHot && (
-                                  <span title="Joueur très en forme !">
-                                    <Flame className="h-4 w-4 text-amber-500 fill-amber-500 inline" />
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-100/70 text-emerald-800 border border-emerald-200/90 shadow-2xs"
+                                    title="Excellente performance (≥ 75% des points gagnés)"
+                                  >
+                                    <Flame className="h-3 w-3 text-emerald-600 fill-emerald-500" />
+                                    <span>Top Perf</span>
                                   </span>
                                 )}
                               </div>
@@ -250,7 +254,15 @@ export const PlayerPerformanceTab: React.FC<Props> = ({ players, clubName }) => 
                         </td>
 
                         <td className="px-5 py-3 text-center font-bold text-slate-900 border-r border-slate-100 font-mono tabular-nums">
-                          {p.score} <span className="text-slate-400 font-normal">/ {p.gamesPlayed}</span>
+                          {isHot ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2 py-0.5 rounded-md font-bold text-xs">
+                              {p.score} / {p.gamesPlayed}
+                            </span>
+                          ) : (
+                            <>
+                              {p.score} <span className="text-slate-400 font-normal">/ {p.gamesPlayed}</span>
+                            </>
+                          )}
                         </td>
 
                         <td className="px-3 py-3 text-center border-r border-slate-100 font-mono tabular-nums">

@@ -855,12 +855,6 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         </button>
                       </div>
                     </div>
-
-                    {assignmentStr && !isIgnored && (
-                      <div className={`mt-2 text-[10px] font-bold font-mono uppercase tracking-wider ${isAssignedHere ? 'text-emerald-700' : 'text-amber-700'}`}>
-                        {isAssignedHere ? 'Assigné à cette équipe' : `Déjà placé : ${assignmentStr}`}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -992,7 +986,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
                   const assignedCount = boards.filter(b => b.player !== null).length;
                   const totalRatings = boards.reduce((sum, b) => sum + (b.player?.assignedrating || 0), 0);
-                  const avgElo = assignedCount === bCount ? Math.round(totalRatings / bCount) : null;
+                  const avgElo = assignedCount > 0 ? Math.round(totalRatings / assignedCount) : null;
 
                   return (
                     <div
