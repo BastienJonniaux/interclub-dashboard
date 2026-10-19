@@ -111,9 +111,9 @@ export const Navbar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Tab Navigation - Modern Segmented Control */}
-        <div className="px-3 sm:px-6 py-2.5 bg-slate-50/70">
-          <nav className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl overflow-x-auto no-scrollbar">
+        {/* Tab Navigation - Modern Border Tabs */}
+        <div className="px-4 sm:px-6 bg-white">
+          <nav className="flex items-center gap-6 overflow-x-auto no-scrollbar">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -121,13 +121,13 @@ export const Navbar: React.FC<Props> = ({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all rounded-lg cursor-pointer ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap py-3.5 text-xs sm:text-sm transition-all border-b-2 cursor-pointer ${
                     isActive
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      ? 'border-slate-900 font-semibold text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-medium'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-500'}`} />
+                  <Icon className={`h-4 w-4 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-400'}`} />
                   {item.label}
                 </button>
               );

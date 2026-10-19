@@ -83,7 +83,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
 
     const recent = history.slice(-5);
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {recent.map((m, idx) => {
           let style = 'bg-slate-100 text-slate-600 border border-slate-200';
           let letter = 'N';
@@ -99,13 +99,17 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
           }
 
           return (
-            <span
-              key={idx}
-              className={`inline-flex w-5 h-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shrink-0 cursor-default ${style}`}
-              title={`Ronde ${m.round}: ${letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'} (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
-            >
-              {letter}
-            </span>
+            <div key={idx} className="flex flex-col items-center gap-0.5">
+              <span
+                className={`inline-flex w-5 h-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shrink-0 cursor-default ${style}`}
+                title={`Ronde ${m.round}: ${letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'} (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
+              >
+                {letter}
+              </span>
+              <span className="text-[9px] font-mono text-slate-500 tabular-nums leading-none">
+                {m.teamScore}-{m.oppScore}
+              </span>
+            </div>
           );
         })}
       </div>
@@ -169,47 +173,49 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                     </div>
                   </div>
 
-                  {/* Recent Form Pills */}
-                  <div className="mt-4 flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
-                    <span className="font-medium text-slate-600">Forme récente :</span>
-                    {our ? renderFormPills(our.matchHistory) : <span className="font-mono text-slate-400">-</span>}
-                  </div>
-
-                  {/* Match Points Visual Progress Bar */}
-                  <div className="mt-3.5 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-mono tabular-nums">
-                      <span className="text-slate-500 font-sans">Points de match :</span>
-                      <span className="font-bold text-slate-900">
-                        {matchPoints} <span className="text-slate-400 font-normal">/ {maxMatchPoints} pts</span>
+                  {/* Bilan & Recent Form Section */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500 block">
+                        Bilan
+                      </span>
+                      <span className="text-xs font-semibold text-slate-700">
+                        {our ? `${our.won} Victoire${our.won > 1 ? 's' : ''} • ${our.drawn} Nulle${our.drawn > 1 ? 's' : ''} • ${our.lost} Défaite${our.lost > 1 ? 's' : ''}` : '-'}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.max(0, matchPointsPercent))}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Bottom stats row */}
-                <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-3 text-center font-mono tabular-nums">
-                  <div className="px-1 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Rang</div>
-                    <div className="mt-0.5 text-lg font-bold font-mono text-slate-800">
-                      {rank} <span className="text-xs font-normal text-slate-600">/{totalTeams}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {our ? renderFormPills(our.matchHistory) : <span className="font-mono text-slate-400 text-xs">-</span>}
                     </div>
                   </div>
-                  <div className="px-1 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Pts Match</div>
-                    <div className="mt-0.5 text-lg font-bold font-mono text-emerald-600">
-                      {matchPoints}
+
+                  {/* Horizontal Metrics Mini-Banner */}
+                  <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200/80 bg-slate-50/80 border border-slate-200/70 rounded-xl py-2.5 px-1 text-center font-mono tabular-nums shadow-xs">
+                    <div className="px-1 text-center">
+                      <span className="block text-[10px] font-sans font-semibold text-slate-500 uppercase tracking-wider">
+                        Rang
+                      </span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {rank === 1 ? '1er' : `${rank}e`} <span className="text-[10px] font-normal text-slate-500">/{totalTeams}</span>
+                      </span>
                     </div>
-                  </div>
-                  <div className="px-1 text-center">
-                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Pts Échiq.</div>
-                    <div className="mt-0.5 text-lg font-bold font-mono text-slate-800">
-                      {our?.boardPoints ?? 0}
+
+                    <div className="px-1 text-center">
+                      <span className="block text-[10px] font-sans font-semibold text-slate-500 uppercase tracking-wider">
+                        Score match
+                      </span>
+                      <span className="font-bold text-emerald-700 text-sm">
+                        {matchPoints} <span className="text-[10px] font-normal text-slate-500">/{maxMatchPoints} pts</span>
+                      </span>
+                    </div>
+
+                    <div className="px-1 text-center">
+                      <span className="block text-[10px] font-sans font-semibold text-slate-500 uppercase tracking-wider">
+                        Départage
+                      </span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {our?.boardPoints ?? 0} <span className="text-[10px] font-normal text-slate-500">pts</span>
+                      </span>
                     </div>
                   </div>
                 </div>

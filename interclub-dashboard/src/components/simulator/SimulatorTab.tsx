@@ -1084,7 +1084,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                                     setSelectedTeamIndex(idx);
                                   }
                                 }}
-                                className="border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 rounded-lg p-2 text-xs text-slate-600 flex items-center justify-between transition-colors cursor-pointer"
+                                className="border border-slate-100 bg-slate-50/60 hover:bg-slate-100/70 rounded-lg p-2 text-xs text-slate-600 flex items-center justify-between transition-colors cursor-pointer"
                                 title={selectedPlayerId !== null ? `Assigner le joueur sélectionné à l'échiquier ${b.board}` : `Cliquer pour gérer cette équipe`}
                               >
                                 <span className="font-mono text-[10px] font-bold text-slate-600">#{b.board}</span>
@@ -1270,7 +1270,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                                 ? 'cursor-pointer hover:bg-slate-50 hover:border-slate-300'
                                 : b.player
                                 ? 'cursor-pointer hover:border-slate-300 bg-white border-slate-200/80 shadow-xs'
-                                : 'border-2 border-dashed border-slate-200 bg-slate-50/60 hover:border-emerald-400 hover:bg-emerald-50/30'
+                                : 'border border-slate-200/80 bg-slate-50/60 hover:border-emerald-400 hover:bg-emerald-50/30'
                             }`}
                           >
                             <span className={`flex h-9 w-9 items-center justify-center font-mono font-bold text-sm shrink-0 rounded-lg border shadow-xs ${

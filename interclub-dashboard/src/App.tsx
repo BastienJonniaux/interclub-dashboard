@@ -63,7 +63,7 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-slate-50">
+    <div className="min-h-screen flex flex-col relative">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
