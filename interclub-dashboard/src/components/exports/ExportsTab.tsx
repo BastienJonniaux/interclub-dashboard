@@ -171,33 +171,33 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 text-white p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Exports & Mails — {club.name}
           </h2>
-          <p className="text-sm text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
+          <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
             Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit shadow-xs">
+      <div className="border-b border-slate-200 flex items-center gap-8">
         <button
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+          className={`pb-3 text-sm font-semibold transition-all cursor-pointer relative ${
             activeSubTab === 'pre-round'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              ? 'text-slate-900 border-b-2 border-slate-900 -mb-px'
+              : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent -mb-px'
           }`}
           onClick={() => setActiveSubTab('pre-round')}
         >
-          Email de compo pré-ronde
+          Email de composition pré-ronde
         </button>
         <button
-          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+          className={`pb-3 text-sm font-semibold transition-all cursor-pointer relative ${
             activeSubTab === 'post-round'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              ? 'text-slate-900 border-b-2 border-slate-900 -mb-px'
+              : 'text-slate-500 hover:text-slate-800 border-b-2 border-transparent -mb-px'
           }`}
           onClick={() => setActiveSubTab('post-round')}
         >
@@ -206,7 +206,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
       </div>
 
       {activeSubTab === 'post-round' && (
-        <div className="flex flex-col justify-between bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
+        <div className="flex flex-col justify-between bg-white border border-slate-200/70 rounded-xl shadow-sm p-6">
           <div>
             <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-slate-100 gap-4">
               <div className="flex items-center gap-3">
@@ -219,9 +219,9 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
               </div>
               <button
                 onClick={handleCopyEmail}
-                className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-700 px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
               >
-                {copiedEmail ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedEmail ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                 <span>{copiedEmail ? 'Copié !' : 'Copier le texte'}</span>
               </button>
             </div>
@@ -231,7 +231,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
                   Ronde à récapituler :
                 </span>
-                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+                <div className="flex gap-1.5 p-1 bg-slate-100/80 rounded-xl">
                   {playedRoundNumbers.map((r) => (
                     <button
                       key={r}
@@ -253,7 +253,7 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
               Texte formaté prêt à être collé dans votre messagerie (Outlook, Gmail, WhatsApp).
             </p>
 
-            <pre className="mt-3 max-h-[500px] overflow-y-auto bg-slate-50 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
+            <pre className="mt-3 max-h-[500px] overflow-y-auto bg-slate-50/70 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200/70 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
               {emailText}
             </pre>
           </div>

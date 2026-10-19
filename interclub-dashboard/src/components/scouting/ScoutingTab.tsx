@@ -58,19 +58,19 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 text-white p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
             Scouting & Prochains Matchs — {clubName}
           </h2>
-          <p className="text-sm text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
+          <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
             Analyse des adversaires de la prochaine ronde, comparaison des forces et détection des besoins en renforts.
           </p>
         </div>
-        <div className="shrink-0 flex flex-col gap-2">
-          <div className="bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-mono font-bold tracking-wider uppercase text-slate-200">SYSTÈME ACTIF</span>
+        <div className="shrink-0">
+          <div className="bg-white border border-slate-200/70 rounded-xl px-3.5 py-2 flex items-center gap-2 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700">Système Actif</span>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
           return (
             <div
               key={idx}
-              className="flex flex-col justify-between bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 sm:p-6"
+              className="flex flex-col justify-between bg-white border border-slate-200/70 rounded-xl shadow-sm p-5 sm:p-6"
             >
               <div>
                 {/* Header with Team & Readiness status */}
@@ -100,7 +100,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                 </div>
 
                 {/* Matchup Banner */}
-                <div className="mt-5 bg-slate-50 border border-slate-200/80 rounded-xl p-4 sm:p-5">
+                <div className="mt-5 bg-slate-50/70 border border-slate-200/70 rounded-xl p-4 sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
@@ -137,34 +137,34 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                   </div>
 
                   {isBye ? (
-                    <div className="mt-5 pt-4 border-t border-slate-200/80 text-center">
+                    <div className="mt-5 pt-4 border-t border-slate-200/70 text-center">
                       <div className="text-xs sm:text-sm text-slate-500 font-medium">
                         L'équipe est exempte (BYE) pour cette ronde. Aucun joueur ne doit être aligné et aucune préparation n'est nécessaire.
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 pt-4 border-t border-slate-200/80 grid grid-cols-3 gap-3 text-center font-mono tabular-nums">
-                      <div className="bg-white p-2.5 border border-slate-200/80 rounded-xl shadow-xs">
+                    <div className="mt-4 pt-4 border-t border-slate-200/70 grid grid-cols-3 gap-3 text-center font-mono tabular-nums">
+                      <div className="bg-white p-2.5 border border-slate-200/70 rounded-xl shadow-xs">
                         <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 font-sans">Notre Moy.</div>
                         <div className="text-sm font-bold text-slate-900">
                           {scout.ourAverageElo > 0 ? `${scout.ourAverageElo}` : 'N/C'}
                         </div>
                       </div>
-                      <div className="bg-white p-2.5 border border-slate-200/80 rounded-xl shadow-xs">
+                      <div className="bg-white p-2.5 border border-slate-200/70 rounded-xl shadow-xs">
                         <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 font-sans">Moy. Adv.</div>
                         <div className="text-sm font-bold text-slate-900">
                           {scout.opponentAverageElo > 0 ? `${scout.opponentAverageElo}` : 'N/C'}
                         </div>
                       </div>
-                      <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xs">
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 font-sans">Écart</div>
+                      <div className="bg-white p-2.5 border border-slate-200/70 rounded-xl shadow-xs">
+                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 font-sans">Écart</div>
                         <div
                           className={`text-sm font-bold ${
                             scout.eloDiff >= 50
-                              ? 'text-emerald-400'
+                              ? 'text-emerald-700'
                               : scout.eloDiff <= -50
-                              ? 'text-rose-400'
-                              : 'text-amber-400'
+                              ? 'text-rose-700'
+                              : 'text-amber-700'
                           }`}
                         >
                           {scout.eloDiff > 0 ? `+${scout.eloDiff}` : scout.eloDiff}
@@ -179,7 +179,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                       Composition probable de l'adversaire
                     </h4>
-                    <div className="border border-slate-200/80 bg-white rounded-xl overflow-hidden shadow-xs">
+                    <div className="border border-slate-200/70 bg-white rounded-lg overflow-hidden shadow-xs">
                       <table className="w-full text-left">
                         <tbody className="divide-y divide-slate-100">
                           {scout.boardsScouting.map((b) => {
@@ -226,7 +226,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
                                         </span>
                                       </PlayerHoverCard>
                                       {b.frequentPlayer.rating > 0 && (
-                                        <span className="font-mono tabular-nums text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200/60">
+                                        <span className="font-mono tabular-nums text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                                           {b.frequentPlayer.rating}
                                         </span>
                                       )}
@@ -250,7 +250,7 @@ export const ScoutingTab: React.FC<Props> = ({ scouting, clubName }) => {
               {/* Action advice */}
               {!isBye && (
                 <div className="mt-5 border-t border-slate-100 pt-4">
-                  <div className="text-xs sm:text-sm text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div className="text-xs sm:text-sm text-slate-800 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/70 shadow-xs">
                     <strong className="text-slate-900 font-bold uppercase tracking-wider text-[11px] font-mono mr-1.5">Conseil Directeur :</strong>
                     <span className="text-slate-600">
                       {scout.readiness === 'red'

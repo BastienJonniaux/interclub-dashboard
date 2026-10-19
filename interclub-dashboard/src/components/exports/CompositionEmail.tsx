@@ -130,7 +130,7 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
   };
 
   return (
-    <div className="flex flex-col justify-between bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
+    <div className="flex flex-col justify-between bg-white border border-slate-200/70 rounded-xl shadow-sm p-6">
       <div>
         <div className="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-slate-100 gap-4">
           <div className="flex items-center gap-3">
@@ -143,9 +143,9 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
           </div>
           <button
             onClick={handleCopy}
-            className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-bold font-mono rounded-lg shadow-xs transition-all cursor-pointer"
           >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
             <span>{copied ? 'Copié !' : "Copier l'email"}</span>
           </button>
         </div>
@@ -159,7 +159,7 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">Texte d'introduction</label>
               <textarea
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 custom-scrollbar min-h-[70px] transition-colors"
+                className="w-full text-xs p-3 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-slate-400 custom-scrollbar min-h-[70px] transition-colors"
                 value={introText}
                 onChange={e => setIntroText(e.target.value)}
               />
@@ -179,7 +179,7 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                 const currentText = teamTexts[tNum] !== undefined ? teamTexts[tNum] : defaultText;
 
                 return (
-                  <div key={team.name} className="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-xs">
+                  <div key={team.name} className="bg-white border border-slate-200/70 rounded-xl p-3.5 shadow-xs">
                     <div className="font-bold text-slate-900 text-sm mb-2 flex items-center justify-between">
                       <span>Équipe {tNum} - vs {scout.opponentTeamName}</span>
                       <span className={`text-[10px] px-2 py-0.5 font-mono uppercase font-bold rounded-md border ${
@@ -214,7 +214,7 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
                       </label>
                       <input 
                         type="text"
-                        className="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 transition-colors"
+                        className="w-full text-xs p-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-slate-400 transition-colors"
                         value={currentText}
                         onChange={e => handleTeamTextChange(tNum, e.target.value)}
                         placeholder={isHome ? "Optionnel..." : "Ex: RDV à 12h30 pour covoiturage..."}
@@ -230,7 +230,7 @@ export const CompositionEmail: React.FC<Props> = ({ club, scouting, draftComposi
             <div className="flex justify-between items-center mb-1">
               <span className="text-[10px] uppercase font-bold text-slate-500 font-mono tracking-wider">Aperçu du mail</span>
             </div>
-            <pre className="flex-1 min-h-[400px] max-h-[600px] overflow-y-auto bg-slate-50 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
+            <pre className="flex-1 min-h-[400px] max-h-[600px] overflow-y-auto bg-slate-50/70 p-4 text-xs leading-relaxed font-mono text-slate-800 border border-slate-200/70 rounded-xl whitespace-pre-wrap select-text custom-scrollbar">
               {generatedEmail}
             </pre>
           </div>
