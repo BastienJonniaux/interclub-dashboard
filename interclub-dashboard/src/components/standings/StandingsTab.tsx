@@ -174,13 +174,13 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                   </div>
 
                   {/* Bilan & Recent Form Section */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-500 block">
                         Bilan
                       </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {our ? `${our.won} Victoire${our.won > 1 ? 's' : ''} • ${our.drawn} Nulle${our.drawn > 1 ? 's' : ''} • ${our.lost} Défaite${our.lost > 1 ? 's' : ''}` : '-'}
+                      <span className="text-xs font-bold font-mono text-slate-700 whitespace-nowrap">
+                        {our ? `${our.won}V • ${our.drawn}N • ${our.lost}D` : '-'}
                       </span>
                     </div>
 
