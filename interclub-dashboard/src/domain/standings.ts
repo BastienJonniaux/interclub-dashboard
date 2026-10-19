@@ -46,19 +46,19 @@ export interface DivisionStandingTable {
 export function getDivisionBadgeStyle(division: number): string {
   switch (division) {
     case 1:
-      return 'bg-amber-500 text-white border border-amber-600 shadow-xs'; // Div 1: Gold / Amber
+      return 'bg-amber-50 text-amber-700 border border-amber-200/80'; // Div 1: Soft Gold / Amber
     case 2:
-      return 'bg-indigo-600 text-white border border-indigo-700 shadow-xs'; // Div 2: Royal Indigo
+      return 'bg-indigo-50 text-indigo-700 border border-indigo-200/80'; // Div 2: Soft Indigo
     case 3:
-      return 'bg-emerald-600 text-white border border-emerald-700 shadow-xs'; // Div 3: Forest Green
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'; // Div 3: Soft Emerald
     case 4:
-      return 'bg-orange-600 text-white border border-orange-700 shadow-xs'; // Div 4: Terracotta / Orange
+      return 'bg-orange-50 text-orange-700 border border-orange-200/80'; // Div 4: Soft Terracotta / Orange
     case 5:
-      return 'bg-teal-600 text-white border border-teal-700 shadow-xs'; // Div 5: Teal
+      return 'bg-teal-50 text-teal-700 border border-teal-200/80'; // Div 5: Soft Teal
     case 6:
-      return 'bg-rose-700 text-white border border-rose-800 shadow-xs'; // Div 6: Burgundy
+      return 'bg-rose-50 text-rose-700 border border-rose-200/80'; // Div 6: Soft Rose
     default:
-      return 'bg-slate-800 text-white border border-slate-900 shadow-xs';
+      return 'bg-slate-100 text-slate-700 border border-slate-200';
   }
 }
 

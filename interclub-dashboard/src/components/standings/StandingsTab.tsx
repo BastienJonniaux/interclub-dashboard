@@ -85,23 +85,23 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
     return (
       <div className="flex items-center gap-1">
         {recent.map((m, idx) => {
-          let style = 'bg-slate-200 text-slate-700';
+          let style = 'bg-slate-100 text-slate-600 border border-slate-200';
           let letter = 'N';
           if (m.matchOutcome === 'win') {
-            style = 'bg-emerald-500 text-white';
+            style = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
             letter = 'V';
           } else if (m.matchOutcome === 'draw') {
-            style = 'bg-amber-500 text-white';
+            style = 'bg-slate-100 text-slate-600 border border-slate-200';
             letter = 'N';
           } else if (m.matchOutcome === 'loss') {
-            style = 'bg-rose-500 text-white';
+            style = 'bg-rose-50 text-rose-700 border border-rose-200';
             letter = 'D';
           }
 
           return (
             <span
               key={idx}
-              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shadow-xs cursor-default ${style}`}
+              className={`inline-flex w-5 h-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shrink-0 cursor-default ${style}`}
               title={`Ronde ${m.round}: ${letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'} (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
             >
               {letter}
@@ -183,7 +183,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                         {matchPoints} <span className="text-slate-400 font-normal">/ {maxMatchPoints} pts</span>
                       </span>
                     </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div
                         className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min(100, Math.max(0, matchPointsPercent))}%` }}
@@ -193,22 +193,22 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                 </div>
 
                 {/* Bottom stats row */}
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center font-mono tabular-nums">
-                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
-                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Rang</div>
-                    <div className="text-sm font-bold text-slate-900">
-                      {rank} <span className="text-[10px] text-slate-400 font-normal">/{totalTeams}</span>
+                <div className="mt-4 grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 pt-3 text-center font-mono tabular-nums">
+                  <div className="px-1 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Rang</div>
+                    <div className="mt-0.5 text-lg font-bold font-mono text-slate-800">
+                      {rank} <span className="text-xs font-normal text-slate-600">/{totalTeams}</span>
                     </div>
                   </div>
-                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
-                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pts Match</div>
-                    <div className="text-sm font-bold text-emerald-700">
+                  <div className="px-1 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Pts Match</div>
+                    <div className="mt-0.5 text-lg font-bold font-mono text-emerald-600">
                       {matchPoints}
                     </div>
                   </div>
-                  <div className="bg-slate-50/70 rounded-lg py-1.5 px-1">
-                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pts Échiq.</div>
-                    <div className="text-sm font-bold text-slate-900">
+                  <div className="px-1 text-center">
+                    <div className="text-[11px] uppercase tracking-wider text-slate-600 font-semibold font-sans">Pts Échiq.</div>
+                    <div className="mt-0.5 text-lg font-bold font-mono text-slate-800">
                       {our?.boardPoints ?? 0}
                     </div>
                   </div>
@@ -327,7 +327,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                                   </span>
                                 </TeamHoverCard>
                                 {isOur && (
-                                  <span className="bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider rounded-md shadow-xs">
+                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md">
                                     Notre Équipe
                                   </span>
                                 )}

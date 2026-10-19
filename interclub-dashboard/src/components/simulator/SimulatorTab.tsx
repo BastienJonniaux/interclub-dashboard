@@ -8,6 +8,7 @@ import {
   RESERVE_ELO_LIMITS
 } from '../../domain/rules/frbeValidator';
 import { getBoardCountForDivision, NextMatchScout } from '../../domain/scouting';
+import { getDivisionBadgeStyle } from '../../domain/standings';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import { DirectorAuthModal } from '../common/DirectorAuthModal';
@@ -455,19 +456,17 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 text-white p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Simulateur de Composition & Règles FRBE
-          </h2>
-          <p className="text-sm text-slate-300 mt-1.5 max-w-3xl leading-relaxed">
-            Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner. Validation en direct des règles FRBE et force théorique.
-          </p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+          Simulateur de Composition & Règles FRBE
+        </h2>
+        <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+          Sélectionnez un joueur dans le deck, puis cliquez sur un échiquier pour l'y assigner. Validation en direct des règles FRBE et force théorique.
+        </p>
       </div>
 
       {/* Round Stepper Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white border border-slate-200/70 rounded-xl shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
             Ronde :
@@ -533,7 +532,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       />
 
       {/* Server & DB Sync Bar */}
-      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs">
+      <div className="bg-white border border-slate-200/70 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="flex items-center gap-1.5 font-mono text-slate-500">
             <Cloud className="h-4 w-4 text-slate-600" />
@@ -637,7 +636,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Player Deck (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-4 h-full flex flex-col">
+          <div className="bg-white border border-slate-200/70 rounded-xl shadow-sm p-4 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-2 shrink-0">
               <div className="flex flex-col">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
@@ -766,96 +765,93 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                         : 'bg-white border-slate-200/80 hover:bg-slate-50'
                     } ${!isIgnored && !isAbsent && !isSelected && !isEligible ? 'opacity-50 grayscale' : ''}`}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2.5">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          {/* Luminous availability dot */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Pastille discrète de disponibilité */}
                           <span
-                            className={`h-2.5 w-2.5 rounded-full shrink-0 shadow-xs ${
+                            className={`w-2 h-2 rounded-full shrink-0 ${
                               status === 'available'
-                                ? 'bg-emerald-500 ring-2 ring-emerald-500/20'
-                                : status === 'tentative'
-                                ? 'bg-amber-400 ring-2 ring-amber-400/20'
-                                : 'bg-rose-500 ring-2 ring-rose-500/20'
+                                ? 'bg-emerald-500'
+                                : status === 'unavailable'
+                                ? 'bg-rose-400'
+                                : 'bg-amber-400'
                             }`}
-                            title={status === 'available' ? 'Présent' : status === 'tentative' ? 'À confirmer' : 'Absent'}
+                            title={status === 'available' ? 'Disponible' : status === 'unavailable' ? 'Absent' : 'À confirmer'}
                           />
 
                           <PlayerHoverCard playerName={`${p.last_name} ${p.first_name}`} expectedElo={p.assignedrating}>
-                            <div className={`font-semibold text-sm truncate ${
+                            <span className={`font-semibold text-sm truncate cursor-pointer ${
                               isSelected
                                 ? 'text-emerald-800'
                                 : isIgnored
                                 ? 'text-slate-400 line-through'
                                 : isAbsent
                                 ? 'text-rose-700/80'
-                                : 'text-slate-900'
+                                : 'text-slate-900 hover:text-emerald-700'
                             }`}>
                               {p.last_name} {p.first_name}
-                            </div>
+                            </span>
                           </PlayerHoverCard>
-                        </div>
 
-                        <div className="text-[11px] text-slate-500 mt-1.5 flex flex-wrap items-center gap-1.5">
-                          <span className="font-mono tabular-nums font-bold text-xs bg-slate-100 text-slate-800 border border-slate-200/80 px-1.5 py-0.5 rounded-md">
-                            {p.assignedrating || 'NC'}
-                          </span>
                           {p.titular && (
-                            <span className="bg-slate-900 text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded-md shadow-xs">
+                            <span className="bg-slate-900 text-white px-1.5 py-0.2 text-[9px] font-bold tracking-wider uppercase rounded shadow-xs shrink-0">
                               Tit. {p.titular}
                             </span>
                           )}
                           {isBackup && (
-                            <span className="bg-white border border-slate-200 px-1.5 py-0.5 text-[9px] text-slate-700 font-bold uppercase rounded-md shadow-xs">
-                              Réserve
-                            </span>
-                          )}
-                          {isAbsent && !isIgnored && (
-                            <span className="bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-md">
-                              Absent
+                            <span className="bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.2 text-[9px] font-bold uppercase rounded shrink-0">
+                              Rés.
                             </span>
                           )}
                           {!isEligible && !isIgnored && !isAbsent && (
-                            <span className="text-[9px] font-bold text-rose-600 uppercase bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200">
+                            <span className="text-[9px] font-bold text-rose-600 uppercase bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 shrink-0">
                               Inéligible
                             </span>
                           )}
                         </div>
+
+                        {assignmentStr && !isIgnored && (
+                          <div className={`mt-1 text-[10px] font-bold font-mono uppercase tracking-wider pl-4 ${isAssignedHere ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            {isAssignedHere ? 'Assigné à cette équipe' : `Déjà placé : ${assignmentStr}`}
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Compact Elo badge */}
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 tabular-nums">
+                          {p.assignedrating || 'NC'}
+                        </span>
+
+                        {/* Discreet availability toggle */}
                         <button
-                          onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'available'); }}
-                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
-                            status === 'available'
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shadow-xs'
-                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
-                          }`}
-                          title="Présent pour cette ronde"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const nextStatus =
+                              status === 'tentative'
+                                ? 'available'
+                                : status === 'available'
+                                ? 'unavailable'
+                                : 'tentative';
+                            setPlayerAvailability(p.idnumber, nextStatus);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/60 bg-white transition-colors cursor-pointer"
+                          title={`Disponibilité : ${status === 'available' ? 'Disponible' : status === 'unavailable' ? 'Absent' : 'À confirmer'} (Cliquer pour alterner)`}
                         >
-                          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'tentative'); }}
-                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
-                            status === 'tentative'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300 font-bold shadow-xs'
-                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
-                          }`}
-                          title="À confirmer"
-                        >
-                          <HelpCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPlayerAvailability(p.idnumber, 'unavailable'); }}
-                          className={`rounded-lg p-1.5 transition-all cursor-pointer ${
-                            status === 'unavailable'
-                              ? 'bg-rose-100 text-rose-800 border border-rose-300 font-bold shadow-xs'
-                              : 'bg-white text-slate-400 border border-transparent hover:border-slate-200 hover:bg-slate-50'
-                          }`}
-                          title="Absent pour cette ronde"
-                        >
-                          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              status === 'available'
+                                ? 'bg-emerald-500'
+                                : status === 'unavailable'
+                                ? 'bg-rose-400'
+                                : 'bg-amber-400'
+                            }`}
+                          />
+                          <span className="text-[10px] text-slate-500">
+                            {status === 'available' ? 'Dispo' : status === 'unavailable' ? 'Absent' : 'À conf.'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -909,7 +905,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           </div>
 
           {selectedTeamIndex === -1 ? (
-            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 space-y-6">
+            <div className="bg-white border border-slate-200/70 rounded-xl shadow-sm p-5 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg tracking-tight">Aperçu Global des Équipes</h3>
@@ -987,43 +983,119 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
                   const bCount = getBoardCountForDivision(t.division);
                   const tDraft = draftCompositions[tNum] || {};
                   
-                  let assignedPlayers = [];
+                  const boards: { board: number; player: PlayerFrbe | null }[] = [];
                   for (let b = 1; b <= bCount; b++) {
                     const pid = tDraft[b];
-                    if (pid) {
-                      const p = players.find(x => x.idnumber === pid);
-                      if (p) assignedPlayers.push(p);
-                    }
+                    const p = pid ? players.find(x => x.idnumber === pid) || null : null;
+                    boards.push({ board: b, player: p });
                   }
 
-                  const avgElo = assignedPlayers.length === bCount 
-                    ? Math.round(assignedPlayers.reduce((sum, p) => sum + (p.assignedrating || 0), 0) / bCount)
-                    : null;
+                  const assignedCount = boards.filter(b => b.player !== null).length;
+                  const totalRatings = boards.reduce((sum, b) => sum + (b.player?.assignedrating || 0), 0);
+                  const avgElo = assignedCount === bCount ? Math.round(totalRatings / bCount) : null;
 
                   return (
                     <div
                       key={tNum}
-                      className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl p-3.5 shadow-xs hover:shadow-sm transition-all cursor-pointer"
-                      onClick={() => setSelectedTeamIndex(idx)}
+                      className="bg-white border border-slate-200/70 hover:border-slate-300 rounded-xl p-4 shadow-sm hover:shadow transition-all flex flex-col justify-between"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-bold text-slate-900 text-sm">
-                          Équipe {tNum} <span className="text-xs text-slate-500 font-mono font-normal">Div {t.division}{t.index}</span>
+                      <div>
+                        {/* Header: Team name + Division + Segmented Completion Gauge */}
+                        <div className="flex items-center justify-between gap-2 mb-2 pb-2.5 border-b border-slate-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-bold text-slate-900 text-sm">
+                              Équipe {tNum}
+                            </span>
+                            <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md ${getDivisionBadgeStyle(t.division)}`}>
+                              Div {t.division}{t.index}
+                            </span>
+                          </div>
+
+                          {/* Segmented completion gauge (crans) */}
+                          <div className="flex items-center gap-1.5 shrink-0" title={`${assignedCount}/${bCount} Joueurs assignés`}>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: bCount }).map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`h-1.5 w-3.5 rounded-full transition-colors ${
+                                    i < assignedCount ? 'bg-emerald-500' : 'bg-slate-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs font-mono font-semibold text-slate-600 tabular-nums">
+                              {assignedCount}/{bCount}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md tabular-nums">
-                          {assignedPlayers.length}/{bCount} Joueurs
-                        </div>
-                      </div>
-                      <div className="text-xs text-slate-500 mb-2.5 font-mono tabular-nums">
-                        Moyenne: <span className="font-bold text-slate-900">{avgElo || 'NC'} Elo</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {assignedPlayers.map(p => (
-                          <span key={p.idnumber} className="text-[10px] bg-slate-100 border border-slate-200/80 text-slate-800 px-2 py-0.5 rounded-md truncate max-w-[120px] font-medium">
-                            {p.last_name}
+
+                        {/* Subheader: Average Elo & View Team Link */}
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-3 font-mono tabular-nums">
+                          <span>
+                            Moyenne : <strong className="text-slate-800">{avgElo ? `${avgElo} Elo` : 'En attente'}</strong>
                           </span>
-                        ))}
-                        {assignedPlayers.length === 0 && <span className="text-[11px] text-slate-400 italic">Aucun joueur assigné</span>}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTeamIndex(idx)}
+                            className="text-[11px] font-sans font-medium text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+                          >
+                            Ouvrir l'équipe →
+                          </button>
+                        </div>
+
+                        {/* Board slots (mini-list) */}
+                        <div className="space-y-1.5">
+                          {boards.map((b) => {
+                            if (b.player) {
+                              return (
+                                <div
+                                  key={b.board}
+                                  onClick={() => {
+                                    if (selectedPlayerId !== null) {
+                                      swapPlayers(selectedPlayerId, b.player!.idnumber);
+                                      setSelectedPlayerId(null);
+                                    } else {
+                                      setSelectedPlayerId(b.player!.idnumber);
+                                    }
+                                  }}
+                                  className="border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100/70 rounded-lg p-2 text-xs flex items-center justify-between transition-colors cursor-pointer"
+                                  title={selectedPlayerId !== null ? `Échanger avec ${b.player.last_name}` : `Sélectionner ${b.player.last_name}`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-mono text-[10px] font-bold text-slate-600 shrink-0">#{b.board}</span>
+                                    <span className="font-medium text-slate-800 truncate">
+                                      {b.player.last_name} {b.player.first_name}
+                                    </span>
+                                  </div>
+                                  <span className="font-mono text-[11px] font-semibold text-slate-600 bg-white px-1.5 py-0.5 rounded border border-slate-200/60 tabular-nums shrink-0">
+                                    {b.player.assignedrating || 'NC'}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div
+                                key={b.board}
+                                onClick={() => {
+                                  if (selectedPlayerId !== null) {
+                                    assignPlayerToBoard(tNum, b.board, selectedPlayerId);
+                                    setSelectedPlayerId(null);
+                                  } else {
+                                    setSelectedTeamIndex(idx);
+                                  }
+                                }}
+                                className="border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 rounded-lg p-2 text-xs text-slate-600 flex items-center justify-between transition-colors cursor-pointer"
+                                title={selectedPlayerId !== null ? `Assigner le joueur sélectionné à l'échiquier ${b.board}` : `Cliquer pour gérer cette équipe`}
+                              >
+                                <span className="font-mono text-[10px] font-bold text-slate-600">#{b.board}</span>
+                                <span className="italic text-slate-600 text-[11px]">
+                                  {selectedPlayerId !== null ? 'Cliquer pour placer le joueur' : 'Échiquier libre'}
+                                </span>
+                                <span className="text-[10px] text-slate-300 font-mono">-</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1109,7 +1181,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
               )}
 
               {/* Boards Assignment Grid */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5">
+              <div className="bg-white border border-slate-200/70 rounded-xl shadow-sm p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-3">
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm tracking-tight">
