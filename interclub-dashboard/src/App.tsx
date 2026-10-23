@@ -3,15 +3,24 @@ import { ClubProvider, useClub } from './context/ClubContext';
 import { SimulatorProvider } from './context/SimulatorContext';
 import { useClubData } from './hooks/useClubData';
 import { Navbar, TabType } from './components/layout/Navbar';
+import { ClubHubTab } from './components/hub/ClubHubTab';
 import { StandingsTab } from './components/standings/StandingsTab';
 import { PlayerPerformanceTab } from './components/players/PlayerPerformanceTab';
 import { ScoutingTab } from './components/scouting/ScoutingTab';
 import { SimulatorTab } from './components/simulator/SimulatorTab';
 import { ExportsTab } from './components/exports/ExportsTab';
+import { DirectorAuthModal } from './components/common/DirectorAuthModal';
+import { ClubSelectorModal } from './components/layout/ClubSelectorModal';
+import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('standings');
+  // Default to guest-friendly "hub" tab
+  const [activeTab, setActiveTab] = useState<TabType>('hub');
+  const [isDirectorMode, setIsDirectorMode] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
+
   const { clubId } = useClub();
   const {
     loading,
@@ -26,6 +35,22 @@ const DashboardContent: React.FC = () => {
     isFallback,
     refresh,
   } = useClubData();
+
+  const handleDirectorAuthSuccess = () => {
+    setIsDirectorMode(true);
+    setIsAuthModalOpen(false);
+
+    // Wake up Neon & backend in background
+    checkServerHealth().catch(() => {});
+    fetchRoundDrafts(1).catch(() => {});
+  };
+
+  const handleLockDirectorMode = () => {
+    setIsDirectorMode(false);
+    if (activeTab === 'simulator' || activeTab === 'exports') {
+      setActiveTab('hub');
+    }
+  };
 
   if (loading) {
     return (
@@ -53,7 +78,7 @@ const DashboardContent: React.FC = () => {
         </p>
         <button
           onClick={refresh}
-          className="mt-6 chess-button inline-flex items-center gap-2"
+          className="mt-6 chess-button inline-flex items-center gap-2 cursor-pointer"
         >
           <RotateCcw className="h-4 w-4" />
           Réessayer
@@ -69,6 +94,10 @@ const DashboardContent: React.FC = () => {
         setActiveTab={setActiveTab}
         onRefresh={refresh}
         isLoading={loading}
+        onOpenClubSelector={() => setIsClubSelectorOpen(true)}
+        isDirectorMode={isDirectorMode}
+        onOpenDirectorAuth={() => setIsAuthModalOpen(true)}
+        onLockDirectorMode={handleLockDirectorMode}
       />
 
       {isFallback && (
@@ -80,6 +109,22 @@ const DashboardContent: React.FC = () => {
       )}
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 relative">
+        {/* Hub Tab (Guest / Member default) */}
+        {activeTab === 'hub' && (
+          <div className="animate-in fade-in duration-300">
+            <ClubHubTab
+              club={club}
+              standings={standings}
+              latestMatches={latestMatches}
+              scouting={scouting}
+              playerStats={playerStats}
+              onNavigateTab={setActiveTab}
+              onOpenClubSelector={() => setIsClubSelectorOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* Division Standings Tab */}
         {activeTab === 'standings' && (
           <div className="animate-in fade-in duration-300">
             <StandingsTab
@@ -89,17 +134,23 @@ const DashboardContent: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Players Tab */}
         {activeTab === 'players' && (
           <div className="animate-in fade-in duration-300">
             <PlayerPerformanceTab players={playerStats} clubName={club.name} />
           </div>
         )}
+
+        {/* Next Matches / Scouting Tab */}
         {activeTab === 'scouting' && (
           <div className="animate-in fade-in duration-300">
             <ScoutingTab scouting={scouting} clubName={club.name} />
           </div>
         )}
-        {activeTab === 'simulator' && (
+
+        {/* Simulator Tab (Director Only) */}
+        {activeTab === 'simulator' && isDirectorMode && (
           <div className="animate-in fade-in duration-300">
             <SimulatorTab
               players={club.players || []}
@@ -109,7 +160,9 @@ const DashboardContent: React.FC = () => {
             />
           </div>
         )}
-        {activeTab === 'exports' && (
+
+        {/* Exports Tab (Director Only) */}
+        {activeTab === 'exports' && isDirectorMode && (
           <div className="animate-in fade-in duration-300">
             <ExportsTab
               club={club}
@@ -123,8 +176,21 @@ const DashboardContent: React.FC = () => {
 
       <footer className="mt-auto border-t border-slate-200/80 bg-white py-6 text-center text-sm text-slate-500">
         <div className="font-bold text-slate-900 tracking-tight mb-1">INTERCLUBS FRBE</div>
-        Tableau de bord tactique officiel &bull; Fédération Royale Belge des Échecs
+        Tableau de bord officiel &bull; Fédération Royale Belge des Échecs
       </footer>
+
+      {/* Club Selector Modal */}
+      <ClubSelectorModal
+        isOpen={isClubSelectorOpen}
+        onClose={() => setIsClubSelectorOpen(false)}
+      />
+
+      {/* Director Password / Unlock Modal */}
+      <DirectorAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleDirectorAuthSuccess}
+      />
     </div>
   );
 };
