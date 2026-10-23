@@ -6,22 +6,21 @@ import { LatestTeamMatch } from '../../domain/matches';
 import { NextMatchScout } from '../../domain/scouting';
 import {
   extractGiantKillers,
-  extractUndefeatedPlayers,
   extractTopScorers,
+  extractTopPerformers,
   extractClubRoundSummary,
+  formatChessScore,
 } from '../../domain/clubHub';
+import { useClubGenerations } from '../../hooks/useClubGenerations';
+import { PlayerHoverCard } from '../common/PlayerHoverCard';
+import { TabType } from '../layout/Navbar';
 import {
-  Trophy,
-  Swords,
-  Flame,
   ArrowRight,
-  Shield,
+  Building2,
   Home,
   Plane,
-  Building2,
-  Sparkles,
+  Loader2,
 } from 'lucide-react';
-import { TabType } from '../layout/Navbar';
 
 interface Props {
   club: ClubFrbe;
@@ -41,58 +40,64 @@ export const ClubHubTab: React.FC<Props> = ({
   onNavigateTab,
   onOpenClubSelector,
 }) => {
-  const giantKillers = React.useMemo(() => extractGiantKillers(playerStats), [playerStats]);
-  const undefeatedPlayers = React.useMemo(() => extractUndefeatedPlayers(playerStats), [playerStats]);
-  const topScorers = React.useMemo(() => extractTopScorers(playerStats), [playerStats]);
-  const roundSummary = React.useMemo(() => extractClubRoundSummary(latestMatches), [latestMatches]);
-
   const [logoError, setLogoError] = React.useState(false);
 
-  // Group latest matches by round
+  // Domain extractions
+  const giantKillers = React.useMemo(() => extractGiantKillers(playerStats), [playerStats]);
+  const topScorers = React.useMemo(() => extractTopScorers(playerStats), [playerStats]);
+  const topPerformers = React.useMemo(() => extractTopPerformers(playerStats), [playerStats]);
+  const roundSummary = React.useMemo(() => extractClubRoundSummary(latestMatches), [latestMatches]);
+
+  // Asynchronous FIDE birth year & age resolution for active club players
+  const { oldestPlayer, youngestPlayer, isLoading: isAgesLoading } = useClubGenerations(playerStats);
+
   const latestRoundNumber = roundSummary?.round || 1;
   const currentRoundMatches = latestMatches.filter((m) => m.roundNumber === latestRoundNumber);
 
   return (
-    <div className="space-y-8">
-      {/* Club Hero Banner */}
-      <div className="relative bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-xs overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center bg-slate-900 text-white rounded-2xl overflow-hidden shrink-0 shadow-md border border-slate-800">
+    <div className="space-y-8 text-slate-900" data-ui="club-hub">
+      {/* =========================================================================
+          MASTHEAD / CLUB HEADER
+          Clean, authoritative typography, flat surfaces, zero slop
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center gap-5">
+            {/* Club Crest */}
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden p-2">
               {!logoError ? (
                 <img
                   src={`/clubs/${club.idclub}.png`}
                   alt={`Logo Club ${club.idclub}`}
-                  className="h-full w-full object-contain p-2"
+                  className="h-full w-full object-contain"
                   onError={() => setLogoError(true)}
                 />
               ) : (
-                <Trophy className="h-8 w-8 text-amber-400" />
+                <span className="font-mono text-xl font-bold text-slate-700 tabular-nums">
+                  {club.idclub}
+                </span>
               )}
             </div>
 
             <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 px-2.5 py-0.5 text-xs font-mono font-bold border border-slate-200 rounded-md">
-                  Matricule {club.idclub}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Interclubs FRBE 2026–2027
-                </span>
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                <span>Club FRBE {club.idclub}</span>
+                <span>•</span>
+                <span>Interclubs Nationaux 2026–2027</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 mt-1.5">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-1">
                 {club.name}
               </h1>
-              <p className="text-sm text-slate-600 mt-1">
-                Espace membres & supporters &bull; Résultats en direct et calendrier des équipes
+              <p className="text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                Tableau de bord officiel des équipes, calendrier des rondes et performances individuelles.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 self-start lg:self-center">
             <button
               onClick={onOpenClubSelector}
-              className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 px-3.5 py-2 text-xs font-mono font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-300 rounded-lg transition-colors cursor-pointer"
             >
               <Building2 className="h-4 w-4 text-slate-500" />
               <span>Changer de club</span>
@@ -100,56 +105,91 @@ export const ClubHubTab: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Round Summary Bar if matches played */}
+        {/* Telemetry / KPIs de la dernière ronde */}
         {roundSummary && (
-          <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 text-xs font-mono font-bold rounded-lg bg-slate-900 text-white shadow-xs">
+          <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-6">
+            <div>
+              <div className="text-xs font-medium text-slate-500">
+                Dernière Ronde
+              </div>
+              <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1 tabular-nums">
                 Ronde {roundSummary.round}
-              </span>
-              <span className="font-semibold text-slate-900 text-sm">
-                Bilan du week-end :
-              </span>
-              <span className="text-sm font-bold font-mono tabular-nums text-slate-700">
-                <strong className="text-emerald-700">{roundSummary.wins}V</strong> &bull;{' '}
-                <strong className="text-amber-700">{roundSummary.draws}N</strong> &bull;{' '}
-                <strong className="text-rose-700">{roundSummary.losses}D</strong>
-              </span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {roundSummary.teamsCount} équipes engagées
+              </div>
             </div>
 
-            <div className="text-xs font-mono text-slate-500 tabular-nums">
-              Points d'échiquiers remportés :{' '}
-              <strong className="text-slate-900 font-bold">
-                {roundSummary.boardPointsWon} / {roundSummary.totalBoardPointsPossible} pts
-              </strong>
+            <div>
+              <div className="text-xs font-medium text-slate-500">
+                Bilan du Match
+              </div>
+              <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1 tabular-nums">
+                <span className="text-emerald-700">{roundSummary.wins}V</span>{' '}
+                <span className="text-amber-700">{roundSummary.draws}N</span>{' '}
+                <span className="text-rose-700">{roundSummary.losses}D</span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {roundSummary.wins >= roundSummary.losses ? 'Bilan positif' : 'Bilan à redresser'}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-medium text-slate-500">
+                Points d'Échiquiers
+              </div>
+              <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1 tabular-nums">
+                {formatChessScore(roundSummary.boardPointsWon)}{' '}
+                <span className="text-sm font-normal text-slate-400">
+                  / {roundSummary.totalBoardPointsPossible}
+                </span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {Math.round((roundSummary.boardPointsWon / roundSummary.totalBoardPointsPossible) * 100)}% de réussite
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-medium text-slate-500">
+                Joueurs Actifs
+              </div>
+              <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1 tabular-nums">
+                {playerStats.filter((p) => p.gamesPlayed > 0).length}{' '}
+                <span className="text-sm font-normal text-slate-400">
+                  / {playerStats.length}
+                </span>
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                Membres alignés cette saison
+              </div>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* SECTION 1: LES TOMBEURS DE GÉANTS (EXPLOITS ELO) */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-xs">
+      {/* =========================================================================
+          SECTION 1: TOMBEURS DE GÉANTS (EXPLOITS ELO)
+          The signature chess feature: celebrating upsets against higher-rated players
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl border border-amber-200 shadow-xs">
-              <Swords className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                <span>Les Tombeurs de Géants</span>
-                <span className="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
-                  Exploits Elo
-                </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                Les Tombeurs de Géants
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Membres du club ayant battu ou neutralisé un adversaire mieux classé qu'eux.
-              </p>
+              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded">
+                Exploits Elo
+              </span>
             </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Membres du club ayant battu ou neutralisé un adversaire avec un classement Elo supérieur.
+            </p>
           </div>
 
           <button
             onClick={() => onNavigateTab('players')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
           >
             <span>Voir toutes les stats individuelles</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -157,90 +197,101 @@ export const ClubHubTab: React.FC<Props> = ({
         </div>
 
         {giantKillers.length === 0 ? (
-          <div className="py-10 text-center text-slate-500 text-sm">
-            Aucun exploit répertorié pour le moment. Que la prochaine ronde apporte de belles victoires !
+          <div className="py-12 text-center text-sm text-slate-500">
+            Aucun exploit d'écart d'Elo supérieur enregistré pour le moment.
           </div>
         ) : (
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {giantKillers.slice(0, 6).map((exploit, idx) => (
               <div
-                key={idx}
-                className="bg-slate-50/60 border border-slate-200/70 hover:border-slate-300 rounded-xl p-4 transition-all shadow-xs flex flex-col justify-between"
+                key={`${exploit.playerId}-${exploit.round}-${idx}`}
+                className="bg-slate-50/80 border border-slate-200 rounded-lg p-4 flex flex-col justify-between transition-colors hover:border-slate-300"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-mono font-bold rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-                      <Sparkles className="h-3 w-3 text-emerald-600" />
-                      +{exploit.ratingDiff} Elo d'écart !
+                  {/* Context Header */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200/70">
+                    <span className="font-medium">
+                      Échiquier {exploit.board} • Ronde {exploit.round} ({exploit.division})
                     </span>
-                    <span className="text-[10px] font-mono text-slate-400 uppercase">
-                      Ronde {exploit.round} &bull; Éch. {exploit.board}
+                    <span className="text-slate-700 font-medium">
+                      {exploit.color === 'white' ? 'Blancs' : 'Noirs'}
                     </span>
                   </div>
 
-                  <div className="mt-3">
-                    <div className="font-bold text-slate-900 text-sm sm:text-base flex items-center justify-between">
-                      <span className="truncate">{exploit.playerName}</span>
-                      <span className="font-mono text-xs text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded ml-2 shrink-0">
-                        {exploit.playerRating}
-                      </span>
+                  {/* Player vs Opponent */}
+                  <div className="my-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <PlayerHoverCard playerName={exploit.playerName} expectedElo={exploit.playerRating}>
+                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                            {exploit.playerName}
+                          </span>
+                        </PlayerHoverCard>
+                        <span className="text-xs font-mono text-slate-500 tabular-nums">
+                          Elo {exploit.playerRating}
+                        </span>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <span className="inline-block font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 tabular-nums">
+                          +{exploit.ratingDiff} Elo
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="text-[11px] font-mono text-slate-500 mt-1 flex items-center gap-1.5">
-                      <span className={`font-bold ${exploit.isWin ? 'text-emerald-700' : 'text-amber-700'}`}>
-                        {exploit.isWin ? 'a battu' : 'a tenu en échec'}
-                      </span>
-                      <span className="font-semibold text-slate-700 truncate max-w-[140px]">
-                        {exploit.opponentName}
-                      </span>
-                      <span className="font-bold text-slate-900 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] ml-auto shrink-0">
-                        {exploit.opponentRating} Elo
+                    <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-600">
+                      <div className="truncate">
+                        <span className="text-slate-400 mr-1">vs</span>
+                        <span className="font-medium text-slate-800">{exploit.opponentName}</span>{' '}
+                        <span className="font-mono text-xs text-slate-500 tabular-nums">({exploit.opponentRating})</span>
+                      </div>
+
+                      <span className="font-mono font-bold text-xs shrink-0 text-slate-900 tabular-nums">
+                        {exploit.resultString}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] font-mono text-slate-500">
-                  <span>Div {exploit.division}</span>
-                  <span className="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200/80">
-                    Résultat : {exploit.resultString}
+                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
+                  <span>{exploit.isWin ? 'Victoire nette' : 'Nulle de combat (+150 Elo)'}</span>
+                  <span className="font-mono text-emerald-700 font-semibold tabular-nums">
+                    {exploit.isWin ? '1 pt' : '½ pt'}
                   </span>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* SECTION 2: DERNIERS RÉSULTATS DES ÉQUIPES */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-xs">
+      {/* =========================================================================
+          SECTION 2: BILAN DE LA DERNIÈRE RONDE
+          Clean match-by-match scoreboards for all teams of the club
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-xs">
-              <Trophy className="h-5 w-5 text-amber-400" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                Derniers Résultats des Équipes (Ronde {latestRoundNumber})
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Scores détaillés et oppositions du week-end dernier.
-              </p>
-            </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-900">
+              Résultats de la Ronde {latestRoundNumber}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Bilan des rencontres de toutes les équipes du club lors du dernier week-end de compétition.
+            </p>
           </div>
 
           <button
             onClick={() => onNavigateTab('standings')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
           >
-            <span>Voir le tableau complet des classements</span>
+            <span>Voir les classements détaillés</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {currentRoundMatches.length === 0 ? (
-          <div className="py-10 text-center text-slate-500 text-sm">
-            Aucun résultat disponible pour cette ronde.
+          <div className="py-12 text-center text-sm text-slate-500">
+            Aucun résultat disponible pour la ronde {latestRoundNumber}.
           </div>
         ) : (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -251,65 +302,62 @@ export const ClubHubTab: React.FC<Props> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-slate-50/60 border border-slate-200/70 hover:border-slate-300 rounded-xl p-4 transition-all shadow-xs flex flex-col justify-between"
+                  className="bg-slate-50/80 border border-slate-200 rounded-lg p-4 flex flex-col justify-between transition-colors hover:border-slate-300"
                 >
                   <div>
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60">
-                      <span className="font-bold text-slate-900 text-sm">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/70">
+                      <span className="font-semibold text-slate-900 text-sm truncate">
                         {m.ourTeamName}
                       </span>
-                      <span className="text-[10px] font-mono font-bold uppercase bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">
+                      <span className="font-mono text-xs font-semibold px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-700 tabular-nums">
                         {m.divisionLabel}
                       </span>
                     </div>
 
                     <div className="my-2">
-                      <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                        <span className="font-semibold text-slate-900 truncate max-w-[150px]">
+                      <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
+                        <span className="font-medium text-slate-900 truncate max-w-[170px]">
                           vs {m.opponentTeamName}
                         </span>
-                        <span className="text-[10px] font-mono flex items-center gap-1">
+                        <span className="text-xs flex items-center gap-1 text-slate-500">
                           {m.isHome ? (
                             <>
-                              <Home className="h-3 w-3 text-emerald-600" />
+                              <Home className="h-3.5 w-3.5 text-emerald-700" />
                               <span>Domicile</span>
                             </>
                           ) : (
                             <>
-                              <Plane className="h-3 w-3 text-slate-400" />
+                              <Plane className="h-3.5 w-3.5 text-slate-500" />
                               <span>Déplacement</span>
                             </>
                           )}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2.5 mt-2">
-                        <span className="text-xs font-semibold text-slate-700">Score match</span>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 text-xs font-mono font-bold rounded ${
-                              isWin
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : isDraw
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}
-                          >
-                            {isWin ? 'Victoire' : isDraw ? 'Nul' : 'Défaite'}
-                          </span>
-                          <span className="font-bold font-mono text-base text-slate-900 tabular-nums">
-                            {m.ourScore} - {m.oppScore}
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2">
+                        <span
+                          className={`text-xs font-bold ${
+                            isWin
+                              ? 'text-emerald-700'
+                              : isDraw
+                              ? 'text-amber-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {isWin ? 'Victoire' : isDraw ? 'Partage' : 'Défaite'}
+                        </span>
+                        <span className="font-mono font-bold text-base text-slate-900 tabular-nums">
+                          {formatChessScore(m.ourScore)} – {formatChessScore(m.oppScore)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <button
                     onClick={() => onNavigateTab('standings')}
-                    className="mt-3 pt-2 border-t border-slate-200/60 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center justify-between cursor-pointer"
+                    className="mt-3 pt-2 border-t border-slate-200/70 text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center justify-between cursor-pointer"
                   >
-                    <span>Voir classement de la division</span>
+                    <span>Détail des échiquiers & classement</span>
                     <ArrowRight className="h-3 w-3" />
                   </button>
                 </div>
@@ -317,37 +365,252 @@ export const ClubHubTab: React.FC<Props> = ({
             })}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* SECTION 3: PROCHAINE RONDE & PROGRAMME */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-200 shadow-xs">
-              <Shield className="h-5 w-5" />
-            </div>
+      {/* =========================================================================
+          SECTION 3: HONNEUR & STATISTIQUES DU CLUB
+          - Top Scoreurs (Points)
+          - Meilleures Performances (TPR & surperformance Elo)
+          - Les Générations du Club (Doyen & Espoir résolus via FIDE/Lichess)
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
+        <div className="pb-4 border-b border-slate-100">
+          <h2 className="text-lg font-bold tracking-tight text-slate-900">
+            Tableau d'Honneur & Générations du Club
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Les meilleurs marqueurs, les surperformances tournoi (TPR) et les générations réunies sous les mêmes couleurs.
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 1. Top Scoreurs */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-5 flex flex-col justify-between">
             <div>
-              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                Programme de la Prochaine Ronde (Ronde {latestRoundNumber + 1})
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Calendrier des matchs à venir et déplacements prévus.
-              </p>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/70 mb-3">
+                <span className="text-xs font-bold text-slate-800">
+                  Top Marqueurs
+                </span>
+                <span className="text-xs text-slate-500">Points bruts</span>
+              </div>
+
+              {topScorers.length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">Aucune partie jouée.</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {topScorers.map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-2 rounded bg-white border border-slate-200 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <span className="font-mono text-xs font-bold text-slate-400 w-4 shrink-0 tabular-nums">
+                          {idx + 1}
+                        </span>
+                        <div className="truncate">
+                          <PlayerHoverCard playerName={p.fullName} expectedElo={p.rating}>
+                            <span className="font-semibold text-slate-900 hover:underline cursor-pointer block truncate">
+                              {p.fullName}
+                            </span>
+                          </PlayerHoverCard>
+                          <span className="text-xs font-mono text-slate-500 tabular-nums">
+                            Elo {p.rating || 'NC'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right font-mono shrink-0 tabular-nums">
+                        <span className="font-bold text-emerald-700">
+                          {formatChessScore(p.score)} / {p.gamesPlayed} pts
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            <div className="mt-4 pt-2 border-t border-slate-200/70 text-xs text-slate-500">
+              Classement selon le total de points marqués pour le club.
+            </div>
+          </div>
+
+          {/* 2. Meilleures Performances (TPR & Sensation) */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/70 mb-3">
+                <span className="text-xs font-bold text-slate-800">
+                  Top Performances (TPR)
+                </span>
+                <span className="text-xs text-slate-500">≥ 2 parties</span>
+              </div>
+
+              {topPerformers.length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">
+                  Pas encore de joueur avec 2 parties et surperformance Elo.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {topPerformers.map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-2 rounded bg-white border border-slate-200 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <span className="font-mono text-xs font-bold text-slate-400 w-4 shrink-0 tabular-nums">
+                          {idx + 1}
+                        </span>
+                        <div className="truncate">
+                          <PlayerHoverCard playerName={p.fullName} expectedElo={p.rating}>
+                            <span className="font-semibold text-slate-900 hover:underline cursor-pointer block truncate">
+                              {p.fullName}
+                            </span>
+                          </PlayerHoverCard>
+                          <span className="text-xs font-mono text-slate-500 tabular-nums">
+                            Elo {p.rating} • {p.gamesPlayed} parties
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right font-mono shrink-0 tabular-nums">
+                        <div className="font-bold text-slate-900">
+                          TPR {p.tpr}
+                        </div>
+                        <span className="text-xs font-semibold text-emerald-700">
+                          +{p.diff} pts
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-2 border-t border-slate-200/70 text-xs text-slate-500">
+              Performance Tournoi calculée selon la formule officielle FIDE.
+            </div>
+          </div>
+
+          {/* 3. Les Générations du Club (Doyen & Espoir) */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/70 mb-3">
+                <span className="text-xs font-bold text-slate-800">
+                  Les Générations du Club
+                </span>
+                {isAgesLoading ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                    <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                    <span>Scan FIDE...</span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-500">Actifs 2026–2027</span>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {/* Doyen */}
+                <div className="p-3 bg-white border border-slate-200 rounded-lg">
+                  <div className="text-xs font-medium text-slate-500 mb-1">
+                    Le Doyen de la Saison
+                  </div>
+                  {oldestPlayer ? (
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <PlayerHoverCard playerName={oldestPlayer.playerName} expectedElo={oldestPlayer.rating}>
+                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                            {oldestPlayer.playerName}
+                          </span>
+                        </PlayerHoverCard>
+                        <span className="text-xs font-mono text-slate-500 tabular-nums">
+                          Elo {oldestPlayer.rating || 'NC'} • {oldestPlayer.gamesPlayed} ronde{oldestPlayer.gamesPlayed > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono shrink-0 tabular-nums">
+                        <div className="text-base font-bold text-slate-900">
+                          {oldestPlayer.age} ans
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          Né en {oldestPlayer.birthYear}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500 py-1">
+                      {isAgesLoading ? 'Recherche en cours dans la base FIDE...' : 'Profil FIDE non renseigné'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Espoir */}
+                <div className="p-3 bg-white border border-slate-200 rounded-lg">
+                  <div className="text-xs font-medium text-slate-500 mb-1">
+                    L'Espoir du Club
+                  </div>
+                  {youngestPlayer ? (
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <PlayerHoverCard playerName={youngestPlayer.playerName} expectedElo={youngestPlayer.rating}>
+                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                            {youngestPlayer.playerName}
+                          </span>
+                        </PlayerHoverCard>
+                        <span className="text-xs font-mono text-slate-500 tabular-nums">
+                          Elo {youngestPlayer.rating || 'NC'} • {youngestPlayer.gamesPlayed} ronde{youngestPlayer.gamesPlayed > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono shrink-0 tabular-nums">
+                        <div className="text-base font-bold text-slate-900">
+                          {youngestPlayer.age} ans
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          Né en {youngestPlayer.birthYear}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500 py-1">
+                      {isAgesLoading ? 'Recherche en cours dans la base FIDE...' : 'Profil FIDE non renseigné'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-2 border-t border-slate-200/70 text-xs text-slate-500">
+              Âge officiel synchronisé depuis l'annuaire FIDE / Lichess pour les joueurs ayant disputé au moins une ronde.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 4: PROGRAMME DE LA PROCHAINE RONDE
+          Clean fixture cards with Home/Away guidance
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-900">
+              Prochaine Ronde (Ronde {latestRoundNumber + 1})
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Affiches à venir pour toutes les équipes du club et désignation des rencontres domicile / déplacement.
+            </p>
           </div>
 
           <button
             onClick={() => onNavigateTab('scouting')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
           >
-            <span>Voir l'analyse des forces & scouting</span>
+            <span>Consulter l'analyse des forces adverses</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {scouting.length === 0 ? (
-          <div className="py-10 text-center text-slate-500 text-sm">
-            Calendrier de la prochaine ronde en cours de publication.
+          <div className="py-12 text-center text-sm text-slate-500">
+            Calendrier de la prochaine ronde en cours d'actualisation par la Fédération.
           </div>
         ) : (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -357,29 +620,29 @@ export const ClubHubTab: React.FC<Props> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-slate-50/60 border border-slate-200/70 hover:border-slate-300 rounded-xl p-4 transition-all shadow-xs flex flex-col justify-between"
+                  className="bg-slate-50/80 border border-slate-200 rounded-lg p-4 flex flex-col justify-between transition-colors hover:border-slate-300"
                 >
                   <div>
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60">
-                      <span className="font-bold text-slate-900 text-sm">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/70">
+                      <span className="font-semibold text-slate-900 text-sm truncate">
                         {s.ourTeamName}
                       </span>
-                      <span className="text-[10px] font-mono font-bold uppercase bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">
+                      <span className="font-mono text-xs font-semibold px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-700 tabular-nums">
                         {s.divisionLabel}
                       </span>
                     </div>
 
                     <div className="my-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <div className="text-xs font-medium text-slate-500 mb-0.5">
                         Adversaire
-                      </span>
-                      <div className="font-bold text-slate-900 text-sm truncate mt-0.5">
+                      </div>
+                      <div className="font-semibold text-slate-900 text-sm truncate">
                         {s.opponentTeamName}
                       </div>
 
-                      <div className="mt-3 flex items-center justify-between text-xs font-mono">
+                      <div className="mt-3 flex items-center justify-between text-xs">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-bold text-[11px] ${
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold ${
                             isBye
                               ? 'bg-slate-200 text-slate-700'
                               : s.isHome
@@ -391,19 +654,19 @@ export const ClubHubTab: React.FC<Props> = ({
                             'Exempt (BYE)'
                           ) : s.isHome ? (
                             <>
-                              <Home className="h-3.5 w-3.5 text-emerald-600" />
-                              <span>À Domicile (14h)</span>
+                              <Home className="h-3.5 w-3.5 text-emerald-700" />
+                              <span>Domicile (14h00)</span>
                             </>
                           ) : (
                             <>
-                              <Plane className="h-3.5 w-3.5 text-amber-600" />
+                              <Plane className="h-3.5 w-3.5 text-amber-700" />
                               <span>En Déplacement</span>
                             </>
                           )}
                         </span>
 
                         {!isBye && (
-                          <span className="text-slate-500 tabular-nums">
+                          <span className="font-mono text-slate-500 tabular-nums">
                             {s.boardCount} échiquiers
                           </span>
                         )}
@@ -413,9 +676,9 @@ export const ClubHubTab: React.FC<Props> = ({
 
                   <button
                     onClick={() => onNavigateTab('scouting')}
-                    className="mt-3 pt-2 border-t border-slate-200/60 text-[11px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center justify-between cursor-pointer"
+                    className="mt-3 pt-2 border-t border-slate-200/70 text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center justify-between cursor-pointer"
                   >
-                    <span>Détails & adversaires probables</span>
+                    <span>Repérage & compositions probables</span>
                     <ArrowRight className="h-3 w-3" />
                   </button>
                 </div>
@@ -423,116 +686,7 @@ export const ClubHubTab: React.FC<Props> = ({
             })}
           </div>
         )}
-      </div>
-
-      {/* SECTION 4: TABLEAU D'HONNEUR DU CLUB (INVAINCUS & TOP SCOREURS) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Les Invaincus */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200">
-                <Shield className="h-4 w-4" />
-              </div>
-              <h3 className="font-bold text-base text-slate-900 tracking-tight">
-                Les Invaincus de la Saison
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-              &ge; 2 parties
-            </span>
-          </div>
-
-          {undefeatedPlayers.length === 0 ? (
-            <p className="text-xs text-slate-500 py-4 text-center">
-              Pas encore de joueur avec 2 parties et 0 défaite.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {undefeatedPlayers.slice(0, 5).map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between p-2.5 bg-slate-50/70 rounded-xl border border-slate-200/60 text-xs"
-                >
-                  <div className="min-w-0">
-                    <span className="font-semibold text-slate-900 block truncate">
-                      {p.fullName}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      Matr. {p.id} &bull; Elo {p.rating || 'NC'}
-                    </span>
-                  </div>
-                  <div className="text-right font-mono tabular-nums shrink-0">
-                    <span className="inline-block bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-bold text-xs">
-                      {p.score} / {p.gamesPlayed} pts
-                    </span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">
-                      Invaincu
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Top Scoreurs */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-amber-50 text-amber-600 rounded-lg border border-amber-200">
-                <Flame className="h-4 w-4" />
-              </div>
-              <h3 className="font-bold text-base text-slate-900 tracking-tight">
-                Meilleurs Scoreurs du Club
-              </h3>
-            </div>
-            <button
-              onClick={() => onNavigateTab('players')}
-              className="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer"
-            >
-              Tous les joueurs &rarr;
-            </button>
-          </div>
-
-          {topScorers.length === 0 ? (
-            <p className="text-xs text-slate-500 py-4 text-center">
-              Aucun match enregistré pour le moment.
-            </p>
-          ) : (
-            <div className="space-y-2.5">
-              {topScorers.map((p, rank) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between p-2.5 bg-slate-50/70 rounded-xl border border-slate-200/60 text-xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
-                      {rank + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <span className="font-semibold text-slate-900 block truncate">
-                        {p.fullName}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        TPR: {p.tpr} Elo
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right font-mono tabular-nums shrink-0">
-                    <span className="font-bold text-slate-900 text-xs">
-                      {p.score} / {p.gamesPlayed} pts
-                    </span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">
-                      {Math.round((p.score / p.gamesPlayed) * 100)}% de victoires
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      </section>
     </div>
   );
 };

@@ -13,6 +13,7 @@ export interface GiantKillerExploit {
   round: number;
   division: string;
   board: number;
+  color: 'white' | 'black';
   resultString: string;
 }
 
@@ -24,6 +25,17 @@ export interface ClubRoundSummary {
   boardPointsWon: number;
   totalBoardPointsPossible: number;
   teamsCount: number;
+}
+
+/**
+ * Format numeric score with chess half symbol (e.g., 3.5 -> "3½", 0.5 -> "½")
+ */
+export function formatChessScore(score: number): string {
+  if (score % 1 === 0.5) {
+    const whole = Math.floor(score);
+    return whole === 0 ? '½' : `${whole}½`;
+  }
+  return score.toString();
 }
 
 /**
@@ -54,6 +66,7 @@ export function extractGiantKillers(players: PlayerStats[]): GiantKillerExploit[
           round: g.round,
           division: g.division,
           board: g.board,
+          color: g.color || 'white',
           resultString: g.resultString || '1-0',
         });
       }
@@ -71,6 +84,7 @@ export function extractGiantKillers(players: PlayerStats[]): GiantKillerExploit[
           round: g.round,
           division: g.division,
           board: g.board,
+          color: g.color || 'black',
           resultString: g.resultString || '½-½',
         });
       }
@@ -82,25 +96,22 @@ export function extractGiantKillers(players: PlayerStats[]): GiantKillerExploit[
 }
 
 /**
- * Find players who played at least 2 games and have 0 losses
- */
-export function extractUndefeatedPlayers(players: PlayerStats[]): PlayerStats[] {
-  return players
-    .filter((p) => {
-      if (p.gamesPlayed < 2) return false;
-      const losses = p.games.filter((g) => g.score === 0).length;
-      return losses === 0;
-    })
-    .sort((a, b) => b.score - a.score || b.gamesPlayed - a.gamesPlayed);
-}
-
-/**
- * Find top point scorers for the club
+ * Find top point scorers for the club (absolute points brought to the club)
  */
 export function extractTopScorers(players: PlayerStats[]): PlayerStats[] {
   return [...players]
     .filter((p) => p.gamesPlayed > 0)
-    .sort((a, b) => b.score - a.score || b.tpr - a.tpr)
+    .sort((a, b) => b.score - a.score || (b.score / b.gamesPlayed) - (a.score / a.gamesPlayed))
+    .slice(0, 5);
+}
+
+/**
+ * Find top tournament performance performers (players outperforming their rating)
+ */
+export function extractTopPerformers(players: PlayerStats[]): PlayerStats[] {
+  return [...players]
+    .filter((p) => p.gamesPlayed >= 2 && p.tpr > 0 && p.diff > 0)
+    .sort((a, b) => b.diff - a.diff || b.tpr - a.tpr)
     .slice(0, 5);
 }
 
