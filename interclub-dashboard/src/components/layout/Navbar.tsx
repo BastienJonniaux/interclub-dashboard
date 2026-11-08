@@ -11,6 +11,7 @@ import {
   Home,
   Lock,
   ShieldCheck,
+  Calendar,
 } from 'lucide-react';
 import { NextRoundBanner } from './NextRoundBanner';
 
@@ -25,6 +26,7 @@ interface Props {
   isDirectorMode: boolean;
   onOpenDirectorAuth: () => void;
   onLockDirectorMode: () => void;
+  onOpenSchedule: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -36,6 +38,7 @@ export const Navbar: React.FC<Props> = ({
   isDirectorMode,
   onOpenDirectorAuth,
   onLockDirectorMode,
+  onOpenSchedule,
 }) => {
   const { clubId, clubName } = useClub();
   const [logoError, setLogoError] = useState(false);
@@ -102,8 +105,19 @@ export const Navbar: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-end">
-            <NextRoundBanner />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-end">
+            {/* Interactive Next Round Countdown */}
+            <NextRoundBanner onClick={onOpenSchedule} />
+
+            {/* Quick Access to Calendar & France Clashes */}
+            <button
+              onClick={onOpenSchedule}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+              title="Voir le calendrier des 11 rondes et les conflits avec les interclubs français"
+            >
+              <Calendar className="h-3.5 w-3.5 text-emerald-700" />
+              <span className="hidden sm:inline">Calendrier & Conflits</span>
+            </button>
 
             {/* Club Selector Button */}
             <button

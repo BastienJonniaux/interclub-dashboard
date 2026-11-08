@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Lance l'application Interclub Dashboard en mode développement.
 .PARAMETER Target

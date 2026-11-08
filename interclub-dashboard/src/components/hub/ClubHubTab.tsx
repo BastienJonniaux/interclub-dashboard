@@ -11,6 +11,8 @@ import {
   extractClubRoundSummary,
   formatChessScore,
 } from '../../domain/clubHub';
+import { ROUND_DATES } from '../../season';
+import { getFrenchClash } from '../../domain/calendar';
 import { useClubGenerations } from '../../hooks/useClubGenerations';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import { TabType } from '../layout/Navbar';
@@ -20,6 +22,8 @@ import {
   Home,
   Plane,
   Loader2,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface Props {
@@ -30,6 +34,7 @@ interface Props {
   playerStats: PlayerStats[];
   onNavigateTab: (tab: TabType) => void;
   onOpenClubSelector: () => void;
+  onOpenSchedule?: () => void;
 }
 
 export const ClubHubTab: React.FC<Props> = ({
@@ -39,6 +44,7 @@ export const ClubHubTab: React.FC<Props> = ({
   playerStats,
   onNavigateTab,
   onOpenClubSelector,
+  onOpenSchedule,
 }) => {
   const [logoError, setLogoError] = React.useState(false);
 
@@ -591,22 +597,61 @@ export const ClubHubTab: React.FC<Props> = ({
       <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-slate-900">
-              Prochaine Ronde (Ronde {latestRoundNumber + 1})
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                Prochaine Ronde (Ronde {latestRoundNumber + 1})
+              </h2>
+              {ROUND_DATES[latestRoundNumber] && getFrenchClash(ROUND_DATES[latestRoundNumber]).hasClash && (
+                <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                  ⚠️ Conflit France (Ronde {getFrenchClash(ROUND_DATES[latestRoundNumber]).frenchRound} FFE)
+                </span>
+              )}
+            </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Affiches à venir pour toutes les équipes du club et désignation des rencontres domicile / déplacement.
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigateTab('scouting')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
-          >
-            <span>Consulter l'analyse des forces adverses</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenSchedule && (
+              <button
+                onClick={onOpenSchedule}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                title="Consulter le calendrier complet des 11 rondes"
+              >
+                <Calendar className="h-3.5 w-3.5 text-emerald-700" />
+                <span className="hidden sm:inline">Calendrier complet</span>
+              </button>
+            )}
+            <button
+              onClick={() => onNavigateTab('scouting')}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
+              <span>Consulter l'analyse des forces adverses</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
+
+        {/* French Clash Alert in Hub */}
+        {ROUND_DATES[latestRoundNumber] && getFrenchClash(ROUND_DATES[latestRoundNumber]).hasClash && (
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Attention doublon calendrier :</strong> La Ronde {latestRoundNumber + 1} se dispute le même jour que les interclubs français (N1-N4). Plusieurs joueurs français du club risquent de ne pas être disponibles.
+              </span>
+            </div>
+            {onOpenSchedule && (
+              <button
+                onClick={onOpenSchedule}
+                className="font-bold underline hover:text-amber-950 shrink-0 cursor-pointer"
+              >
+                Voir calendrier
+              </button>
+            )}
+          </div>
+        )}
 
         {scouting.length === 0 ? (
           <div className="py-12 text-center text-sm text-slate-500">

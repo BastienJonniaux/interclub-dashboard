@@ -32,8 +32,8 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
     setSuccess(false);
 
     try {
-      const isValid = await verifyDirectorKey(keyInput.trim());
-      if (isValid) {
+      const result = await verifyDirectorKey(keyInput.trim());
+      if (result.valid) {
         setStoredDirectorKey(keyInput.trim());
         setSuccess(true);
         setTimeout(() => {
@@ -41,10 +41,10 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
           if (onSuccess) onSuccess();
         }, 600);
       } else {
-        setError('Clé Directeur incorrecte. Accès refusé.');
+        setError(result.message || 'Clé Directeur incorrecte. Accès refusé.');
       }
     } catch {
-      // If server unreachable, still allow saving locally so user isn't blocked
+      // Fallback: save locally
       setStoredDirectorKey(keyInput.trim());
       setSuccess(true);
       setTimeout(() => {
@@ -101,6 +101,16 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 font-mono transition-colors"
                 autoFocus
               />
+            </div>
+            <div className="flex items-center justify-between mt-1 text-[11px] text-slate-400">
+              <span>Mot de passe par défaut : <code className="bg-slate-100 text-slate-700 px-1 py-0.5 rounded font-mono font-bold">director1234</code></span>
+              <button
+                type="button"
+                onClick={() => setKeyInput('director1234')}
+                className="text-emerald-700 hover:text-emerald-800 hover:underline font-medium cursor-pointer"
+              >
+                Remplir
+              </button>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ClubProvider, useClub } from './context/ClubContext';
 import { SimulatorProvider } from './context/SimulatorContext';
 import { useClubData } from './hooks/useClubData';
@@ -11,6 +11,8 @@ import { SimulatorTab } from './components/simulator/SimulatorTab';
 import { ExportsTab } from './components/exports/ExportsTab';
 import { DirectorAuthModal } from './components/common/DirectorAuthModal';
 import { ClubSelectorModal } from './components/layout/ClubSelectorModal';
+import { CalendarScheduleModal } from './components/layout/CalendarScheduleModal';
+import { extractFullSeasonSchedule } from './domain/calendar';
 import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
@@ -20,6 +22,8 @@ const DashboardContent: React.FC = () => {
   const [isDirectorMode, setIsDirectorMode] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
+  const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(1);
 
   const { clubId } = useClub();
   const {
@@ -34,7 +38,18 @@ const DashboardContent: React.FC = () => {
     playerDirectory,
     isFallback,
     refresh,
+    getScoutingForRound,
   } = useClubData();
+
+  const fullSchedule = useMemo(() => {
+    return extractFullSeasonSchedule(allDivisions, clubId, standings, playerDirectory);
+  }, [allDivisions, clubId, standings, playerDirectory]);
+
+  const handleSelectRoundFromSchedule = (roundNumber: number) => {
+    setSelectedScoutingRound(roundNumber);
+    setActiveTab('scouting');
+    setIsScheduleModalOpen(false);
+  };
 
   const handleDirectorAuthSuccess = () => {
     setIsDirectorMode(true);
@@ -98,6 +113,7 @@ const DashboardContent: React.FC = () => {
         isDirectorMode={isDirectorMode}
         onOpenDirectorAuth={() => setIsAuthModalOpen(true)}
         onLockDirectorMode={handleLockDirectorMode}
+        onOpenSchedule={() => setIsScheduleModalOpen(true)}
       />
 
       {isFallback && (
@@ -120,6 +136,7 @@ const DashboardContent: React.FC = () => {
               playerStats={playerStats}
               onNavigateTab={setActiveTab}
               onOpenClubSelector={() => setIsClubSelectorOpen(true)}
+              onOpenSchedule={() => setIsScheduleModalOpen(true)}
             />
           </div>
         )}
@@ -145,7 +162,13 @@ const DashboardContent: React.FC = () => {
         {/* Next Matches / Scouting Tab */}
         {activeTab === 'scouting' && (
           <div className="animate-in fade-in duration-300">
-            <ScoutingTab scouting={scouting} clubName={club.name} />
+            <ScoutingTab
+              scouting={scouting}
+              clubName={club.name}
+              selectedRoundNumber={selectedScoutingRound}
+              onSelectRoundNumber={setSelectedScoutingRound}
+              getScoutingForRound={getScoutingForRound}
+            />
           </div>
         )}
 
@@ -183,6 +206,14 @@ const DashboardContent: React.FC = () => {
       <ClubSelectorModal
         isOpen={isClubSelectorOpen}
         onClose={() => setIsClubSelectorOpen(false)}
+      />
+
+      {/* Interclub Full Schedule & France Clash Modal */}
+      <CalendarScheduleModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        schedule={fullSchedule}
+        onSelectRound={handleSelectRoundFromSchedule}
       />
 
       {/* Director Password / Unlock Modal */}

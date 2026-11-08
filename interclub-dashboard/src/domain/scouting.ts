@@ -60,7 +60,8 @@ export function scoutNextMatch(
   ourClubId: number,
   allDivisionsAcrossRounds: { round: number; divisions: DivisionFrbe[] }[],
   playerDirectory?: Map<number, { name: string; rating: number; clubName?: string }>,
-  ourTeamAverageElo?: number
+  ourTeamAverageElo?: number,
+  targetRoundNumber?: number
 ): NextMatchScout | null {
   const ourTeam = division.teams.find((t) => t.idclub === ourClubId);
   if (!ourTeam) return null;
@@ -73,26 +74,28 @@ export function scoutNextMatch(
         : PAIRINGS_10
       : PAIRINGS_12;
 
-  // Find next unplayed round
-  let nextRoundNumber = 1;
+  // Determine round to scout: either explicitly requested or next unplayed round
+  let nextRoundNumber = targetRoundNumber || 1;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
 
-  for (let r = 1; r <= pairings.length; r++) {
-    const roundData = division.rounds.find((rd) => rd.round === r);
-    const encounter = roundData?.encounters.find(
-      (e) => e.pairingnr_home === ourTeam.pairingnumber || e.pairingnr_visit === ourTeam.pairingnumber
-    );
-    
-    if (!encounter || !encounter.played) {
-      const isBye = encounter && (encounter.icclub_home === 0 || encounter.icclub_visit === 0);
-      const roundDate = division.division === 6 ? DIVISION_SIX_DATES[r - 1] : ROUND_DATES[r - 1];
+  if (!targetRoundNumber) {
+    for (let r = 1; r <= pairings.length; r++) {
+      const roundData = division.rounds.find((rd) => rd.round === r);
+      const encounter = roundData?.encounters.find(
+        (e) => e.pairingnr_home === ourTeam.pairingnumber || e.pairingnr_visit === ourTeam.pairingnumber
+      );
       
-      if (isBye && roundDate && roundDate < today) {
-        continue;
+      if (!encounter || !encounter.played) {
+        const isBye = encounter && (encounter.icclub_home === 0 || encounter.icclub_visit === 0);
+        const roundDate = division.division === 6 ? DIVISION_SIX_DATES[r - 1] : ROUND_DATES[r - 1];
+        
+        if (isBye && roundDate && roundDate < today) {
+          continue;
+        }
+        
+        nextRoundNumber = r;
+        break;
       }
-      
-      nextRoundNumber = r;
-      break;
     }
   }
 
