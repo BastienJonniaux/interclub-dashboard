@@ -1,0 +1,15 @@
+{
+  "name": "interclub-dashboard-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root workspace launcher for Interclub Dashboard (Vite Frontend + Express Backend)",
+  "scripts": {
+    "dev": "npm --prefix interclub-dashboard run dev",
+    "dev:front": "npm --prefix interclub-dashboard run dev",
+    "dev:server": "npm --prefix server run dev",
+    "dev:all": "npx concurrently -n \"server,client\" -c \"blue,green\" \"npm --prefix server run dev\" \"npm --prefix interclub-dashboard run dev\"",
+    "build": "npm --prefix interclub-dashboard run build",
+    "build:server": "npm --prefix server run build",
+    "lint": "npm --prefix interclub-dashboard run lint"
+  }
+}

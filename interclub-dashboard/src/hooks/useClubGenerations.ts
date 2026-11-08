@@ -160,3 +160,4 @@ export function useClubGenerations(players: PlayerStats[]) {
     totalActive: activePlayers.length,
   };
 }
+
