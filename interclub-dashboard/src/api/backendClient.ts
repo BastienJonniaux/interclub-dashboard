@@ -98,21 +98,46 @@ export async function checkServerHealth(): Promise<{
   }
 }
 
-export async function verifyDirectorKey(key: string): Promise<boolean> {
+export interface VerifyKeyResult {
+  valid: boolean;
+  isOffline?: boolean;
+  message?: string;
+}
+
+export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
+  const trimmed = key.trim();
+  // Quick fallback check: if key matches default 'director1234'
+  const isDefaultKey = trimmed === 'director1234';
+
   try {
     const res = await fetch(`${getServerBaseUrl()}/api/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key }),
+      body: JSON.stringify({ key: trimmed }),
       signal: AbortSignal.timeout(4000),
     });
+
     if (res.ok) {
       const data = await res.json();
-      return !!data.valid;
+      return { valid: !!data.valid, message: data.message };
     }
-    return false;
-  } catch {
-    return false;
+
+    // 401 Unauthorized: explicitly wrong key
+    if (res.status === 401 || res.status === 403) {
+      return { valid: false, message: 'Mot de passe / Clé Directeur incorrecte.' };
+    }
+
+    return { valid: false, message: `Erreur serveur HTTP ${res.status}` };
+  } catch (err: any) {
+    // If backend is unreachable or timed out
+    console.warn('[Backend] Auth verify offline or unreachable:', err);
+    return {
+      valid: isDefaultKey,
+      isOffline: true,
+      message: isDefaultKey
+        ? 'Mode hors-ligne validé avec la clé par défaut.'
+        : 'Serveur backend local inaccessible (port 3001). Vérifiez que le serveur est démarré.',
+    };
   }
 }
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
-import { ClubSelectorModal } from './ClubSelectorModal';
 import {
   Trophy,
   Users,
@@ -9,16 +8,25 @@ import {
   Share2,
   RotateCw,
   Building2,
+  Home,
+  Lock,
+  ShieldCheck,
+  Calendar,
 } from 'lucide-react';
 import { NextRoundBanner } from './NextRoundBanner';
 
-export type TabType = 'standings' | 'players' | 'scouting' | 'simulator' | 'exports';
+export type TabType = 'hub' | 'standings' | 'players' | 'scouting' | 'simulator' | 'exports';
 
 interface Props {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   onRefresh: () => void;
   isLoading: boolean;
+  onOpenClubSelector: () => void;
+  isDirectorMode: boolean;
+  onOpenDirectorAuth: () => void;
+  onLockDirectorMode: () => void;
+  onOpenSchedule: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -26,64 +34,132 @@ export const Navbar: React.FC<Props> = ({
   setActiveTab,
   onRefresh,
   isLoading,
+  onOpenClubSelector,
+  isDirectorMode,
+  onOpenDirectorAuth,
+  onLockDirectorMode,
+  onOpenSchedule,
 }) => {
   const { clubId, clubName } = useClub();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
-  const navItems = [
-    { id: 'standings', label: 'Classements Équipes', icon: Trophy },
-    { id: 'players', label: 'Performance Joueurs', icon: Users },
-    { id: 'scouting', label: 'Scouting & Matchs', icon: Compass },
-    { id: 'simulator', label: 'Simulateur & Règles FRBE', icon: FileSpreadsheet },
-    { id: 'exports', label: 'Exports & Mails', icon: Share2 },
-  ] as const;
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [clubId]);
+
+  const baseNavItems = [
+    { id: 'standings' as const, label: 'Classements Équipes', icon: Trophy },
+    { id: 'hub' as const, label: 'Le Club', icon: Home },
+    { id: 'scouting' as const, label: 'Prochains Matchs', icon: Compass },
+    { id: 'players' as const, label: 'Joueurs du Club', icon: Users },
+  ];
+
+  const directorNavItems = [
+    { id: 'simulator' as const, label: 'Simulateur & Règles FRBE', icon: FileSpreadsheet },
+    { id: 'exports' as const, label: 'Exports & Mails', icon: Share2 },
+  ];
+
+  const navItems = isDirectorMode
+    ? [...baseNavItems, ...directorNavItems]
+    : baseNavItems;
 
   return (
-    <>
-      <header className="relative mx-4 sm:mx-6 lg:mx-8 mt-4 mb-6 chess-panel p-0 flex flex-col">
-        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-[#E2DFD8]">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6">
+      <header className="relative bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 sm:px-6 border-b border-slate-100 gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center bg-[#1A1918] text-white">
-                <Trophy className="h-6 w-6" />
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 items-center justify-center bg-slate-900 text-white rounded-xl overflow-hidden shrink-0 shadow-xs border border-slate-800">
+                {!logoError ? (
+                  <img
+                    src={`/clubs/${clubId}.png`}
+                    alt={`Logo Club ${clubId}`}
+                    className="h-full w-full object-contain p-1"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <Trophy className="h-5 w-5 text-amber-400" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6E6A64]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     Interclubs FRBE 2026–2027
                   </span>
                 </div>
-                <h1 className="text-2xl font-bold font-serif text-[#1A1918] leading-tight tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 leading-tight">
                   Tableau de Bord
                 </h1>
               </div>
             </div>
 
             <div className="flex sm:hidden items-center gap-2">
-               <button
+              <button
                 onClick={onRefresh}
                 disabled={isLoading}
                 className="p-2 chess-button-secondary"
+                aria-label="Actualiser"
               >
                 <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-4 mt-4 sm:mt-0">
-            <NextRoundBanner />
-            
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-end">
+            {/* Interactive Next Round Countdown */}
+            <NextRoundBanner onClick={onOpenSchedule} />
+
+            {/* Quick Access to Calendar & France Clashes */}
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={onOpenSchedule}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+              title="Voir le calendrier des 11 rondes et les conflits avec les interclubs français"
+            >
+              <Calendar className="h-3.5 w-3.5 text-emerald-700" />
+              <span className="hidden sm:inline">Calendrier & Conflits</span>
+            </button>
+
+            {/* Club Selector Button */}
+            <button
+              onClick={onOpenClubSelector}
               className="inline-flex items-center gap-2 chess-button-secondary text-sm"
               title="Changer de club"
             >
-              <Building2 className="h-4 w-4 text-[#1A1918]" />
-              <span className="font-mono">
-                Club <strong className="font-bold">{clubId}</strong> <span className="font-sans">({clubName})</span>
+              <Building2 className="h-4 w-4 text-slate-500" />
+              <span className="font-mono text-xs">
+                Club <strong className="font-bold text-slate-900">{clubId}</strong>{' '}
+                <span className="font-sans text-slate-500 hidden md:inline">({clubName})</span>
               </span>
             </button>
 
+            {/* Director Mode Indicator / Preview Toggle */}
+            {isDirectorMode ? (
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Directeur</span>
+                </span>
+                <button
+                  onClick={onLockDirectorMode}
+                  className="px-2 py-1.5 text-xs font-mono text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                  title="Aperçu du mode invité (membres)"
+                >
+                  Vue Invité
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenDirectorAuth}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
+                title="Revenir à l'Espace Directeur"
+              >
+                <Lock className="h-3.5 w-3.5 text-slate-500" />
+                <span>Espace Directeur</span>
+              </button>
+            )}
+
+            {/* Refresh Button */}
             <button
               onClick={onRefresh}
               disabled={isLoading}
@@ -91,14 +167,14 @@ export const Navbar: React.FC<Props> = ({
               title="Actualiser les données FRBE"
             >
               <RotateCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Actualiser</span>
+              <span className="hidden sm:inline">Actualiser</span>
             </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="px-2 sm:px-4 py-2 bg-[#F9F8F6]">
-          <nav className="flex space-x-2 overflow-x-auto pb-1 no-scrollbar">
+        {/* Tab Navigation - Modern Border Tabs */}
+        <div className="px-4 sm:px-6 bg-white">
+          <nav className="flex items-center gap-6 overflow-x-auto no-scrollbar">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -106,13 +182,13 @@ export const Navbar: React.FC<Props> = ({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold transition-colors ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap py-3.5 text-xs sm:text-sm transition-all border-b-2 cursor-pointer ${
                     isActive
-                      ? 'bg-[#1A1918] text-white'
-                      : 'bg-transparent text-[#6E6A64] hover:bg-[#E2DFD8] hover:text-[#1A1918]'
+                      ? 'border-slate-900 font-semibold text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 font-medium'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 transition-colors ${isActive ? 'text-white' : 'text-[#6E6A64]'}`} />
+                  <Icon className={`h-4 w-4 transition-colors ${isActive ? 'text-slate-900' : 'text-slate-400'}`} />
                   {item.label}
                 </button>
               );
@@ -120,8 +196,6 @@ export const Navbar: React.FC<Props> = ({
           </nav>
         </div>
       </header>
-
-      <ClubSelectorModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
-    </>
+    </div>
   );
 };

@@ -28,6 +28,7 @@ export interface ClubDataState {
   playerDirectory: Map<number, { name: string; rating: number; clubName?: string }>;
   isFallback: boolean;
   refresh: () => Promise<void>;
+  getScoutingForRound: (roundNumber: number) => NextMatchScout[];
 }
 
 export function useClubData(): ClubDataState {
@@ -42,6 +43,7 @@ export function useClubData(): ClubDataState {
   const [scouting, setScouting] = useState<NextMatchScout[]>([]);
   const [latestMatches, setLatestMatches] = useState<LatestTeamMatch[]>([]);
   const [allDivisions, setAllDivisions] = useState<DivisionFrbe[]>([]);
+  const [allRoundsData, setAllRoundsData] = useState<{ round: number; divisions: DivisionFrbe[] }[]>([]);
   const [playerDirectory, setPlayerDirectory] = useState<
     Map<number, { name: string; rating: number; clubName?: string }>
   >(new Map());
@@ -124,6 +126,7 @@ export function useClubData(): ClubDataState {
         round: idx + 1,
         divisions: divs,
       }));
+      setAllRoundsData(allDivisionsAcrossRounds);
 
       (clubData.teams || []).forEach((team) => {
         const matchingDiv = mergedDivisions.find(
@@ -131,7 +134,7 @@ export function useClubData(): ClubDataState {
         );
 
         if (matchingDiv) {
-          const divStandings = calculateDivisionStandings(matchingDiv, clubId);
+          const divStandings = calculateDivisionStandings(matchingDiv, clubId, directory);
           divisionStandingsList.push(divStandings);
 
           // Calculate our team average Elo from titulars
@@ -181,6 +184,44 @@ export function useClubData(): ClubDataState {
     await loadData(true);
   };
 
+  const getScoutingForRound = useCallback(
+    (targetRound: number): NextMatchScout[] => {
+      if (!club) return [];
+      const list: NextMatchScout[] = [];
+
+      (club.teams || []).forEach((team) => {
+        const matchingDiv = allDivisions.find(
+          (d) => d.division === team.division && (d.index || 'A') === (team.index || 'A')
+        );
+
+        if (matchingDiv) {
+          const titulars = (club.players || []).filter(
+            (p) => p.titular && p.titular.includes(team.name)
+          );
+          const ourAvg =
+            titulars.length > 0
+              ? Math.round(
+                  titulars.reduce((s, p) => s + (p.assignedrating || 0), 0) / titulars.length
+                )
+              : 0;
+
+          const scout = scoutNextMatch(
+            matchingDiv,
+            clubId,
+            allRoundsData,
+            playerDirectory,
+            ourAvg,
+            targetRound
+          );
+          if (scout) list.push(scout);
+        }
+      });
+
+      return list;
+    },
+    [club, allDivisions, clubId, allRoundsData, playerDirectory]
+  );
+
   return {
     loading,
     error,
@@ -194,5 +235,6 @@ export function useClubData(): ClubDataState {
     playerDirectory,
     isFallback,
     refresh,
+    getScoutingForRound,
   };
 }

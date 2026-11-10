@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { ROUND_DATES } from '../../season';
+import { getFrenchClash } from '../../domain/calendar';
 
-export const NextRoundBanner: React.FC = () => {
+interface Props {
+  onClick?: () => void;
+}
+
+export const NextRoundBanner: React.FC<Props> = ({ onClick }) => {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; mins: number } | null>(null);
   const [nextDate, setNextDate] = useState<Date | null>(null);
   const [roundNumber, setRoundNumber] = useState<number | null>(null);
+  const [hasFrenchClash, setHasFrenchClash] = useState<boolean>(false);
 
   useEffect(() => {
     let upcomingDate: Date | null = null;
     let upcomingRound: number | null = null;
+    let clash = false;
     const now = new Date();
 
     for (let i = 0; i < ROUND_DATES.length; i++) {
@@ -21,12 +28,14 @@ export const NextRoundBanner: React.FC = () => {
       if (roundDate > now) {
         upcomingDate = roundDate;
         upcomingRound = i + 1;
+        clash = getFrenchClash(dateStr).hasClash;
         break;
       }
     }
 
     setNextDate(upcomingDate);
     setRoundNumber(upcomingRound);
+    setHasFrenchClash(clash);
   }, []);
 
   useEffect(() => {
@@ -57,24 +66,36 @@ export const NextRoundBanner: React.FC = () => {
   if (!nextDate || !timeLeft) return null;
 
   return (
-    <div 
-      className="hidden md:flex items-center gap-3 bg-white border border-[#E2DFD8] px-3 py-1.5" 
-      title={`Ronde ${roundNumber} : ${nextDate.toLocaleDateString('fr-BE')}`}
+    <button
+      onClick={onClick}
+      className="hidden md:flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs transition-colors cursor-pointer text-left"
+      title={`Ronde ${roundNumber} : ${nextDate.toLocaleDateString('fr-BE')} — Cliquez pour voir tout le calendrier et conflits France`}
     >
-      <div className="flex items-center gap-1.5 text-[#1A1918]">
-        <Calendar className="h-3.5 w-3.5 text-[#1E5E3A]" />
-        <span className="text-[10px] uppercase font-bold tracking-wider">
+      <div className="flex items-center gap-1.5 text-slate-800">
+        <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+        <span className="text-xs font-bold text-slate-800">
           Ronde {roundNumber}
         </span>
       </div>
-      <div className="w-[1px] h-4 bg-[#E2DFD8]"></div>
-      <div className="flex items-center gap-1.5 text-[#1A1918]">
-        <Clock className="h-3.5 w-3.5 text-[#B45309]" />
-        <span className="font-mono text-[11px] font-bold">
+
+      <div className="w-px h-3.5 bg-slate-200" />
+
+      <div className="flex items-center gap-1.5 text-slate-800">
+        <Clock className="h-3.5 w-3.5 text-amber-500" />
+        <span className="font-mono tabular-nums text-xs font-bold text-slate-800">
           {timeLeft.days}j {timeLeft.hours.toString().padStart(2, '0')}h {timeLeft.mins.toString().padStart(2, '0')}m
         </span>
       </div>
-    </div>
+
+      {hasFrenchClash && (
+        <>
+          <div className="w-px h-3.5 bg-slate-200" />
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
+            <AlertTriangle className="h-3 w-3 text-amber-700" />
+            <span>Conflit FR</span>
+          </span>
+        </>
+      )}
+    </button>
   );
 };
-

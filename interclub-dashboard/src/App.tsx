@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ClubProvider, useClub } from './context/ClubContext';
 import { SimulatorProvider } from './context/SimulatorContext';
 import { useClubData } from './hooks/useClubData';
 import { Navbar, TabType } from './components/layout/Navbar';
+import { ClubHubTab } from './components/hub/ClubHubTab';
 import { StandingsTab } from './components/standings/StandingsTab';
 import { PlayerPerformanceTab } from './components/players/PlayerPerformanceTab';
 import { ScoutingTab } from './components/scouting/ScoutingTab';
 import { SimulatorTab } from './components/simulator/SimulatorTab';
 import { ExportsTab } from './components/exports/ExportsTab';
+import { DirectorAuthModal } from './components/common/DirectorAuthModal';
+import { ClubSelectorModal } from './components/layout/ClubSelectorModal';
+import { CalendarScheduleModal } from './components/layout/CalendarScheduleModal';
+import { extractFullSeasonSchedule, getUpcomingRoundNumber } from './domain/calendar';
+import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
+  // Default to standings tab (original director default) with all tabs accessible
   const [activeTab, setActiveTab] = useState<TabType>('standings');
+  const [isDirectorMode, setIsDirectorMode] = useState<boolean>(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
+  const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(() => getUpcomingRoundNumber());
+
+  React.useEffect(() => {
+    // Wake up Neon & backend in background on load
+    checkServerHealth().catch(() => {});
+  }, []);
+
   const { clubId } = useClub();
   const {
     loading,
@@ -25,16 +43,43 @@ const DashboardContent: React.FC = () => {
     playerDirectory,
     isFallback,
     refresh,
+    getScoutingForRound,
   } = useClubData();
+
+  const fullSchedule = useMemo(() => {
+    return extractFullSeasonSchedule(allDivisions, clubId, standings, playerDirectory);
+  }, [allDivisions, clubId, standings, playerDirectory]);
+
+  const handleSelectRoundFromSchedule = (roundNumber: number) => {
+    setSelectedScoutingRound(roundNumber);
+    setActiveTab('scouting');
+    setIsScheduleModalOpen(false);
+  };
+
+  const handleDirectorAuthSuccess = () => {
+    setIsDirectorMode(true);
+    setIsAuthModalOpen(false);
+
+    // Wake up Neon & backend in background
+    checkServerHealth().catch(() => {});
+    fetchRoundDrafts(1).catch(() => {});
+  };
+
+  const handleLockDirectorMode = () => {
+    setIsDirectorMode(false);
+    if (activeTab === 'simulator' || activeTab === 'exports') {
+      setActiveTab('standings');
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#F9F8F6]">
-        <Loader2 className="h-10 w-10 text-[#1E5E3A] animate-spin" />
-        <h3 className="mt-4 text-lg font-bold font-serif text-[#1A1918]">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-50">
+        <Loader2 className="h-10 w-10 text-emerald-600 animate-spin" />
+        <h3 className="mt-4 text-lg font-bold text-slate-900 tracking-tight">
           Chargement de l'Échiquier...
         </h3>
-        <p className="mt-1 text-sm font-mono text-[#6E6A64]">
+        <p className="mt-1 text-sm font-mono text-slate-500">
           Synchronisation FRBE pour le matricule {clubId}
         </p>
       </div>
@@ -43,17 +88,17 @@ const DashboardContent: React.FC = () => {
 
   if (error || !club) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-[#F9F8F6]">
-        <div className="h-16 w-16 bg-white border border-[#E2DFD8] flex items-center justify-center text-[#B91C1C] mb-4 shadow-sm">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-slate-50">
+        <div className="h-16 w-16 bg-white border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 mb-4 shadow-xs">
           <AlertCircle className="h-8 w-8" />
         </div>
-        <h3 className="text-2xl font-bold font-serif text-[#1A1918]">Erreur de connexion</h3>
-        <p className="mt-2 max-w-md text-base text-[#6E6A64]">
+        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Erreur de connexion</h3>
+        <p className="mt-2 max-w-md text-base text-slate-600">
           {error || 'Impossible de charger les données du club.'}
         </p>
         <button
           onClick={refresh}
-          className="mt-6 chess-button inline-flex items-center gap-2"
+          className="mt-6 chess-button inline-flex items-center gap-2 cursor-pointer"
         >
           <RotateCcw className="h-4 w-4" />
           Réessayer
@@ -63,23 +108,47 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-[#F9F8F6]">
+    <div className="min-h-screen flex flex-col relative">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onRefresh={refresh}
         isLoading={loading}
+        onOpenClubSelector={() => setIsClubSelectorOpen(true)}
+        isDirectorMode={isDirectorMode}
+        onOpenDirectorAuth={() => setIsAuthModalOpen(true)}
+        onLockDirectorMode={handleLockDirectorMode}
+        onOpenSchedule={() => setIsScheduleModalOpen(true)}
       />
 
       {isFallback && (
-        <div className="bg-[#B45309]/10 border-b border-[#B45309] px-4 py-3 text-center text-sm font-semibold text-[#B45309]">
-          Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-amber-800">
+            Le serveur principal FRBE est indisponible. Utilisation des archives de sauvegarde.
+          </div>
         </div>
       )}
 
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 relative">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 relative">
+        {/* Hub Tab (Guest / Member default) */}
+        {activeTab === 'hub' && (
+          <div className="animate-in fade-in duration-300">
+            <ClubHubTab
+              club={club}
+              standings={standings}
+              latestMatches={latestMatches}
+              scouting={scouting}
+              playerStats={playerStats}
+              onNavigateTab={setActiveTab}
+              onOpenClubSelector={() => setIsClubSelectorOpen(true)}
+              onOpenSchedule={() => setIsScheduleModalOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* Division Standings Tab */}
         {activeTab === 'standings' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <StandingsTab
               standings={standings}
               clubName={club.name}
@@ -87,18 +156,30 @@ const DashboardContent: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Players Tab */}
         {activeTab === 'players' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <PlayerPerformanceTab players={playerStats} clubName={club.name} />
           </div>
         )}
+
+        {/* Next Matches / Scouting Tab */}
         {activeTab === 'scouting' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ScoutingTab scouting={scouting} clubName={club.name} />
+          <div className="animate-in fade-in duration-300">
+            <ScoutingTab
+              scouting={scouting}
+              clubName={club.name}
+              selectedRoundNumber={selectedScoutingRound}
+              onSelectRoundNumber={setSelectedScoutingRound}
+              getScoutingForRound={getScoutingForRound}
+            />
           </div>
         )}
+
+        {/* Simulator Tab */}
         {activeTab === 'simulator' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <SimulatorTab
               players={club.players || []}
               teams={club.teams || []}
@@ -107,8 +188,10 @@ const DashboardContent: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Exports Tab */}
         {activeTab === 'exports' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in duration-300">
             <ExportsTab
               club={club}
               divisions={allDivisions}
@@ -119,10 +202,31 @@ const DashboardContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="mt-auto border-t border-[#E2DFD8] bg-white py-8 text-center text-sm text-[#6E6A64]">
-        <div className="font-serif font-bold text-[#1A1918] mb-1">INTERCLUBS FRBE</div>
-        Tableau de bord tactique officiel
+      <footer className="mt-auto border-t border-slate-200/80 bg-white py-6 text-center text-sm text-slate-500">
+        <div className="font-bold text-slate-900 tracking-tight mb-1">INTERCLUBS FRBE</div>
+        Tableau de bord officiel &bull; Fédération Royale Belge des Échecs
       </footer>
+
+      {/* Club Selector Modal */}
+      <ClubSelectorModal
+        isOpen={isClubSelectorOpen}
+        onClose={() => setIsClubSelectorOpen(false)}
+      />
+
+      {/* Interclub Full Schedule & France Clash Modal */}
+      <CalendarScheduleModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        schedule={fullSchedule}
+        onSelectRound={handleSelectRoundFromSchedule}
+      />
+
+      {/* Director Password / Unlock Modal */}
+      <DirectorAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleDirectorAuthSuccess}
+      />
     </div>
   );
 };
@@ -138,4 +242,3 @@ export function App() {
 }
 
 export default App;
-
