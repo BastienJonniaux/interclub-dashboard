@@ -9,7 +9,9 @@ import {
 } from '../../domain/rules/frbeValidator';
 import { getBoardCountForDivision, NextMatchScout } from '../../domain/scouting';
 import { getDivisionBadgeStyle } from '../../domain/standings';
+import { InterclubRoundSchedule } from '../../domain/calendar';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
+import { MatchSheetModal } from './MatchSheetModal';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import { DirectorAuthModal } from '../common/DirectorAuthModal';
 import {
@@ -46,16 +48,26 @@ import {
   RefreshCw,
   Plus,
   Copy,
+  Printer,
 } from 'lucide-react';
 
 interface Props {
   players: PlayerFrbe[];
   teams: TeamFrbe[];
   clubName: string;
+  clubId?: number;
   scouting?: NextMatchScout[];
+  schedule?: InterclubRoundSchedule[];
 }
 
-export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouting = [] }) => {
+export const SimulatorTab: React.FC<Props> = ({
+  players,
+  teams,
+  clubName,
+  clubId = 901,
+  scouting = [],
+  schedule = [],
+}) => {
   const {
     selectedRound,
     setSelectedRound,
@@ -81,6 +93,7 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isMatchSheetModalOpen, setIsMatchSheetModalOpen] = useState(false);
 
   // Server & DB Sync State
   const [serverState, setServerState] = useState<{ checked: boolean; online: boolean; db: boolean }>({
@@ -584,6 +597,16 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
           >
             <CloudUpload className={`h-3.5 w-3.5 ${isSaving ? 'animate-spin' : ''}`} />
             <span>{isSaving ? 'Sauvegarde...' : 'Sauvegarder (Serveur)'}</span>
+          </button>
+
+          {/* Printable Match Sheets */}
+          <button
+            onClick={() => setIsMatchSheetModalOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-slate-900 text-white border border-slate-900 px-3.5 py-1.5 text-xs font-mono font-bold hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+            title="Générer et imprimer les feuilles de match officielles A4 pour chaque équipe de la ronde sélectionnée"
+          >
+            <Printer className="h-3.5 w-3.5 text-white" />
+            <span>Feuilles de match (PDF)</span>
           </button>
 
           {/* Toggle lock */}
@@ -1333,6 +1356,18 @@ export const SimulatorTab: React.FC<Props> = ({ players, teams, clubName, scouti
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         players={players}
+      />
+
+      <MatchSheetModal
+        isOpen={isMatchSheetModalOpen}
+        onClose={() => setIsMatchSheetModalOpen(false)}
+        selectedRound={selectedRound}
+        clubId={clubId}
+        clubName={clubName}
+        teams={teams}
+        players={players}
+        draftCompositionsByRound={draftCompositionsByRound}
+        schedule={schedule}
       />
     </div>
   );
