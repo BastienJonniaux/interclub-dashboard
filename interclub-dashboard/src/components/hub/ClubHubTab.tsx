@@ -330,14 +330,16 @@ export const ClubHubTab: React.FC<Props> = ({
                   <div className="my-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 pr-2">
-                        <PlayerHoverCard playerName={exploit.playerName} expectedElo={exploit.playerRating}>
-                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
-                            {exploit.playerName}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <PlayerHoverCard playerName={exploit.playerName} expectedElo={exploit.playerRating}>
+                            <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                              {exploit.playerName}
+                            </span>
+                          </PlayerHoverCard>
+                          <span className="text-xs font-mono text-slate-500 tabular-nums px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200/80">
+                            Elo {exploit.playerRating}
                           </span>
-                        </PlayerHoverCard>
-                        <span className="text-xs font-mono text-slate-500 tabular-nums">
-                          Elo {exploit.playerRating}
-                        </span>
+                        </div>
                       </div>
 
                       <div className="shrink-0 text-right">
@@ -413,13 +415,13 @@ export const ClubHubTab: React.FC<Props> = ({
                         <span className="font-mono text-xs font-bold text-slate-400 w-4 shrink-0 tabular-nums">
                           {idx + 1}
                         </span>
-                        <div className="truncate">
+                        <div className="flex items-center gap-3 min-w-0">
                           <PlayerHoverCard playerName={p.fullName} expectedElo={p.rating}>
                             <span className="font-semibold text-slate-900 hover:underline cursor-pointer block truncate">
                               {p.fullName}
                             </span>
                           </PlayerHoverCard>
-                          <span className="text-xs font-mono text-slate-500 tabular-nums">
+                          <span className="text-[11px] font-mono text-slate-500 tabular-nums shrink-0 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200/80">
                             Elo {p.rating || 'NC'}
                           </span>
                         </div>
@@ -466,14 +468,14 @@ export const ClubHubTab: React.FC<Props> = ({
                         <span className="font-mono text-xs font-bold text-slate-400 w-4 shrink-0 tabular-nums">
                           {idx + 1}
                         </span>
-                        <div className="truncate">
+                        <div className="flex items-center gap-3 min-w-0">
                           <PlayerHoverCard playerName={p.fullName} expectedElo={p.rating}>
                             <span className="font-semibold text-slate-900 hover:underline cursor-pointer block truncate">
                               {p.fullName}
                             </span>
                           </PlayerHoverCard>
-                          <span className="text-xs font-mono text-slate-500 tabular-nums">
-                            Elo {p.rating} • {p.gamesPlayed} parties
+                          <span className="text-[11px] font-mono text-slate-500 tabular-nums shrink-0 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200/80">
+                            Elo {p.rating}
                           </span>
                         </div>
                       </div>
@@ -523,14 +525,19 @@ export const ClubHubTab: React.FC<Props> = ({
                   {oldestPlayer ? (
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 pr-2">
-                        <PlayerHoverCard playerName={oldestPlayer.playerName} expectedElo={oldestPlayer.rating}>
-                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
-                            {oldestPlayer.playerName}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <PlayerHoverCard playerName={oldestPlayer.playerName} expectedElo={oldestPlayer.rating}>
+                            <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                              {oldestPlayer.playerName}
+                            </span>
+                          </PlayerHoverCard>
+                          <span className="text-xs font-mono text-slate-500 tabular-nums px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200/80">
+                            Elo {oldestPlayer.rating || 'NC'}
                           </span>
-                        </PlayerHoverCard>
-                        <span className="text-xs font-mono text-slate-500 tabular-nums">
-                          Elo {oldestPlayer.rating || 'NC'} • {oldestPlayer.gamesPlayed} ronde{oldestPlayer.gamesPlayed > 1 ? 's' : ''}
-                        </span>
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-400 mt-1">
+                          {oldestPlayer.gamesPlayed} ronde{oldestPlayer.gamesPlayed > 1 ? 's' : ''} jouée{oldestPlayer.gamesPlayed > 1 ? 's' : ''}
+                        </div>
                       </div>
                       <div className="text-right font-mono shrink-0 tabular-nums">
                         <div className="text-base font-bold text-slate-900">
@@ -556,14 +563,19 @@ export const ClubHubTab: React.FC<Props> = ({
                   {youngestPlayer ? (
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 pr-2">
-                        <PlayerHoverCard playerName={youngestPlayer.playerName} expectedElo={youngestPlayer.rating}>
-                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
-                            {youngestPlayer.playerName}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <PlayerHoverCard playerName={youngestPlayer.playerName} expectedElo={youngestPlayer.rating}>
+                            <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                              {youngestPlayer.playerName}
+                            </span>
+                          </PlayerHoverCard>
+                          <span className="text-xs font-mono text-slate-500 tabular-nums px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200/80">
+                            Elo {youngestPlayer.rating || 'NC'}
                           </span>
-                        </PlayerHoverCard>
-                        <span className="text-xs font-mono text-slate-500 tabular-nums">
-                          Elo {youngestPlayer.rating || 'NC'} • {youngestPlayer.gamesPlayed} ronde{youngestPlayer.gamesPlayed > 1 ? 's' : ''}
-                        </span>
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-400 mt-1">
+                          {youngestPlayer.gamesPlayed} ronde{youngestPlayer.gamesPlayed > 1 ? 's' : ''} jouée{youngestPlayer.gamesPlayed > 1 ? 's' : ''}
+                        </div>
                       </div>
                       <div className="text-right font-mono shrink-0 tabular-nums">
                         <div className="text-base font-bold text-slate-900">
