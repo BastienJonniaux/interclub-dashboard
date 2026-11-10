@@ -17,13 +17,18 @@ import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
-  // Default to guest-friendly "hub" tab
-  const [activeTab, setActiveTab] = useState<TabType>('hub');
-  const [isDirectorMode, setIsDirectorMode] = useState<boolean>(false);
+  // Default to standings tab (original director default) with all tabs accessible
+  const [activeTab, setActiveTab] = useState<TabType>('standings');
+  const [isDirectorMode, setIsDirectorMode] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
   const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(1);
+
+  React.useEffect(() => {
+    // Wake up Neon & backend in background on load
+    checkServerHealth().catch(() => {});
+  }, []);
 
   const { clubId } = useClub();
   const {
@@ -63,7 +68,7 @@ const DashboardContent: React.FC = () => {
   const handleLockDirectorMode = () => {
     setIsDirectorMode(false);
     if (activeTab === 'simulator' || activeTab === 'exports') {
-      setActiveTab('hub');
+      setActiveTab('standings');
     }
   };
 
@@ -172,8 +177,8 @@ const DashboardContent: React.FC = () => {
           </div>
         )}
 
-        {/* Simulator Tab (Director Only) */}
-        {activeTab === 'simulator' && isDirectorMode && (
+        {/* Simulator Tab */}
+        {activeTab === 'simulator' && (
           <div className="animate-in fade-in duration-300">
             <SimulatorTab
               players={club.players || []}
@@ -184,8 +189,8 @@ const DashboardContent: React.FC = () => {
           </div>
         )}
 
-        {/* Exports Tab (Director Only) */}
-        {activeTab === 'exports' && isDirectorMode && (
+        {/* Exports Tab */}
+        {activeTab === 'exports' && (
           <div className="animate-in fade-in duration-300">
             <ExportsTab
               club={club}

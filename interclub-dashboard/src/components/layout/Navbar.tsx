@@ -132,17 +132,8 @@ export const Navbar: React.FC<Props> = ({
               </span>
             </button>
 
-            {/* Director Mode Button */}
-            {!isDirectorMode ? (
-              <button
-                onClick={onOpenDirectorAuth}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
-                title="Accès réservé au Directeur des Interclubs (Simulateur et Exports)"
-              >
-                <Lock className="h-3.5 w-3.5 text-slate-500" />
-                <span>Espace Directeur</span>
-              </button>
-            ) : (
+            {/* Director Mode Indicator / Preview Toggle */}
+            {isDirectorMode ? (
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-2xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
@@ -151,12 +142,21 @@ export const Navbar: React.FC<Props> = ({
                 </span>
                 <button
                   onClick={onLockDirectorMode}
-                  className="px-2 py-1.5 text-xs font-mono text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                  title="Verrouiller et revenir au mode invité / membre"
+                  className="px-2 py-1.5 text-xs font-mono text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                  title="Aperçu du mode invité (membres)"
                 >
-                  Quitter
+                  Vue Invité
                 </button>
               </div>
+            ) : (
+              <button
+                onClick={onOpenDirectorAuth}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
+                title="Revenir à l'Espace Directeur"
+              >
+                <Lock className="h-3.5 w-3.5 text-slate-500" />
+                <span>Espace Directeur</span>
+              </button>
             )}
 
             {/* Refresh Button */}
