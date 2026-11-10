@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NextMatchScout, ReadinessColor } from '../../domain/scouting';
 import { ROUND_DATES } from '../../season';
-import { getFrenchClash, formatDateFrench } from '../../domain/calendar';
+import { getFrenchClash, formatDateFrench, getUpcomingRoundNumber } from '../../domain/calendar';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import {
   Compass,
@@ -29,8 +29,8 @@ export const ScoutingTab: React.FC<Props> = ({
   onSelectRoundNumber,
   getScoutingForRound,
 }) => {
-  // Determine default round from provided scouting or prop
-  const defaultRound = selectedRoundNumber || (scouting.length > 0 ? scouting[0].roundNumber : 1);
+  // Determine default round from prop, provided scouting, or upcoming round
+  const defaultRound = selectedRoundNumber || (scouting.length > 0 ? scouting[0].roundNumber : getUpcomingRoundNumber());
   const [activeRound, setActiveRound] = useState<number>(defaultRound);
 
   useEffect(() => {

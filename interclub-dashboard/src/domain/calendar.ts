@@ -39,6 +39,20 @@ export function getFrenchClash(dateStr: string): FrenchClashInfo {
   return { hasClash: false };
 }
 
+/**
+ * Returns the round number of the upcoming (or current unplayed) round based on today's date.
+ */
+export function getUpcomingRoundNumber(now: Date = new Date()): number {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(now);
+  for (let r = 1; r <= ROUND_DATES.length; r++) {
+    const date = ROUND_DATES[r - 1];
+    if (date >= today) {
+      return r;
+    }
+  }
+  return ROUND_DATES.length;
+}
+
 export interface OpponentRecentMatch {
   round: number;
   opponentName: string;
@@ -118,14 +132,7 @@ export function extractFullSeasonSchedule(
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(new Date());
 
   // Determine current next unplayed round
-  let currentNextRound = 1;
-  for (let r = 1; r <= ROUND_DATES.length; r++) {
-    const date = ROUND_DATES[r - 1];
-    if (date >= today) {
-      currentNextRound = r;
-      break;
-    }
-  }
+  const currentNextRound = getUpcomingRoundNumber();
 
   const schedule: InterclubRoundSchedule[] = [];
 

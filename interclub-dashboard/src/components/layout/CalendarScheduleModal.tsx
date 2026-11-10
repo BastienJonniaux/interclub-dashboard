@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { InterclubRoundSchedule, TeamRoundMatchup } from '../../domain/calendar';
 import {
   Calendar,
@@ -9,6 +9,8 @@ import {
   X,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Info,
   ShieldAlert,
   Search,
@@ -29,10 +31,26 @@ export const CalendarScheduleModal: React.FC<Props> = ({
   onSelectRound,
 }) => {
   const [filterMode, setFilterMode] = useState<'all' | 'clashes' | 'upcoming'>('all');
+  const [expandedRounds, setExpandedRounds] = useState<Record<number, boolean>>({});
   const [hoveredMatchup, setHoveredMatchup] = useState<{
     key: string;
     matchup: TeamRoundMatchup;
+    openDown?: boolean;
   } | null>(null);
+
+  const currentRoundRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        if (currentRoundRef.current) {
+          currentRoundRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, filterMode]);
 
   if (!isOpen) return null;
 
@@ -43,6 +61,13 @@ export const CalendarScheduleModal: React.FC<Props> = ({
     if (filterMode === 'upcoming') return s.status !== 'past';
     return true;
   });
+
+  const toggleRound = (roundNumber: number, defaultExpanded: boolean) => {
+    setExpandedRounds((prev) => ({
+      ...prev,
+      [roundNumber]: prev[roundNumber] !== undefined ? !prev[roundNumber] : !defaultExpanded,
+    }));
+  };
 
   const handleCardClick = (roundNumber: number) => {
     onSelectRound(roundNumber);
@@ -121,18 +146,63 @@ export const CalendarScheduleModal: React.FC<Props> = ({
         </div>
 
         {/* Schedule List */}
-        <div className="p-6 overflow-y-auto space-y-4 flex-1">
+        <div ref={scrollContainerRef} className="p-6 overflow-y-auto space-y-4 flex-1 pb-32">
           {filteredSchedule.map((round) => {
             const hasClash = round.frenchClash.hasClash;
             const isCurrent = round.status === 'current';
             const isPast = round.status === 'past';
+            const isExpanded =
+              expandedRounds[round.roundNumber] !== undefined
+                ? expandedRounds[round.roundNumber]
+                : !isPast;
+
+            const wins = round.matchups.filter((m) => m.matchOutcome === 'win').length;
+            const draws = round.matchups.filter((m) => m.matchOutcome === 'draw').length;
+            const losses = round.matchups.filter((m) => m.matchOutcome === 'loss').length;
+
+            {/* Minimized / Collapsed Past Round */}
+            if (isPast && !isExpanded) {
+              return (
+                <div
+                  key={round.roundNumber}
+                  className="border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 rounded-xl p-3.5 transition-all flex items-center justify-between cursor-pointer group"
+                  onClick={() => toggleRound(round.roundNumber, false)}
+                >
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-mono text-xs font-bold px-2.5 py-1 bg-slate-600 text-white rounded-md">
+                      Ronde {round.roundNumber}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      {round.formattedDate}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-white text-slate-500 border border-slate-200">
+                      Ronde jouée
+                    </span>
+                    {round.matchups.some((m) => m.played) && (
+                      <span className="text-xs font-mono font-semibold text-slate-600">
+                        Bilan :{' '}
+                        <span className="text-emerald-700 font-bold">{wins}V</span>{' • '}
+                        <span className="text-amber-700 font-bold">{draws}N</span>{' • '}
+                        <span className="text-rose-700 font-bold">{losses}D</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 group-hover:text-slate-900 transition-colors">
+                    <span>Afficher les {round.matchups.length} matchs</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div
                 key={round.roundNumber}
+                ref={isCurrent ? currentRoundRef : undefined}
                 className={`border rounded-xl p-4 sm:p-5 transition-all ${
                   isCurrent
-                    ? 'border-emerald-500/80 bg-emerald-50/20 shadow-xs'
+                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20 shadow-xs'
                     : hasClash
                     ? 'border-amber-300 bg-amber-50/15'
                     : 'border-slate-200 bg-white hover:border-slate-300'
@@ -164,17 +234,28 @@ export const CalendarScheduleModal: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* French Conflict Warning Badge */}
-                  {hasClash ? (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold shadow-2xs">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                      <span>Conflit Ronde {round.frenchClash.frenchRound} FFE (France)</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-                      Pas de conflit France connu
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {/* French Conflict Warning Badge */}
+                    {hasClash ? (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold shadow-2xs">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                        <span>Conflit Ronde {round.frenchClash.frenchRound} FFE (France)</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                        Pas de conflit France connu
+                      </span>
+                    )}
+
+                    {/* Minimize button for rounds */}
+                    <button
+                      onClick={() => toggleRound(round.roundNumber, !isPast)}
+                      className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                      title={isExpanded ? 'Réduire cette ronde' : 'Déplier'}
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Conflict explanation banner if applicable */}
@@ -196,7 +277,12 @@ export const CalendarScheduleModal: React.FC<Props> = ({
                     return (
                       <div
                         key={matchupKey}
-                        onMouseEnter={() => setHoveredMatchup({ key: matchupKey, matchup: m })}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          // Open downwards if near top of viewport (< 350px) to prevent top clipping
+                          const openDown = rect.top < 350;
+                          setHoveredMatchup({ key: matchupKey, matchup: m, openDown });
+                        }}
                         onMouseLeave={() => setHoveredMatchup(null)}
                         onClick={() => handleCardClick(round.roundNumber)}
                         className="relative p-3 rounded-lg border border-slate-200 bg-slate-50/60 hover:bg-slate-100/80 hover:border-slate-300 transition-colors cursor-pointer group flex flex-col justify-between"
@@ -283,7 +369,17 @@ export const CalendarScheduleModal: React.FC<Props> = ({
 
                         {/* Hover Preview Popover */}
                         {isHovered && !m.isBye && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 text-white rounded-xl shadow-2xl z-50 text-xs pointer-events-none animate-in fade-in duration-100">
+                          <div
+                            className={`absolute ${
+                              hoveredMatchup?.openDown ? 'top-full mt-2' : 'bottom-full mb-2'
+                            } ${
+                              mIdx % 3 === 0
+                                ? 'left-0 sm:left-1/2 sm:-translate-x-1/2'
+                                : mIdx % 3 === 2
+                                ? 'right-0 sm:left-1/2 sm:-translate-x-1/2'
+                                : 'left-1/2 -translate-x-1/2'
+                            } w-72 p-3 bg-slate-900 text-white rounded-xl shadow-2xl z-50 text-xs pointer-events-none animate-in fade-in duration-100`}
+                          >
                             <div className="font-bold text-emerald-400 mb-1 border-b border-slate-800 pb-1">
                               {m.opponentTeamName}
                             </div>

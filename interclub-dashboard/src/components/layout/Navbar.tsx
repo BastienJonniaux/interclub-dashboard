@@ -48,8 +48,8 @@ export const Navbar: React.FC<Props> = ({
   }, [clubId]);
 
   const baseNavItems = [
-    { id: 'hub' as const, label: 'Le Club', icon: Home },
     { id: 'standings' as const, label: 'Classements Équipes', icon: Trophy },
+    { id: 'hub' as const, label: 'Le Club', icon: Home },
     { id: 'scouting' as const, label: 'Prochains Matchs', icon: Compass },
     { id: 'players' as const, label: 'Joueurs du Club', icon: Users },
   ];

@@ -174,105 +174,7 @@ export const ClubHubTab: React.FC<Props> = ({
       </section>
 
       {/* =========================================================================
-          SECTION 1: TOMBEURS DE GÉANTS (EXPLOITS ELO)
-          The signature chess feature: celebrating upsets against higher-rated players
-         ========================================================================= */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold tracking-tight text-slate-900">
-                Les Tombeurs de Géants
-              </h2>
-              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded">
-                Exploits Elo
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Membres du club ayant battu ou neutralisé un adversaire avec un classement Elo supérieur.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onNavigateTab('players')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
-          >
-            <span>Voir toutes les stats individuelles</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {giantKillers.length === 0 ? (
-          <div className="py-12 text-center text-sm text-slate-500">
-            Aucun exploit d'écart d'Elo supérieur enregistré pour le moment.
-          </div>
-        ) : (
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {giantKillers.slice(0, 6).map((exploit, idx) => (
-              <div
-                key={`${exploit.playerId}-${exploit.round}-${idx}`}
-                className="bg-slate-50/80 border border-slate-200 rounded-lg p-4 flex flex-col justify-between transition-colors hover:border-slate-300"
-              >
-                <div>
-                  {/* Context Header */}
-                  <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200/70">
-                    <span className="font-medium">
-                      Échiquier {exploit.board} • Ronde {exploit.round} ({exploit.division})
-                    </span>
-                    <span className="text-slate-700 font-medium">
-                      {exploit.color === 'white' ? 'Blancs' : 'Noirs'}
-                    </span>
-                  </div>
-
-                  {/* Player vs Opponent */}
-                  <div className="my-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0 pr-2">
-                        <PlayerHoverCard playerName={exploit.playerName} expectedElo={exploit.playerRating}>
-                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
-                            {exploit.playerName}
-                          </span>
-                        </PlayerHoverCard>
-                        <span className="text-xs font-mono text-slate-500 tabular-nums">
-                          Elo {exploit.playerRating}
-                        </span>
-                      </div>
-
-                      <div className="shrink-0 text-right">
-                        <span className="inline-block font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 tabular-nums">
-                          +{exploit.ratingDiff} Elo
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-600">
-                      <div className="truncate">
-                        <span className="text-slate-400 mr-1">vs</span>
-                        <span className="font-medium text-slate-800">{exploit.opponentName}</span>{' '}
-                        <span className="font-mono text-xs text-slate-500 tabular-nums">({exploit.opponentRating})</span>
-                      </div>
-
-                      <span className="font-mono font-bold text-xs shrink-0 text-slate-900 tabular-nums">
-                        {exploit.resultString}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
-                  <span>{exploit.isWin ? 'Victoire nette' : 'Nulle de combat (+150 Elo)'}</span>
-                  <span className="font-mono text-emerald-700 font-semibold tabular-nums">
-                    {exploit.isWin ? '1 pt' : '½ pt'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* =========================================================================
-          SECTION 2: BILAN DE LA DERNIÈRE RONDE
+          SECTION 1: BILAN DE LA DERNIÈRE RONDE
           Clean match-by-match scoreboards for all teams of the club
          ========================================================================= */}
       <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
@@ -369,6 +271,104 @@ export const ClubHubTab: React.FC<Props> = ({
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      {/* =========================================================================
+          SECTION 2: TOMBEURS DE GÉANTS (EXPLOITS ELO)
+          The signature chess feature: celebrating upsets against higher-rated players
+         ========================================================================= */}
+      <section className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">
+                Les Tombeurs de Géants
+              </h2>
+              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 rounded">
+                Exploits Elo
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Membres du club ayant battu ou neutralisé un adversaire avec un classement Elo supérieur.
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigateTab('players')}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 cursor-pointer"
+          >
+            <span>Voir toutes les stats individuelles</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {giantKillers.length === 0 ? (
+          <div className="py-12 text-center text-sm text-slate-500">
+            Aucun exploit d'écart d'Elo supérieur enregistré pour le moment.
+          </div>
+        ) : (
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {giantKillers.slice(0, 6).map((exploit, idx) => (
+              <div
+                key={`${exploit.playerId}-${exploit.round}-${idx}`}
+                className="bg-slate-50/80 border border-slate-200 rounded-lg p-4 flex flex-col justify-between transition-colors hover:border-slate-300"
+              >
+                <div>
+                  {/* Context Header */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-200/70">
+                    <span className="font-medium">
+                      Échiquier {exploit.board} • Ronde {exploit.round} ({exploit.division})
+                    </span>
+                    <span className="text-slate-700 font-medium">
+                      {exploit.color === 'white' ? 'Blancs' : 'Noirs'}
+                    </span>
+                  </div>
+
+                  {/* Player vs Opponent */}
+                  <div className="my-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <PlayerHoverCard playerName={exploit.playerName} expectedElo={exploit.playerRating}>
+                          <span className="font-semibold text-sm text-slate-900 hover:underline cursor-pointer block truncate">
+                            {exploit.playerName}
+                          </span>
+                        </PlayerHoverCard>
+                        <span className="text-xs font-mono text-slate-500 tabular-nums">
+                          Elo {exploit.playerRating}
+                        </span>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <span className="inline-block font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 tabular-nums">
+                          +{exploit.ratingDiff} Elo
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-600">
+                      <div className="truncate">
+                        <span className="text-slate-400 mr-1">vs</span>
+                        <span className="font-medium text-slate-800">{exploit.opponentName}</span>{' '}
+                        <span className="font-mono text-xs text-slate-500 tabular-nums">({exploit.opponentRating})</span>
+                      </div>
+
+                      <span className="font-mono font-bold text-xs shrink-0 text-slate-900 tabular-nums">
+                        {exploit.resultString}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
+                  <span>{exploit.isWin ? 'Victoire nette' : 'Nulle de combat (+150 Elo)'}</span>
+                  <span className="font-mono text-emerald-700 font-semibold tabular-nums">
+                    {exploit.isWin ? '1 pt' : '½ pt'}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

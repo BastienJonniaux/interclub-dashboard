@@ -12,7 +12,7 @@ import { ExportsTab } from './components/exports/ExportsTab';
 import { DirectorAuthModal } from './components/common/DirectorAuthModal';
 import { ClubSelectorModal } from './components/layout/ClubSelectorModal';
 import { CalendarScheduleModal } from './components/layout/CalendarScheduleModal';
-import { extractFullSeasonSchedule } from './domain/calendar';
+import { extractFullSeasonSchedule, getUpcomingRoundNumber } from './domain/calendar';
 import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
 import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const DashboardContent: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
-  const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(1);
+  const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(() => getUpcomingRoundNumber());
 
   React.useEffect(() => {
     // Wake up Neon & backend in background on load

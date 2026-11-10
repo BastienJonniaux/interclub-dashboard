@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useClub } from './ClubContext';
 import { RESERVE_ELO_LIMITS } from '../domain/rules/frbeValidator';
+import { getUpcomingRoundNumber } from '../domain/calendar';
 
 export type AvailabilityStatus = 'available' | 'unavailable' | 'tentative';
 
@@ -32,7 +33,7 @@ interface SimulatorContextType {
 }
 
 const SimulatorContext = createContext<SimulatorContextType>({
-  selectedRound: 2,
+  selectedRound: 1,
   setSelectedRound: () => {},
   draftCompositionsByRound: {},
   copyRoundDraft: () => {},
@@ -57,7 +58,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { clubId } = useClub();
   const storageKey = `interclub_sim_${clubId}`;
 
-  const [selectedRound, setSelectedRoundState] = useState<number>(2);
+  const [selectedRound, setSelectedRoundState] = useState<number>(() => getUpcomingRoundNumber());
   const [draftCompositionsByRound, setDraftCompositionsByRound] = useState<{
     [round: number]: { [teamNumber: number]: { [board: number]: number | null } };
   }>({});
@@ -106,25 +107,31 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           draftsByRound[1] = parsed.draftCompositions;
         }
 
-        const savedRound = parsed.selectedRound || (draftsByRound[2] ? 2 : 1);
+        const upcomingRound = getUpcomingRoundNumber();
+        const savedRound =
+          parsed.selectedRound && parsed.selectedRound >= upcomingRound
+            ? parsed.selectedRound
+            : (draftsByRound[upcomingRound] ? upcomingRound : upcomingRound);
 
         setDraftCompositionsByRound(draftsByRound);
         setSelectedRoundState(savedRound);
         setDraftCompositions(draftsByRound[savedRound] || parsed.draftCompositions || {});
         setDraftHistory([]);
       } else {
+        const upcomingRound = getUpcomingRoundNumber();
         setAvailability({});
         setPlayerSettings({});
         setDraftCompositionsByRound({});
-        setSelectedRoundState(2);
+        setSelectedRoundState(upcomingRound);
         setDraftCompositions({});
         setDraftHistory([]);
       }
     } catch {
+      const upcomingRound = getUpcomingRoundNumber();
       setAvailability({});
       setPlayerSettings({});
       setDraftCompositionsByRound({});
-      setSelectedRoundState(2);
+      setSelectedRoundState(upcomingRound);
       setDraftCompositions({});
       setDraftHistory([]);
     }
