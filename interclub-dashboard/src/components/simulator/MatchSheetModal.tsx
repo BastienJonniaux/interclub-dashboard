@@ -156,22 +156,24 @@ export const MatchSheetModal: React.FC<Props> = ({
         @media print {
           @page {
             size: A4 landscape;
-            margin: 8mm 10mm 8mm 10mm;
+            margin: 8mm 10mm;
           }
 
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
             background: white !important;
+            background-image: none !important;
             color: black !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
-          /* Hide entire on-screen app and modals */
-          #root,
-          .no-print,
-          .no-print * {
+          /* Hide EVERYTHING in body except the printable portal */
+          body > *:not(#printable-match-sheets) {
             display: none !important;
           }
 
@@ -180,33 +182,30 @@ export const MatchSheetModal: React.FC<Props> = ({
             display: block !important;
             position: static !important;
             width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
           }
 
           .match-sheet-page {
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            width: 100% !important;
-            height: 190mm !important;
-            max-height: 190mm !important;
+            display: block !important;
             box-sizing: border-box !important;
-            page-break-after: always !important;
-            break-after: page !important;
+            width: 100% !important;
+            height: auto !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             padding: 0 !important;
             margin: 0 !important;
             background: white !important;
             color: black !important;
-            overflow: hidden !important;
           }
 
-          .match-sheet-page:last-child {
-            page-break-after: avoid !important;
-            break-after: avoid !important;
+          /* Page break strictly between consecutive team sheets (never trailing after the last or only page) */
+          .match-sheet-page + .match-sheet-page {
+            page-break-before: always !important;
+            break-before: page !important;
           }
         }
       `}</style>
