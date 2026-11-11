@@ -1366,6 +1366,7 @@ export const SimulatorTab: React.FC<Props> = ({
         clubName={clubName}
         teams={teams}
         players={players}
+        draftCompositions={draftCompositions}
         draftCompositionsByRound={draftCompositionsByRound}
         schedule={schedule}
       />
