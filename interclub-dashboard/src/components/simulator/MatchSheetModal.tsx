@@ -592,7 +592,7 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
 
         <div className="border-t border-slate-300 pt-1 text-[8px] text-slate-500 flex justify-between">
           <span>Interclubs Nationaux FRBE &bull; Édition officielle générée le {new Intl.DateTimeFormat('fr-BE').format(new Date())}</span>
-          <span>Feuille de match officielle &bull; À renvoyer après la rencontre</span>
+          <span>Feuille de match officielle &bull; Echiquier Leuzois</span>
         </div>
       </div>
     </div>
