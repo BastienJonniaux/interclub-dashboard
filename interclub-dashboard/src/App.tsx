@@ -184,7 +184,9 @@ const DashboardContent: React.FC = () => {
               players={club.players || []}
               teams={club.teams || []}
               clubName={club.name}
+              clubId={clubId}
               scouting={scouting}
+              schedule={fullSchedule}
             />
           </div>
         )}
