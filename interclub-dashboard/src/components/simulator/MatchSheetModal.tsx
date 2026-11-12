@@ -711,35 +711,46 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
       </div>
 
       {/* 3. Footer Section */}
-      <div className="border-2 border-slate-900 p-2.5 text-[10px] font-mono space-y-2.5">
-        <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-          <span className="text-slate-600">
-            Guide des résultats : <strong>1</strong> = Gain &bull; <strong>½</strong> = Nulle &bull; <strong>0</strong> = Perte &bull; <strong>1F / 0F</strong> = Forfait
-          </span>
-          <span className="font-bold text-sm text-slate-900">
-            Score Final : [ &nbsp;____&nbsp; - &nbsp;____&nbsp; ]
-          </span>
-        </div>
-
-        {/* 2 Clean Captain Signature Blocks (No referee) */}
-        <div className="grid grid-cols-2 gap-8 pt-1">
-          <div>
-            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider">Capitaine Équipe Domicile</span>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="truncate">Nom : ________________________________</span>
-              <span className="truncate">Signature : ____________________</span>
-            </div>
-          </div>
-          <div>
-            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider">Capitaine Équipe Visiteuse</span>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="truncate">Nom : ________________________________</span>
-              <span className="truncate">Signature : ____________________</span>
-            </div>
+      <div className="border-2 border-slate-900 font-mono text-[10px]">
+        {/* Score Final en grand au milieu */}
+        <div className="flex items-center justify-center py-2 border-b-2 border-slate-900 bg-slate-50">
+          <div className="inline-flex items-center gap-3 px-5 py-1.5 border-2 border-slate-900 bg-white shadow-xs">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-slate-800">
+              Score Final :
+            </span>
+            <span className="text-base sm:text-lg font-black text-slate-900 tracking-widest font-mono">
+              [&nbsp;&nbsp;____&nbsp;&nbsp;&minus;&nbsp;&nbsp;____&nbsp;&nbsp;]
+            </span>
           </div>
         </div>
 
-        <div className="border-t border-slate-300 pt-1 text-[8px] text-slate-500 flex justify-between">
+        {/* 2 Captain Blocks avec séparation verticale symétrique */}
+        <div className="grid grid-cols-2 divide-x-2 divide-slate-900">
+          {/* Capitaine Équipe Domicile */}
+          <div className="p-2.5 sm:p-3">
+            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider mb-2">
+              Capitaine Équipe Domicile
+            </span>
+            <div className="flex items-center justify-between gap-4 text-[10px]">
+              <span className="font-semibold text-slate-900">Nom : _________________________</span>
+              <span className="font-semibold text-slate-900">Signature : __________________</span>
+            </div>
+          </div>
+
+          {/* Capitaine Équipe Visiteuse */}
+          <div className="p-2.5 sm:p-3">
+            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider mb-2">
+              Capitaine Équipe Visiteuse
+            </span>
+            <div className="flex items-center justify-between gap-4 text-[10px]">
+              <span className="font-semibold text-slate-900">Nom : _________________________</span>
+              <span className="font-semibold text-slate-900">Signature : __________________</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Metadata bar */}
+        <div className="border-t border-slate-300 px-3 py-1 text-[8px] text-slate-500 flex justify-between bg-slate-50">
           <span>Interclubs Nationaux FRBE &bull; Édition officielle générée le {new Intl.DateTimeFormat('fr-BE').format(new Date())}</span>
           <span>Feuille de match officielle &bull; Echiquier Leuzois</span>
         </div>
