@@ -128,7 +128,7 @@ export const MatchSheetModal: React.FC<Props> = ({
             (m.divisionNumber === team.division &&
               (!team.index || m.divisionIndex === team.index || m.divisionLabel.includes(team.index))) ||
             m.teamName.toLowerCase().includes(team.name.toLowerCase()) ||
-            m.teamName.toLowerCase().includes(`${clubName.toLowerCase()} ${team.index || teamNumber}`.toLowerCase())
+            m.teamName.toLowerCase().includes(`${clubName.toLowerCase()} ${teamNumber}`.toLowerCase())
         ) ||
         (roundSchedule?.matchups && idx < roundSchedule.matchups.length ? roundSchedule.matchups[idx] : undefined);
 
@@ -185,7 +185,7 @@ export const MatchSheetModal: React.FC<Props> = ({
 
       return {
         teamNumber,
-        teamName: `${clubName} ${team.index || teamNumber}`,
+        teamName: team.name || `${clubName} ${teamNumber}`,
         divisionLabel,
         divisionNumber: team.division,
         boardCount,
@@ -539,24 +539,24 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
         </div>
 
         {/* Top Meta Details Grid: 4 columns including Lieu / Salle de jeu */}
-        <div className="grid grid-cols-12 border-b-2 border-x-2 border-slate-900 text-xs font-mono">
-          <div className="col-span-2 p-1.5 border-r border-slate-900">
+        <div className="flex border-b-2 border-x-2 border-slate-900 text-xs font-mono">
+          <div className="w-[23%] p-1.5 border-r border-slate-900 shrink-0">
             <span className="text-[10px] text-slate-500 uppercase block font-sans">Date</span>
-            <strong className="text-slate-900 font-bold">{roundDateFormatted}</strong>
+            <strong className="text-slate-900 font-bold whitespace-nowrap block">{roundDateFormatted}</strong>
           </div>
-          <div className="col-span-5 p-1.5 border-r border-slate-900">
+          <div className="flex-1 p-1.5 border-r border-slate-900 min-w-0">
             <span className="text-[10px] text-slate-500 uppercase block font-sans">Lieu de la rencontre</span>
             <strong className="text-slate-900 font-bold truncate block" title={venueAddressFormatted}>
               {venueAddressFormatted}
             </strong>
           </div>
-          <div className="col-span-3 p-1.5 border-r border-slate-900">
-            <span className="text-[10px] text-slate-500 uppercase block font-sans">Compétition / Division</span>
-            <strong className="text-slate-900 font-bold">{divisionLabel}</strong>
+          <div className="w-[14%] p-1.5 border-r border-slate-900 shrink-0">
+            <span className="text-[10px] text-slate-500 uppercase block font-sans">Division</span>
+            <strong className="text-slate-900 font-bold block">{divisionLabel}</strong>
           </div>
-          <div className="col-span-2 p-1.5">
+          <div className="w-[11%] p-1.5 shrink-0 text-center">
             <span className="text-[10px] text-slate-500 uppercase block font-sans">Ronde</span>
-            <strong className="text-slate-900 font-bold">Ronde {roundNumber}</strong>
+            <strong className="text-slate-900 font-bold block">Ronde {roundNumber}</strong>
           </div>
         </div>
       </div>
