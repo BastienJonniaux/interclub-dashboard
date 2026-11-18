@@ -16,6 +16,7 @@ import {
   safeCompareKeys,
   extractProvidedKey,
 } from '../middleware/auth';
+import { getSeasonConfig } from '../utils/season';
 import { prisma } from '../prisma';
 
 export const apiRouter = Router();
@@ -45,6 +46,13 @@ apiRouter.get('/health', async (_req, res) => {
       message: err.message,
     });
   }
+});
+
+// Current Season configuration & official calendar
+apiRouter.get('/season/current', (req, res) => {
+  const requestedSeason = req.query.season as string | undefined;
+  const config = getSeasonConfig(requestedSeason);
+  return res.json(config);
 });
 
 // Director Key verification with rate-limiting and timing-safe comparison

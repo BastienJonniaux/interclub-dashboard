@@ -99,9 +99,14 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 
 ### 🟠 Majeur — Maintenabilité & Cohérence technique
 
-4. **Duplication du calendrier et des données de saison**
-   - **Constat** : La saison `'2026-2027'` et les 11 dates de rondes sont dupliquées et codées en dur à 4 endroits : `interclub-dashboard/src/season.ts`, `server/src/utils/calendar.ts`, `draftsController.ts` / `attendancesController.ts` (`DEFAULT_SEASON`), et `firestoreFallback.ts` (`years/2026`). De même, `getOrCreateSeason` est copié-collé entre les deux contrôleurs backend.
-   - **Amélioration** : Centraliser la configuration de saison dans une table PostgreSQL (`Season` enrichie des dates de rondes) ou un module partagé `shared/` consommé par front et back, et extraire un service backend unique.
+4. **[RÉSOLU] Unification du calendrier et autorité de saison** (`server/src/utils/season.ts`, `server/src/utils/calendar.ts`, `GET /api/season/current`, `firestoreFallback.ts`)
+   - **Historique** : La saison `'2026-2027'` et les 11 dates de rondes étaient dupliquées et codées en dur à 4 endroits (`season.ts`, `calendar.ts`, contrôleurs serveur, `firestoreFallback.ts:5`), avec des formats hétérogènes (`'2026'` vs `'2026-2027'`).
+   - **Corrections apportées** :
+     - **Backend comme autorité** : `server/src/utils/season.ts` centralise la configuration des saisons (`DEFAULT_SEASON = '2026-2027'`), les calendriers officiels (`OFFICIAL_SEASON_CALENDARS`) et expose `GET /api/season/current`.
+     - `calendar.ts` consomme désormais directement `getRoundDatesForSeason` au lieu de dupliquer un tableau de dates distinct.
+     - **Normalisation universelle** : ajout de `normalizeSeasonYear` et `getSeasonStartYear` front & back permettant d'interchanger `'2026'`, `'2026-2027'`, `'2026–2027'` sans bug de casting.
+     - **Nettoyage Firestore** : `firestoreFallback.ts` utilise dynamiquement `ACTIVE_SEASON` au lieu d'une URL codée en dur sur `/years/2026`.
+     - **Tests unitaires** : 11 nouveaux tests dédiés (`server/src/utils/__tests__/season.test.ts` et `interclub-dashboard/src/domain/__tests__/season.test.ts`).
 
 5. **Validation des règles FRBE absente côté serveur**
    - **Constat** : `frbeValidator.ts` s'exécute uniquement dans le navigateur. `POST /api/rounds/:roundNumber/drafts` accepte n'importe quel JSON valide sans vérifier l'absence de doublons ni les limites de ronde/échiquier.
@@ -141,3 +146,4 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 - [ADR-005 : Logique Métier et Validation FRBE côté Client](./adr/005-client-side-domain-logic-and-duplication.md)
 - [ADR-006 : Génération des Feuilles de Match via `@media print` et `createPortal`](./adr/006-native-print-portal-match-sheets.md)
 - [ADR-007 : Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions)](./adr/007-automated-testing-strategy-and-ci.md)
+- [ADR-008 : Unification de la Saison et Autorité du Calendrier](./adr/008-centralized-season-and-calendar-authority.md)
