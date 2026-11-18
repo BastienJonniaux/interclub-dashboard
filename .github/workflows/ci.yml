@@ -1,0 +1,61 @@
+name: CI / Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (Tests & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: interclub-dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix interclub-dashboard ci
+
+      - name: Run Vitest Unit Tests
+        run: npm --prefix interclub-dashboard run test
+
+      - name: Run Production Build (TypeScript + Vite)
+        run: npm --prefix interclub-dashboard run build
+
+  backend:
+    name: Backend Server (Tests & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix server ci
+
+      - name: Generate Prisma Client
+        run: npm --prefix server run prisma:generate
+
+      - name: Run Unit Tests (Node native test runner)
+        run: npm --prefix server run test
+
+      - name: Run Production Build (TypeScript)
+        run: npm --prefix server run build

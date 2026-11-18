@@ -15,13 +15,15 @@ export function getDirectorKey(): string {
   if (!key) {
     if (process.env.NODE_ENV === 'production') {
       console.error('🚨 [CRITICAL SECURITY ERROR] DIRECTOR_KEY is not defined in environment variables!');
-      throw new Error('DIRECTOR_KEY must be defined in production.');
+      throw new Error('DIRECTOR_KEY obligatoire et non défini en production.');
     }
     return 'director1234';
   }
 
-  if (process.env.NODE_ENV === 'production' && key === 'director1234') {
-    console.warn('⚠️ [SECURITY WARNING] Production is using the default DIRECTOR_KEY ("director1234"). Please configure a strong secret in your environment.');
+  if (process.env.NODE_ENV === 'production') {
+    if (key === 'director1234' || key.length < 8) {
+      throw new Error('DIRECTOR_KEY trop faible ou trop courte en production (minimum 8 caractères distincts de la clé par défaut).');
+    }
   }
 
   return key;
