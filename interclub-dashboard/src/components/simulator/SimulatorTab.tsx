@@ -22,6 +22,7 @@ import {
   fetchRoundAttendances,
   saveRoundAttendances,
   getStoredDirectorKey,
+  getStoredAuthorName,
 } from '../../api/backendClient';
 import {
   CheckCircle,
@@ -109,6 +110,7 @@ export const SimulatorTab: React.FC<Props> = ({
   const [isLoadingServer, setIsLoadingServer] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
   const [roundLocked, setRoundLocked] = useState(false);
+  const [roundSavedBy, setRoundSavedBy] = useState<string | null>(null);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   // Check backend server health on mount
@@ -123,8 +125,10 @@ export const SimulatorTab: React.FC<Props> = ({
     fetchRoundDrafts(selectedRound, undefined, clubId).then(res => {
       if (res && !res.isRestricted) {
         setRoundLocked(res.isLocked);
+        setRoundSavedBy(res.savedBy || null);
       } else {
         setRoundLocked(false);
+        setRoundSavedBy(null);
       }
     });
   }, [selectedRound, clubId]);
@@ -190,6 +194,8 @@ export const SimulatorTab: React.FC<Props> = ({
     });
     await saveRoundAttendances(selectedRound, attPayload, undefined, undefined, clubId);
 
+    const currentAuthor = getStoredAuthorName() || 'Directeur';
+    setRoundSavedBy(currentAuthor);
     setIsSaving(false);
     setSyncFeedback({
       type: 'success',
@@ -228,6 +234,7 @@ export const SimulatorTab: React.FC<Props> = ({
     if (draftRes && Object.keys(draftRes.drafts).length > 0) {
       applyRoundDraftsFromExternal(selectedRound, draftRes.drafts);
       setRoundLocked(draftRes.isLocked);
+      setRoundSavedBy(draftRes.savedBy || null);
       loadedCount = Object.keys(draftRes.drafts).length;
     }
 
@@ -239,12 +246,13 @@ export const SimulatorTab: React.FC<Props> = ({
       applyAttendancesFromExternal(newAvail);
     }
 
+    const authorNotice = draftRes?.savedBy ? ` (enregistré par ${draftRes.savedBy})` : '';
     setIsLoadingServer(false);
     setSyncFeedback({
       type: 'success',
       message:
         loadedCount > 0
-          ? `Compositions officielles de la ronde ${selectedRound} chargées (${loadedCount} équipes).`
+          ? `Compositions officielles de la ronde ${selectedRound} chargées (${loadedCount} équipes)${authorNotice}.`
           : `Aucune composition officielle trouvée sur le serveur pour la ronde ${selectedRound}.`,
     });
     setTimeout(() => setSyncFeedback(null), 4000);
@@ -265,6 +273,7 @@ export const SimulatorTab: React.FC<Props> = ({
 
     if (res.success) {
       setRoundLocked(!!res.isLocked);
+      if (res.savedBy) setRoundSavedBy(res.savedBy);
       setSyncFeedback({
         type: 'success',
         message: res.message || (newLockState ? 'Ronde verrouillée.' : 'Ronde déverrouillée.'),
@@ -539,7 +548,10 @@ export const SimulatorTab: React.FC<Props> = ({
             handleToggleLock();
           } else {
             fetchRoundDrafts(selectedRound, undefined, clubId).then((res) => {
-              if (res && !res.isRestricted) setRoundLocked(res.isLocked);
+              if (res && !res.isRestricted) {
+                setRoundLocked(res.isLocked);
+                setRoundSavedBy(res.savedBy || null);
+              }
             });
           }
           setAuthAction(null);
@@ -574,6 +586,12 @@ export const SimulatorTab: React.FC<Props> = ({
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 font-mono shadow-xs">
               <Unlock className="h-3 w-3 text-amber-600" /> Brouillon modifiable
+            </span>
+          )}
+
+          {roundSavedBy && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70">
+              Auteur : <strong className="text-slate-800">{roundSavedBy}</strong>
             </span>
           )}
         </div>

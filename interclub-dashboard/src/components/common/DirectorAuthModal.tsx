@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
   getStoredDirectorKey,
   setStoredDirectorKey,
+  getStoredAuthorName,
+  setStoredAuthorName,
   verifyDirectorKey,
 } from '../../api/backendClient';
-import { ShieldCheck, KeyRound, X, Check, AlertCircle } from 'lucide-react';
+import { ShieldCheck, KeyRound, User, X, Check, AlertCircle } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface Props {
 
 export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [keyInput, setKeyInput] = useState(getStoredDirectorKey() || '');
+  const [authorInput, setAuthorInput] = useState(getStoredAuthorName() || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -35,6 +38,7 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
       const result = await verifyDirectorKey(keyInput.trim());
       if (result.valid) {
         setStoredDirectorKey(keyInput.trim());
+        setStoredAuthorName(authorInput.trim() || null);
         setSuccess(true);
         setTimeout(() => {
           onClose();
@@ -44,13 +48,7 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
         setError(result.message || 'Clé Directeur incorrecte. Accès refusé.');
       }
     } catch {
-      // Fallback: save locally
-      setStoredDirectorKey(keyInput.trim());
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-        if (onSuccess) onSuccess();
-      }, 600);
+      setError('Erreur de communication avec le serveur backend.');
     } finally {
       setLoading(false);
     }
@@ -58,7 +56,9 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
 
   const handleForget = () => {
     setStoredDirectorKey(null);
+    setStoredAuthorName(null);
     setKeyInput('');
+    setAuthorInput('');
     setError(null);
     setSuccess(false);
   };
@@ -102,16 +102,37 @@ export const DirectorAuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess 
                 autoFocus
               />
             </div>
-            <div className="flex items-center justify-between mt-1 text-[11px] text-slate-400">
-              <span>Mot de passe par défaut : <code className="bg-slate-100 text-slate-700 px-1 py-0.5 rounded font-mono font-bold">director1234</code></span>
-              <button
-                type="button"
-                onClick={() => setKeyInput('director1234')}
-                className="text-emerald-700 hover:text-emerald-800 hover:underline font-medium cursor-pointer"
-              >
-                Remplir
-              </button>
+            {import.meta.env.DEV && (
+              <div className="flex items-center justify-between mt-1.5 text-[11px] text-amber-700 bg-amber-50/80 px-2 py-1 rounded border border-amber-200/60">
+                <span>Mode dev local : clé par défaut <code className="font-mono font-bold">director1234</code></span>
+                <button
+                  type="button"
+                  onClick={() => setKeyInput('director1234')}
+                  className="text-amber-800 hover:underline font-semibold cursor-pointer"
+                >
+                  Remplir
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wider text-slate-700 font-bold mb-1.5">
+              Votre nom / identifiant (optionnel)
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={authorInput}
+                onChange={(e) => setAuthorInput(e.target.value)}
+                placeholder="ex: Bastien, Laurent (Directeur)..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-600 transition-colors"
+              />
             </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Permet de savoir qui a enregistré ou verrouillé la composition en base de données.
+            </p>
           </div>
 
           {error && (

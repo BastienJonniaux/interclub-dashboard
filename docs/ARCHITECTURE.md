@@ -77,14 +77,15 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
    - **Historique** : À l'origine, `Round` n'avait aucun champ `clubId`. Deux clubs différents écrasaient leurs compositions respectives.
    - **Correction apportée** : `clubId Int @default(541)` a été ajouté au modèle `Round` avec la contrainte unique `@@unique([seasonId, clubId, roundNumber])`. Le backend et le frontend transmettent désormais le `clubId` à chaque lecture/écriture, garantissant un cloisonnement strict par club.
 
-2. **Sécurité de la clé Directeur (`DIRECTOR_KEY`) et CORS permissif** (`server/src/middleware/auth.ts`, `server/src/index.ts`)
-   - **Constat** :
-     - Clé par défaut codée en dur (`'director1234'`) à la fois côté serveur (`auth.ts`, `api.ts`) et même côté client pour le fallback hors-ligne (`backendClient.ts:110`).
-     - Acceptation de la clé en query string (`req.query.directorKey`), ce qui l'expose dans les logs HTTP et l'historique navigateur.
-     - Aucune limitation de débit (*rate limiting*) sur `POST /api/auth/verify`.
-     - Le callback CORS (`server/src/index.ts:24`) retourne `callback(null, true)` dans tous les cas, même si `CORS_ORIGIN` est restreint.
-     - Aucune traçabilité d'auteur (`updatedBy` inexistant), empêchant de savoir *qui* du directeur ou du président a enregistré une composition.
-   - **Amélioration** : Supprimer le défaut `'director1234'` en production (fail-fast au démarrage si absent), interdire `req.query.directorKey`, ajouter `express-rate-limit`, corriger le callback CORS, et introduire des comptes légers ou au minimum un identifiant/rôle signé (JWT) pour tracer l'auteur des sauvegardes (`updatedBy`).
+2. **[RÉSOLU] Sécurité de la clé Directeur (`DIRECTOR_KEY`), CORS strict et traçabilité d'audit** (`server/src/middleware/auth.ts`, `server/src/index.ts`, `server/src/routes/api.ts`, `server/prisma/schema.prisma`)
+   - **Historique** : Clé par défaut codée en dur (`'director1234'`) dans le backend et frontend, transmission en query string (`req.query.directorKey`), absence de limitation de débit sur `/api/auth/verify`, configuration CORS permissive (`callback(null, true)`), et absence totale de traçabilité (`savedBy` inexistant).
+   - **Corrections apportées** :
+     - Élimination du fallback par défaut en production (rejet strict au démarrage si `DIRECTOR_KEY` n'est pas configuré).
+     - Comparaison cryptographique en temps constant (`crypto.timingSafeEqual`) pour prévenir les attaques temporelles.
+     - Rejet strict HTTP 400 de tout secret passé dans l'URL (query string) ; utilisation obligatoire des en-têtes HTTP `x-director-key` ou `Authorization: Bearer`.
+     - Protection anti-brute-force par `express-rate-limit` (10 tentatives / 15 min par IP).
+     - Filtrage CORS strict et normalisé rejetant formellement toute origine non autorisée.
+     - Audit et traçabilité : champ `savedBy` dans PostgreSQL/Prisma (`Round`, `TeamDraft`) avec mémorisation de l'auteur dans `DirectorAuthModal.tsx` et affichage dans la barre d'état du simulateur.
 
 3. **Absence totale de tests automatisés**
    - **Constat** : Ni `interclub-dashboard/package.json` ni `server/package.json` ne contiennent de suite de tests (`vitest`, `jest`, `playwright`).

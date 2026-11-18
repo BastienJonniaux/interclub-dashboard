@@ -15,7 +15,8 @@
     "@prisma/client": "^5.20.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "express-rate-limit": "^8.7.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -26,4 +27,3 @@
     "typescript": "^5.6.2"
   }
 }
-

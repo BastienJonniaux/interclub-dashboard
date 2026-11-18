@@ -10,18 +10,40 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // CORS configuration
-const allowedOrigins = (process.env.CORS_ORIGIN || '*')
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+];
+
+const envOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
-  .map((origin) => origin.trim());
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = envOrigins.length > 0 ? envOrigins : defaultOrigins;
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, server-to-server)
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      // 1. Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive default for club members
+
+      // 2. Allow wildcard if configured
+      if (allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.trim().replace(/\/+$/, '');
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS] Requête bloquée depuis l'origine non autorisée : ${origin}`);
+      return callback(new Error(`Bloqué par la politique CORS : l'origine ${origin} n'est pas autorisée.`));
     },
     credentials: true,
   })
