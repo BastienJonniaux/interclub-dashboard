@@ -45,7 +45,7 @@ apiRouter.post('/auth/verify', (req, res) => {
   return res.status(401).json({ valid: false, error: 'Clé Directeur incorrecte.' });
 });
 
-// Draft compositions
+// Draft compositions (query or body clubId supported, fallback to 541)
 apiRouter.get('/rounds/:roundNumber/drafts', getRoundDrafts);
 apiRouter.post('/rounds/:roundNumber/drafts', requireDirectorAuth, saveRoundDrafts);
 apiRouter.post('/rounds/:roundNumber/lock', requireDirectorAuth, toggleRoundLock);
@@ -56,4 +56,12 @@ apiRouter.put('/rounds/:roundNumber/attendances', requireDirectorAuth, saveRound
 
 // Season stats
 apiRouter.get('/stats/attendance', getSeasonAttendanceStats);
+
+// Explicit RESTful multi-club routes (/api/clubs/:clubId/...)
+apiRouter.get('/clubs/:clubId/rounds/:roundNumber/drafts', getRoundDrafts);
+apiRouter.post('/clubs/:clubId/rounds/:roundNumber/drafts', requireDirectorAuth, saveRoundDrafts);
+apiRouter.post('/clubs/:clubId/rounds/:roundNumber/lock', requireDirectorAuth, toggleRoundLock);
+apiRouter.get('/clubs/:clubId/rounds/:roundNumber/attendances', getRoundAttendances);
+apiRouter.put('/clubs/:clubId/rounds/:roundNumber/attendances', requireDirectorAuth, saveRoundAttendances);
+apiRouter.get('/clubs/:clubId/stats/attendance', getSeasonAttendanceStats);
 

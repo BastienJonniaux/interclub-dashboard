@@ -1,5 +1,6 @@
 export interface ServerDraftResponse {
   roundNumber: number;
+  clubId?: number;
   seasonYear: string;
   isLocked: boolean;
   lockedAt: string | null;
@@ -143,11 +144,13 @@ export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
 
 export async function fetchRoundDrafts(
   roundNumber: number,
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<ServerDraftResponse | null> {
   try {
     const url = new URL(`${getServerBaseUrl()}/api/rounds/${roundNumber}/drafts`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
+    if (clubId) url.searchParams.set('clubId', clubId.toString());
 
     const key = getStoredDirectorKey();
     const headers: Record<string, string> = {};
@@ -164,6 +167,7 @@ export async function fetchRoundDrafts(
       const errData = await res.json().catch(() => ({}));
       return {
         roundNumber,
+        clubId,
         seasonYear: seasonYear || '2026-2027',
         isLocked: false,
         lockedAt: null,
@@ -197,7 +201,8 @@ export async function saveRoundDrafts(
     }
   >,
   directorKey?: string,
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const key = directorKey || getStoredDirectorKey();
@@ -213,6 +218,7 @@ export async function saveRoundDrafts(
       },
       body: JSON.stringify({
         seasonYear,
+        clubId,
         drafts: draftsPayload,
       }),
       signal: AbortSignal.timeout(6000),
@@ -233,7 +239,8 @@ export async function lockRound(
   roundNumber: number,
   lock: boolean,
   directorKey?: string,
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<{ success: boolean; isLocked?: boolean; message?: string; error?: string }> {
   try {
     const key = directorKey || getStoredDirectorKey();
@@ -247,7 +254,7 @@ export async function lockRound(
         'Content-Type': 'application/json',
         'x-director-key': key,
       },
-      body: JSON.stringify({ lock, seasonYear }),
+      body: JSON.stringify({ lock, seasonYear, clubId }),
       signal: AbortSignal.timeout(5000),
     });
 
@@ -264,11 +271,13 @@ export async function lockRound(
 
 export async function fetchRoundAttendances(
   roundNumber: number,
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<Record<number, { status: string; note?: string; playerName?: string }> | null> {
   try {
     const url = new URL(`${getServerBaseUrl()}/api/rounds/${roundNumber}/attendances`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
+    if (clubId) url.searchParams.set('clubId', clubId.toString());
 
     const key = getStoredDirectorKey();
     const headers: Record<string, string> = {};
@@ -295,7 +304,8 @@ export async function saveRoundAttendances(
     { status: string; playerName?: string; note?: string } | string
   >,
   directorKey?: string,
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const key = directorKey || getStoredDirectorKey();
@@ -309,7 +319,7 @@ export async function saveRoundAttendances(
         'Content-Type': 'application/json',
         'x-director-key': key,
       },
-      body: JSON.stringify({ seasonYear, attendances }),
+      body: JSON.stringify({ seasonYear, clubId, attendances }),
       signal: AbortSignal.timeout(6000),
     });
 
@@ -325,11 +335,13 @@ export async function saveRoundAttendances(
 }
 
 export async function fetchSeasonAttendanceStats(
-  seasonYear?: string
+  seasonYear?: string,
+  clubId?: number
 ): Promise<SeasonAttendanceResponse | null> {
   try {
     const url = new URL(`${getServerBaseUrl()}/api/stats/attendance`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
+    if (clubId) url.searchParams.set('clubId', clubId.toString());
 
     const key = getStoredDirectorKey();
     const headers: Record<string, string> = {};

@@ -73,10 +73,9 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 
 ### 🔴 Critique — Risques structurels ou de sécurité
 
-1. **Modèle de données mono-club alors que l'UI est multi-clubs** (`server/prisma/schema.prisma`)
-   - **Constat** : Le frontend permet de changer de club via `ClubSelectorModal` (`ClubContext`), mais les modèles Prisma `Round` (`@@unique([seasonId, roundNumber])`), `TeamDraft` et `PlayerAttendance` ne contiennent **aucun champ `clubId`**.
-   - **Risque** : Si deux clubs utilisent le même backend, leurs compositions et disponibilités s'écrasent mutuellement.
-   - **Amélioration** : Ajouter `clubId Int` sur `Round` (avec contrainte `@@unique([seasonId, clubId, roundNumber])`) et filtrer toutes les requêtes API par `clubId`.
+1. **[RÉSOLU] Modèle de données multi-clubs isolé** (`server/prisma/schema.prisma`)
+   - **Historique** : À l'origine, `Round` n'avait aucun champ `clubId`. Deux clubs différents écrasaient leurs compositions respectives.
+   - **Correction apportée** : `clubId Int @default(541)` a été ajouté au modèle `Round` avec la contrainte unique `@@unique([seasonId, clubId, roundNumber])`. Le backend et le frontend transmettent désormais le `clubId` à chaque lecture/écriture, garantissant un cloisonnement strict par club.
 
 2. **Sécurité de la clé Directeur (`DIRECTOR_KEY`) et CORS permissif** (`server/src/middleware/auth.ts`, `server/src/index.ts`)
    - **Constat** :

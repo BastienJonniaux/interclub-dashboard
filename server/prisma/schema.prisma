@@ -20,6 +20,7 @@ model Round {
   id          String             @id @default(uuid())
   seasonId    String
   season      Season             @relation(fields: [seasonId], references: [id])
+  clubId      Int                @default(541) // Matricule FRBE du club (ex: 541 Leuze)
   roundNumber Int                // 1 à 11
   date        DateTime?
   isLocked    Boolean            @default(false)
@@ -29,7 +30,7 @@ model Round {
   drafts      TeamDraft[]
   attendances PlayerAttendance[]
 
-  @@unique([seasonId, roundNumber])
+  @@unique([seasonId, clubId, roundNumber])
 }
 
 model TeamDraft {

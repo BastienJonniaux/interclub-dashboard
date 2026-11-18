@@ -23,7 +23,7 @@ Le besoin était donc d'ajouter une persistance centralisée accessible par API,
   - En production : instance serverless PostgreSQL gratuite sur **Neon.tech** (région Frankfurt).
 - **Modèle relationnel** (`server/prisma/schema.prisma`) :
   - `Season` (`id`, `year`, `isCurrent`)
-  - `Round` (`id`, `seasonId`, `roundNumber`, `isLocked`, `lockedAt`, contrainte `@@unique([seasonId, roundNumber])`)
+  - `Round` (`id`, `seasonId`, `clubId` (Int, défaut 541), `roundNumber`, `isLocked`, `lockedAt`, contrainte `@@unique([seasonId, clubId, roundNumber])`)
   - `TeamDraft` (`id`, `roundId`, `teamNumber`, `divisionLabel`, contrainte `@@unique([roundId, teamNumber])`)
   - `BoardAssignment` (`id`, `teamDraftId`, `boardNumber`, `playerId`, `playerName`, `playerRating`, contrainte `@@unique([teamDraftId, boardNumber])`)
   - `PlayerAttendance` (`id`, `roundId`, `playerId`, `playerName`, `status`, `note`, contrainte `@@unique([roundId, playerId])`)
@@ -37,21 +37,17 @@ Le besoin était donc d'ajouter une persistance centralisée accessible par API,
 - **Hébergement 100 % gratuit** : combinaison Render Free Web Service + Neon Free Postgres.
 - **Portabilité et indépendance** : pas de dépendance propriétaire (ni Firebase SDK, ni Supabase lock-in) ; l'API peut être migrée chez n'importe quel hébergeur Docker ou Node.js.
 - **Intégrité transactionnelle** : `saveRoundDrafts` exécute la mise à jour des échiquiers d'une équipe dans une transaction Prisma atomique (`prisma.$transaction`), garantissant qu'une sauvegarde partielle ne corrompt pas la composition.
+- **Support multi-clubs isolé** : les compositions, verrouillages et disponibilités sont cloisonnés par club (`clubId`), permettant à n'importe quel club d'utiliser le serveur sans écrasement mutuel.
 
 ### Négatives
 - **Cold start Render Free** : le conteneur s'endort après 15 minutes d'inactivité, générant un délai de 30 à 50 secondes au réveil.
-- **Schéma relationnel mono-club** : absence de colonne `clubId` dans la base.
 
 ---
 
 ## Analyse Critique & Améliorations Possibles
 
-1. **Absence critique de `clubId` dans le schéma PostgreSQL** :
-   - *Critique* : Le frontend supporte le changement de club via `ClubSelectorModal` (`ClubContext`), mais les tables Prisma `Round`, `TeamDraft` et `PlayerAttendance` n'ont aucun champ `clubId`. Si deux clubs utilisent le dashboard sur la même URL d'API, leurs compositions s'écraseront mutuellement.
-   - *Amélioration* :
-     - Ajouter `clubId Int` sur le modèle `Round`.
-     - Remplacer `@@unique([seasonId, roundNumber])` par `@@unique([seasonId, clubId, roundNumber])`.
-     - Faire évoluer les endpoints en `/api/clubs/:clubId/rounds/:roundNumber/...`.
+1. **Isolation multi-clubs résolue (Novembre 2026)** :
+   - *Statut* : ✅ **Résolu**. `clubId` a été ajouté au modèle `Round` avec la contrainte d'unicité `@@unique([seasonId, clubId, roundNumber])`. Les routes `/api/clubs/:clubId/...` et les paramètres query/body sont supportés côté Express et client.
 2. **Incompatibilité entre le cold start de Render et les timeouts frontend** :
    - *Critique* : `backendClient.ts` applique des timeouts stricts (`4000 ms` pour `/api/health`, `5000 ms` pour `fetchRoundDrafts`). Lors d'un cold start sur Render (30–50 s), les requêtes échouent systématiquement par timeout, faisant croire au directeur que la base est déconnectée.
    - *Amélioration* : Augmenter le timeout de la première requête de healthcheck, afficher une notification claire *"Démarrage du serveur cloud en cours (~30s)..."*, ou configurer un ping cron gratuit (ex: cron-job.org) les dimanches matins de ronde.
