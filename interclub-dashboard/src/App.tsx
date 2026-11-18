@@ -35,6 +35,7 @@ const DashboardContent: React.FC = () => {
     loading,
     error,
     club,
+    venues,
     playerStats,
     standings,
     scouting,
@@ -187,6 +188,7 @@ const DashboardContent: React.FC = () => {
               clubId={clubId}
               scouting={scouting}
               schedule={fullSchedule}
+              venues={venues}
             />
           </div>
         )}

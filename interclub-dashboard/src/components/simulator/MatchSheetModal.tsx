@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
+import { PlayerFrbe, TeamFrbe, VenueFrbe } from '../../modelsFRBE';
 import { InterclubRoundSchedule } from '../../domain/calendar';
 import { getBoardCountForDivision } from '../../domain/scouting';
+import { fetchVenues } from '../../api/frbeClient';
 import { ROUND_DATES } from '../../season';
 import {
   Printer,
   X,
   Layers,
   Info,
+  MapPin,
 } from 'lucide-react';
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
     [round: number]: { [teamNumber: number]: { [board: number]: number | null } };
   };
   schedule?: InterclubRoundSchedule[];
+  venues?: VenueFrbe[];
 }
 
 export const MatchSheetModal: React.FC<Props> = ({
@@ -37,11 +40,21 @@ export const MatchSheetModal: React.FC<Props> = ({
   draftCompositions,
   draftCompositionsByRound,
   schedule = [],
+  venues = [],
 }) => {
   // 0 means "All teams (preview all)", 1..N means preview a specific team on screen
   const [previewTeamIndex, setPreviewTeamIndex] = useState<number>(0);
   // Holds the active print job filter (0 = all, 1..N = specific team) and timestamp
   const [printJob, setPrintJob] = useState<{ filter: number; timestamp: number } | null>(null);
+
+  // Venues map by club ID (our club + opponent clubs)
+  const [venuesMap, setVenuesMap] = useState<Record<number, VenueFrbe[]>>({
+    [clubId]: venues,
+  });
+  // Selected home venue index (if our club has multiple venues)
+  const [selectedHomeVenueIdx, setSelectedHomeVenueIdx] = useState<number>(0);
+  // Selected venue index per team (overrides if specific team has multiple venues)
+  const [selectedVenuesByTeam, setSelectedVenuesByTeam] = useState<Record<number, number>>({});
 
   const roundSchedule = useMemo(() => {
     return schedule.find((s) => s.roundNumber === selectedRound);
@@ -55,6 +68,40 @@ export const MatchSheetModal: React.FC<Props> = ({
     return `${d}/${m}/${y}`;
   }, [roundSchedule, selectedRound]);
 
+  // Load venues for all clubs in this round (home and away opponents)
+  useEffect(() => {
+    const clubIds = new Set<number>();
+    clubIds.add(clubId);
+    roundSchedule?.matchups.forEach((m) => {
+      if (m.opponentClubId && m.opponentClubId > 0) {
+        clubIds.add(m.opponentClubId);
+      }
+    });
+
+    const loadAllVenues = async () => {
+      const newMap: Record<number, VenueFrbe[]> = {
+        [clubId]: venues && venues.length > 0 ? venues : (venuesMap[clubId] || []),
+      };
+      for (const cid of clubIds) {
+        if (!newMap[cid] || newMap[cid].length === 0) {
+          try {
+            const v = await fetchVenues(cid);
+            if (v && v.length > 0) {
+              newMap[cid] = v;
+            }
+          } catch {
+            // Ignore error
+          }
+        }
+      }
+      setVenuesMap((prev) => ({ ...prev, ...newMap }));
+    };
+
+    if (isOpen) {
+      loadAllVenues();
+    }
+  }, [clubId, roundSchedule, venues, isOpen]);
+
   // Trigger print dialog when printJob is updated
   useEffect(() => {
     if (printJob) {
@@ -64,6 +111,8 @@ export const MatchSheetModal: React.FC<Props> = ({
       return () => clearTimeout(timer);
     }
   }, [printJob]);
+
+  const homeVenuesList = venuesMap[clubId] || venues || [];
 
   // Prepare data for each team sheet
   const sheetsData = useMemo(() => {
@@ -79,13 +128,39 @@ export const MatchSheetModal: React.FC<Props> = ({
             (m.divisionNumber === team.division &&
               (!team.index || m.divisionIndex === team.index || m.divisionLabel.includes(team.index))) ||
             m.teamName.toLowerCase().includes(team.name.toLowerCase()) ||
-            m.teamName.toLowerCase().includes(`${clubName.toLowerCase()} ${team.index || teamNumber}`.toLowerCase())
+            m.teamName.toLowerCase().includes(`${clubName.toLowerCase()} ${teamNumber}`.toLowerCase())
         ) ||
         (roundSchedule?.matchups && idx < roundSchedule.matchups.length ? roundSchedule.matchups[idx] : undefined);
 
       const isHome = matchup ? matchup.isHome : teamNumber % 2 !== 0;
       const opponentTeamName = matchup?.opponentTeamName || 'Équipe adverse';
       const opponentClubId = matchup?.opponentClubId;
+
+      // Determine venue
+      const locationClubId = isHome ? clubId : (opponentClubId || 0);
+      const availableVenues = venuesMap[locationClubId] || (isHome ? homeVenuesList : []) || [];
+      const venueIdx =
+        selectedVenuesByTeam[teamNumber] !== undefined
+          ? selectedVenuesByTeam[teamNumber]
+          : isHome
+          ? selectedHomeVenueIdx
+          : 0;
+
+      const currentVenue = availableVenues[venueIdx] || availableVenues[0] || null;
+
+      let venueAddressFormatted = '';
+      if (currentVenue) {
+        const parts = [
+          currentVenue.address,
+          [currentVenue.postalcode, currentVenue.city].filter(Boolean).join(' '),
+        ].filter(Boolean);
+        venueAddressFormatted = parts.join(', ');
+        if (currentVenue.comment) {
+          venueAddressFormatted = `${currentVenue.comment} - ${venueAddressFormatted}`;
+        }
+      } else {
+        venueAddressFormatted = isHome ? `${clubName} (Local du club)` : opponentTeamName;
+      }
 
       // Get assigned players for this round & team:
       // Priority 1: draftCompositionsByRound for selectedRound
@@ -110,17 +185,33 @@ export const MatchSheetModal: React.FC<Props> = ({
 
       return {
         teamNumber,
-        teamName: `${clubName} ${team.index || teamNumber}`,
+        teamName: team.name || `${clubName} ${teamNumber}`,
         divisionLabel,
         divisionNumber: team.division,
         boardCount,
         isHome,
         opponentTeamName,
         opponentClubId,
+        availableVenues,
+        currentVenue,
+        venueAddressFormatted,
         boards,
       };
     });
-  }, [teams, roundSchedule, clubName, selectedRound, draftCompositionsByRound, draftCompositions, players]);
+  }, [
+    teams,
+    roundSchedule,
+    clubName,
+    clubId,
+    venuesMap,
+    homeVenuesList,
+    selectedHomeVenueIdx,
+    selectedVenuesByTeam,
+    selectedRound,
+    draftCompositionsByRound,
+    draftCompositions,
+    players,
+  ]);
 
   if (!isOpen) return null;
 
@@ -142,6 +233,9 @@ export const MatchSheetModal: React.FC<Props> = ({
     activePrintFilter === 0
       ? sheetsData
       : sheetsData.filter((s) => s.teamNumber === activePrintFilter);
+
+  // Active team in preview mode (if viewing 1 team)
+  const activePreviewSheet = sheetsData.find((s) => s.teamNumber === previewTeamIndex);
 
   return (
     <>
@@ -227,7 +321,7 @@ export const MatchSheetModal: React.FC<Props> = ({
                   </span>
                 </h2>
                 <p className="text-xs text-slate-500">
-                  1 page A4 Paysage par équipe avec compositions pré-remplies et lignes adverses manuscrites.
+                  1 page A4 Paysage par équipe avec compositions pré-remplies, lieu de la rencontre et lignes adverses manuscrites.
                 </p>
               </div>
             </div>
@@ -251,45 +345,93 @@ export const MatchSheetModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Team Selector Tabs in Modal */}
-          <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1.5">
+          {/* Subheader Toolbar: Team selector tabs + Venue selection */}
+          <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               <button
                 onClick={() => setPreviewTeamIndex(0)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
                   previewTeamIndex === 0
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>Toutes les équipes ({teams.length})</span>
+                <span>Toutes ({teams.length})</span>
               </button>
 
               {sheetsData.map((s) => (
                 <button
                   key={s.teamNumber}
                   onClick={() => setPreviewTeamIndex(s.teamNumber)}
-                  className={`px-2.5 py-1.5 text-xs font-mono font-semibold rounded-lg transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1.5 text-xs font-mono font-semibold rounded-lg transition-colors cursor-pointer shrink-0 ${
                     previewTeamIndex === s.teamNumber
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  Équipe {s.teamNumber} ({s.divisionLabel})
+                  Éq. {s.teamNumber} ({s.divisionLabel})
                 </button>
               ))}
             </div>
 
-            {previewTeamIndex > 0 && (
-              <button
-                onClick={() => handlePrintSingle(previewTeamIndex)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-2xs cursor-pointer shrink-0"
-              >
-                <Printer className="h-3.5 w-3.5 text-slate-600" />
-                <span>Imprimer l'équipe {previewTeamIndex} (1 page)</span>
-              </button>
-            )}
+            {/* Venue Selector when multiple venues exist */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* If previewing all teams and our club has multiple venues: global home venue picker */}
+              {previewTeamIndex === 0 && homeVenuesList.length > 1 && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+                  <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-slate-600 shrink-0 text-[11px]">Salle Domicile :</span>
+                  <select
+                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[220px] truncate"
+                    value={selectedHomeVenueIdx}
+                    onChange={(e) => setSelectedHomeVenueIdx(Number(e.target.value))}
+                  >
+                    {homeVenuesList.map((v, i) => (
+                      <option key={i} value={i}>
+                        {v.comment ? `${v.comment} - ` : ''}{v.address}, {v.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* If previewing a specific team: picker for that specific team's venue if >1 available */}
+              {previewTeamIndex > 0 && activePreviewSheet && (activePreviewSheet.availableVenues.length > 1) && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+                  <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-slate-600 shrink-0 text-[11px]">
+                    {activePreviewSheet.isHome ? 'Salle Domicile :' : 'Salle Visiteur :'}
+                  </span>
+                  <select
+                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[220px] truncate"
+                    value={selectedVenuesByTeam[previewTeamIndex] ?? (activePreviewSheet.isHome ? selectedHomeVenueIdx : 0)}
+                    onChange={(e) =>
+                      setSelectedVenuesByTeam((prev) => ({
+                        ...prev,
+                        [previewTeamIndex]: Number(e.target.value),
+                      }))
+                    }
+                  >
+                    {activePreviewSheet.availableVenues.map((v, i) => (
+                      <option key={i} value={i}>
+                        {v.comment ? `${v.comment} - ` : ''}{v.address}, {v.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {previewTeamIndex > 0 && (
+                <button
+                  onClick={() => handlePrintSingle(previewTeamIndex)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-2xs cursor-pointer shrink-0"
+                >
+                  <Printer className="h-3.5 w-3.5 text-slate-600" />
+                  <span>Imprimer cette équipe (1 page)</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Modal Scrollable Preview Area */}
@@ -357,6 +499,7 @@ interface MatchSheetContentProps {
     isHome: boolean;
     opponentTeamName: string;
     opponentClubId?: number;
+    venueAddressFormatted: string;
     boards: {
       boardNumber: number;
       player: PlayerFrbe | null | undefined;
@@ -373,7 +516,7 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
   roundDateFormatted,
   roundNumber,
 }) => {
-  const { isHome, boards, teamName, opponentTeamName, divisionLabel } = sheet;
+  const { isHome, boards, teamName, opponentTeamName, divisionLabel, venueAddressFormatted } = sheet;
 
   // Club Home (odd boards = White) vs Club Away (odd boards = Black)
   const homeClubName = isHome ? teamName : opponentTeamName;
@@ -395,32 +538,38 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
           </h1>
         </div>
 
-        {/* Top Meta Details Grid: 3 clean columns (Date, Compétition / Division, Ronde) */}
-        <div className="grid grid-cols-3 border-b-2 border-x-2 border-slate-900 text-xs font-mono">
-          <div className="p-1.5 border-r border-slate-900">
+        {/* Top Meta Details Grid: 4 columns including Lieu / Salle de jeu */}
+        <div className="flex border-b-2 border-x-2 border-slate-900 text-xs font-mono">
+          <div className="w-[23%] p-1.5 border-r border-slate-900 shrink-0">
             <span className="text-[10px] text-slate-500 uppercase block font-sans">Date</span>
-            <strong className="text-slate-900 font-bold">{roundDateFormatted}</strong>
+            <strong className="text-slate-900 font-bold whitespace-nowrap block">{roundDateFormatted}</strong>
           </div>
-          <div className="p-1.5 border-r border-slate-900">
-            <span className="text-[10px] text-slate-500 uppercase block font-sans">Compétition / Division</span>
-            <strong className="text-slate-900 font-bold">{divisionLabel}</strong>
+          <div className="flex-1 p-1.5 border-r border-slate-900 min-w-0">
+            <span className="text-[10px] text-slate-500 uppercase block font-sans">Lieu de la rencontre</span>
+            <strong className="text-slate-900 font-bold truncate block" title={venueAddressFormatted}>
+              {venueAddressFormatted}
+            </strong>
           </div>
-          <div className="p-1.5">
+          <div className="w-[14%] p-1.5 border-r border-slate-900 shrink-0">
+            <span className="text-[10px] text-slate-500 uppercase block font-sans">Division</span>
+            <strong className="text-slate-900 font-bold block">{divisionLabel}</strong>
+          </div>
+          <div className="w-[11%] p-1.5 shrink-0 text-center">
             <span className="text-[10px] text-slate-500 uppercase block font-sans">Ronde</span>
-            <strong className="text-slate-900 font-bold">Ronde {roundNumber}</strong>
+            <strong className="text-slate-900 font-bold block">Ronde {roundNumber}</strong>
           </div>
         </div>
       </div>
 
       {/* 2. Main Two-Column Roster Table (Domicile vs Visiteur) */}
       <div className="grid grid-cols-2 gap-3 my-2.5">
-        {/* Left Column: CLUB AYANT LES BLANCS SUR LES ECHIQUIERS IMPAIRS (DOMICILE) */}
+        {/* Left Column: CLUB DOMICILE (blancs aux échiquiers impairs) */}
         <div className="border-2 border-slate-900 flex flex-col justify-between">
           <div>
             <div className="bg-slate-100 p-2 border-b-2 border-slate-900 flex items-center justify-between text-xs">
               <div>
                 <span className="text-[9px] uppercase font-bold tracking-wider text-slate-600 block">
-                  Club ayant les blancs aux échiquiers impairs (Domicile)
+                  Club Domicile
                 </span>
                 <strong className="text-sm font-bold text-slate-900 uppercase">
                   {homeClubName}
@@ -487,13 +636,13 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
           </div>
         </div>
 
-        {/* Right Column: CLUB AYANT LES BLANCS SUR LES ECHIQUIERS PAIRS (VISITEUR) */}
+        {/* Right Column: CLUB VISITEUR (blancs aux échiquiers pairs) */}
         <div className="border-2 border-slate-900 flex flex-col justify-between">
           <div>
             <div className="bg-slate-100 p-2 border-b-2 border-slate-900 flex items-center justify-between text-xs">
               <div>
                 <span className="text-[9px] uppercase font-bold tracking-wider text-slate-600 block">
-                  Club ayant les blancs aux échiquiers pairs (Visiteur)
+                  Club Visiteur
                 </span>
                 <strong className="text-sm font-bold text-slate-900 uppercase">
                   {awayClubName}
@@ -562,37 +711,48 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
       </div>
 
       {/* 3. Footer Section */}
-      <div className="border-2 border-slate-900 p-2.5 text-[10px] font-mono space-y-2.5">
-        <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-          <span className="text-slate-600">
-            Guide des résultats : <strong>1</strong> = Gain &bull; <strong>½</strong> = Nulle &bull; <strong>0</strong> = Perte &bull; <strong>1F / 0F</strong> = Forfait
-          </span>
-          <span className="font-bold text-sm text-slate-900">
-            Score Final : [ &nbsp;____&nbsp; - &nbsp;____&nbsp; ]
-          </span>
-        </div>
-
-        {/* 2 Clean Captain Signature Blocks (No referee) */}
-        <div className="grid grid-cols-2 gap-8 pt-1">
-          <div>
-            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider">Capitaine Équipe Domicile</span>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="truncate">Nom : ________________________________</span>
-              <span className="truncate">Signature : ____________________</span>
-            </div>
-          </div>
-          <div>
-            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider">Capitaine Équipe Visiteuse</span>
-            <div className="mt-2 flex items-center justify-between gap-4">
-              <span className="truncate">Nom : ________________________________</span>
-              <span className="truncate">Signature : ____________________</span>
-            </div>
+      <div className="border-2 border-slate-900 font-mono text-[10px]">
+        {/* Score Final en grand au milieu */}
+        <div className="flex items-center justify-center py-2 border-b-2 border-slate-900 bg-slate-50">
+          <div className="inline-flex items-center gap-3 px-5 py-1.5 border-2 border-slate-900 bg-white shadow-xs">
+            <span className="text-xs uppercase font-extrabold tracking-wider text-slate-800">
+              Score Final :
+            </span>
+            <span className="text-base sm:text-lg font-black text-slate-900 tracking-widest font-mono">
+              [&nbsp;&nbsp;____&nbsp;&nbsp;&minus;&nbsp;&nbsp;____&nbsp;&nbsp;]
+            </span>
           </div>
         </div>
 
-        <div className="border-t border-slate-300 pt-1 text-[8px] text-slate-500 flex justify-between">
+        {/* 2 Captain Blocks avec séparation verticale symétrique */}
+        <div className="grid grid-cols-2 divide-x-2 divide-slate-900">
+          {/* Capitaine Équipe Domicile */}
+          <div className="p-2.5 sm:p-3">
+            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider mb-2">
+              Capitaine Équipe Domicile
+            </span>
+            <div className="flex items-center justify-between gap-4 text-[10px]">
+              <span className="font-semibold text-slate-900">Nom : _________________________</span>
+              <span className="font-semibold text-slate-900">Signature : __________________</span>
+            </div>
+          </div>
+
+          {/* Capitaine Équipe Visiteuse */}
+          <div className="p-2.5 sm:p-3">
+            <span className="text-slate-600 block text-[9px] uppercase font-bold tracking-wider mb-2">
+              Capitaine Équipe Visiteuse
+            </span>
+            <div className="flex items-center justify-between gap-4 text-[10px]">
+              <span className="font-semibold text-slate-900">Nom : _________________________</span>
+              <span className="font-semibold text-slate-900">Signature : __________________</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Metadata bar */}
+        <div className="border-t border-slate-300 px-3 py-1 text-[8px] text-slate-500 flex justify-between bg-slate-50">
           <span>Interclubs Nationaux FRBE &bull; Édition officielle générée le {new Intl.DateTimeFormat('fr-BE').format(new Date())}</span>
-          <span>Feuille de match officielle &bull; À renvoyer après la rencontre</span>
+          <span>Feuille de match officielle &bull; Echiquier Leuzois</span>
         </div>
       </div>
     </div>

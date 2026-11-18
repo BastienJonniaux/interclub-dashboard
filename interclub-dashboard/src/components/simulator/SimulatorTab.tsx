@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PlayerFrbe, TeamFrbe } from '../../modelsFRBE';
+import { PlayerFrbe, TeamFrbe, VenueFrbe } from '../../modelsFRBE';
 import { useSimulator } from '../../context/SimulatorContext';
 import {
   validateTeamComposition,
@@ -58,6 +58,7 @@ interface Props {
   clubId?: number;
   scouting?: NextMatchScout[];
   schedule?: InterclubRoundSchedule[];
+  venues?: VenueFrbe[];
 }
 
 export const SimulatorTab: React.FC<Props> = ({
@@ -67,6 +68,7 @@ export const SimulatorTab: React.FC<Props> = ({
   clubId = 901,
   scouting = [],
   schedule = [],
+  venues = [],
 }) => {
   const {
     selectedRound,
@@ -1369,6 +1371,7 @@ export const SimulatorTab: React.FC<Props> = ({
         draftCompositions={draftCompositions}
         draftCompositionsByRound={draftCompositionsByRound}
         schedule={schedule}
+        venues={venues}
       />
     </div>
   );
