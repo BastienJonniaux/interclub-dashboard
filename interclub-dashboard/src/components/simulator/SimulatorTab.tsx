@@ -65,7 +65,7 @@ export const SimulatorTab: React.FC<Props> = ({
   players,
   teams,
   clubName,
-  clubId = 901,
+  clubId = 541,
   scouting = [],
   schedule = [],
   venues = [],
@@ -118,16 +118,16 @@ export const SimulatorTab: React.FC<Props> = ({
     });
   }, []);
 
-  // Check round lock status when selectedRound changes
+  // Check round lock status when selectedRound or clubId changes
   useEffect(() => {
-    fetchRoundDrafts(selectedRound).then(res => {
+    fetchRoundDrafts(selectedRound, undefined, clubId).then(res => {
       if (res && !res.isRestricted) {
         setRoundLocked(res.isLocked);
       } else {
         setRoundLocked(false);
       }
     });
-  }, [selectedRound]);
+  }, [selectedRound, clubId]);
 
   const handleSaveToServer = async (retryWithKey?: boolean) => {
     const directorKey = getStoredDirectorKey();
@@ -168,7 +168,7 @@ export const SimulatorTab: React.FC<Props> = ({
       };
     });
 
-    const resDrafts = await saveRoundDrafts(selectedRound, draftsPayload);
+    const resDrafts = await saveRoundDrafts(selectedRound, draftsPayload, undefined, undefined, clubId);
     if (!resDrafts.success) {
       setIsSaving(false);
       setSyncFeedback({ type: 'error', message: resDrafts.error || 'Erreur lors de la sauvegarde.' });
@@ -188,7 +188,7 @@ export const SimulatorTab: React.FC<Props> = ({
         playerName: `${p.last_name} ${p.first_name}`,
       };
     });
-    await saveRoundAttendances(selectedRound, attPayload);
+    await saveRoundAttendances(selectedRound, attPayload, undefined, undefined, clubId);
 
     setIsSaving(false);
     setSyncFeedback({
@@ -203,8 +203,8 @@ export const SimulatorTab: React.FC<Props> = ({
     setSyncFeedback(null);
 
     const [draftRes, attRes] = await Promise.all([
-      fetchRoundDrafts(selectedRound),
-      fetchRoundAttendances(selectedRound),
+      fetchRoundDrafts(selectedRound, undefined, clubId),
+      fetchRoundAttendances(selectedRound, undefined, clubId),
     ]);
 
     if (draftRes && draftRes.isRestricted) {
@@ -260,7 +260,7 @@ export const SimulatorTab: React.FC<Props> = ({
 
     setIsLocking(true);
     const newLockState = !roundLocked;
-    const res = await lockRound(selectedRound, newLockState);
+    const res = await lockRound(selectedRound, newLockState, undefined, undefined, clubId);
     setIsLocking(false);
 
     if (res.success) {
@@ -538,7 +538,7 @@ export const SimulatorTab: React.FC<Props> = ({
           } else if (authAction === 'lock') {
             handleToggleLock();
           } else {
-            fetchRoundDrafts(selectedRound).then((res) => {
+            fetchRoundDrafts(selectedRound, undefined, clubId).then((res) => {
               if (res && !res.isRestricted) setRoundLocked(res.isLocked);
             });
           }

@@ -2,23 +2,13 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { isDirectorAuthenticated } from '../middleware/auth';
 import { isRoundInPast } from '../utils/calendar';
-
-const DEFAULT_SEASON = '2026-2027';
-
-async function getOrCreateSeason(year: string = DEFAULT_SEASON) {
-  let season = await prisma.season.findUnique({ where: { year } });
-  if (!season) {
-    season = await prisma.season.create({
-      data: { year, isCurrent: true },
-    });
-  }
-  return season;
-}
+import { DEFAULT_SEASON, getOrCreateSeason, extractClubId } from '../utils/season';
 
 export async function getRoundAttendances(req: Request, res: Response) {
   try {
     const roundNumber = parseInt(req.params.roundNumber, 10);
     const seasonYear = (req.query.season as string) || DEFAULT_SEASON;
+    const clubId = extractClubId(req);
 
     if (isNaN(roundNumber)) {
       return res.status(400).json({ error: 'Numéro de ronde invalide.' });
@@ -39,8 +29,9 @@ export async function getRoundAttendances(req: Request, res: Response) {
     const season = await getOrCreateSeason(seasonYear);
     const round = await prisma.round.findUnique({
       where: {
-        seasonId_roundNumber: {
+        seasonId_clubId_roundNumber: {
           seasonId: season.id,
+          clubId,
           roundNumber,
         },
       },
@@ -50,7 +41,7 @@ export async function getRoundAttendances(req: Request, res: Response) {
     });
 
     if (!round) {
-      return res.json({ roundNumber, attendances: {} });
+      return res.json({ roundNumber, clubId, attendances: {} });
     }
 
     const attendancesMap: Record<number, {
@@ -69,6 +60,7 @@ export async function getRoundAttendances(req: Request, res: Response) {
 
     return res.json({
       roundNumber,
+      clubId,
       attendances: attendancesMap,
     });
   } catch (error) {
@@ -81,6 +73,7 @@ export async function saveRoundAttendances(req: Request, res: Response) {
   try {
     const roundNumber = parseInt(req.params.roundNumber, 10);
     const { seasonYear = DEFAULT_SEASON, attendances } = req.body;
+    const clubId = extractClubId(req);
 
     if (isNaN(roundNumber)) {
       return res.status(400).json({ error: 'Numéro de ronde invalide.' });
@@ -94,13 +87,15 @@ export async function saveRoundAttendances(req: Request, res: Response) {
 
     const round = await prisma.round.upsert({
       where: {
-        seasonId_roundNumber: {
+        seasonId_clubId_roundNumber: {
           seasonId: season.id,
+          clubId,
           roundNumber,
         },
       },
       create: {
         seasonId: season.id,
+        clubId,
         roundNumber,
       },
       update: {},
@@ -163,6 +158,7 @@ export async function saveRoundAttendances(req: Request, res: Response) {
 
     return res.json({
       success: true,
+      clubId,
       message: `Disponibilités pour la ronde ${roundNumber} enregistrées avec succès.`,
     });
   } catch (error) {
@@ -174,13 +170,17 @@ export async function saveRoundAttendances(req: Request, res: Response) {
 export async function getSeasonAttendanceStats(req: Request, res: Response) {
   try {
     const seasonYear = (req.query.season as string) || DEFAULT_SEASON;
+    const clubId = extractClubId(req);
     const season = await getOrCreateSeason(seasonYear);
 
     const isAuth = isDirectorAuthenticated(req);
 
-    // Retrieve all rounds with attendances and team drafts
+    // Retrieve all rounds with attendances and team drafts for this club
     const allRounds = await prisma.round.findMany({
-      where: { seasonId: season.id },
+      where: {
+        seasonId: season.id,
+        clubId,
+      },
       include: {
         attendances: true,
         drafts: {
@@ -310,6 +310,7 @@ export async function getSeasonAttendanceStats(req: Request, res: Response) {
 
     return res.json({
       seasonYear,
+      clubId,
       totalRoundsTracked: rounds.length,
       players: result,
     });
@@ -318,4 +319,3 @@ export async function getSeasonAttendanceStats(req: Request, res: Response) {
     return res.status(500).json({ error: 'Erreur lors du calcul des statistiques de présence.' });
   }
 }
-

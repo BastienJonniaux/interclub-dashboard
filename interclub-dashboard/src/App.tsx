@@ -63,7 +63,7 @@ const DashboardContent: React.FC = () => {
 
     // Wake up Neon & backend in background
     checkServerHealth().catch(() => {});
-    fetchRoundDrafts(1).catch(() => {});
+    fetchRoundDrafts(1, undefined, clubId).catch(() => {});
   };
 
   const handleLockDirectorMode = () => {
