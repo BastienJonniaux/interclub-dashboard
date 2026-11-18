@@ -87,10 +87,15 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
      - Filtrage CORS strict et normalisé rejetant formellement toute origine non autorisée.
      - Audit et traçabilité : champ `savedBy` dans PostgreSQL/Prisma (`Round`, `TeamDraft`) avec mémorisation de l'auteur dans `DirectorAuthModal.tsx` et affichage dans la barre d'état du simulateur.
 
-3. **Absence totale de tests automatisés**
-   - **Constat** : Ni `interclub-dashboard/package.json` ni `server/package.json` ne contiennent de suite de tests (`vitest`, `jest`, `playwright`).
-   - **Risque** : Les règles critiques FRBE (`frbeValidator.ts` : descente de titulaires, seuils Elo de réserve, écart max d'ordre d'échiquier, moyenne croisée entre équipes) et les calculs de score inversés domicile/extérieur (`performance.ts`) peuvent régresser silencieusement.
-   - **Amélioration** : Ajouter **Vitest** en priorité sur `src/domain/rules/frbeValidator.ts`, `src/domain/performance.ts` et `src/domain/calendar.ts`.
+3. **[RÉSOLU] Suite de tests automatisés et pipeline CI GitHub Actions** (`vitest`, `node:test`, `.github/workflows/ci.yml`)
+   - **Historique** : Ni le frontend ni le backend ne contenaient de suite de tests, laissant les règles critiques FRBE et la sécurité vulnérables aux régressions silencieuses.
+   - **Corrections apportées** :
+     - **Frontend** : Installation de **Vitest** (standard moderne natif Vite/TypeScript) pour tester le domaine pur :
+       - `src/domain/rules/__tests__/frbeValidator.test.ts` (13 tests) : descente de titulaire interdite, seuils de réserve, division 1 (seuil 1800 et top 4 à 2000), tolérance de permutation d'échiquiers et règles de moyennes croisées inter-équipes.
+       - `src/domain/__tests__/performance.test.ts` (12 tests) : inversion des résultats en fonction de la perspective domicile/visiteur, forfaits et scores partiels.
+     - **Backend** : Tests unitaires via le test runner natif de Node.js (`node:test` via `tsx`) :
+       - `server/src/middleware/__tests__/auth.test.ts` (14 tests) : comparaison en temps constant `safeCompareKeys`, rejet strict des secrets dans les query strings, extraction d'auteur et garde-fou au démarrage en production.
+     - **Pipeline CI** : Création du workflow `.github/workflows/ci.yml` exécutant à chaque push et Pull Request sur `main` les suites de tests et la compilation TypeScript/Vite/Prisma en environnement isolé.
 
 ### 🟠 Majeur — Maintenabilité & Cohérence technique
 
@@ -135,3 +140,4 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 - [ADR-004 : Authentification par Clé Partagée (`DIRECTOR_KEY`) et Confidentialité](./adr/004-director-key-authentication-and-privacy.md)
 - [ADR-005 : Logique Métier et Validation FRBE côté Client](./adr/005-client-side-domain-logic-and-duplication.md)
 - [ADR-006 : Génération des Feuilles de Match via `@media print` et `createPortal`](./adr/006-native-print-portal-match-sheets.md)
+- [ADR-007 : Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions)](./adr/007-automated-testing-strategy-and-ci.md)

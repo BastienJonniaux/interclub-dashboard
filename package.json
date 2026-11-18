@@ -10,6 +10,9 @@
     "dev:all": "npx concurrently -n \"server,client\" -c \"blue,green\" \"npm --prefix server run dev\" \"npm --prefix interclub-dashboard run dev\"",
     "build": "npm --prefix interclub-dashboard run build",
     "build:server": "npm --prefix server run build",
+    "test": "npm --prefix interclub-dashboard run test && npm --prefix server run test",
+    "test:front": "npm --prefix interclub-dashboard run test",
+    "test:server": "npm --prefix server run test",
     "lint": "npm --prefix interclub-dashboard run lint"
   }
 }
