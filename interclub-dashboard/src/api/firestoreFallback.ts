@@ -1,8 +1,9 @@
 import { ClubFrbe, DivisionFrbe, TeamFrbe, PlayerFrbe } from '../modelsFRBE';
 import { ResultEnum } from '../models/ResultEnum';
+import { ACTIVE_SEASON } from '../season';
 
 const FIRESTORE_BASE =
-  'https://firestore.googleapis.com/v1/projects/interclub-668f3/databases/(default)/documents/years/2026';
+  `https://firestore.googleapis.com/v1/projects/interclub-668f3/databases/(default)/documents/years/${ACTIVE_SEASON}`;
 
 export function decodeFirestoreValue(val: any): any {
   if (!val || typeof val !== 'object') return val;

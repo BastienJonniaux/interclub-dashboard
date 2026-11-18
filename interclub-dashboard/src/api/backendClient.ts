@@ -99,6 +99,34 @@ export function setStoredAuthorName(name: string | null): void {
   }
 }
 
+export interface SeasonConfigResponse {
+  seasonYear: string;
+  startYear: string;
+  seasonLabel: string;
+  divisionCsvFile: string;
+  totalRounds: number;
+  currentRound: number;
+  roundDates: string[];
+}
+
+export async function fetchCurrentSeasonConfig(
+  seasonYear?: string
+): Promise<SeasonConfigResponse | null> {
+  const baseUrl = getServerBaseUrl();
+  try {
+    const url = new URL(`${baseUrl}/api/season/current`);
+    if (seasonYear) url.searchParams.set('season', seasonYear);
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err: any) {
+    console.warn('[Backend] Could not fetch season config from server:', err);
+    return null;
+  }
+}
+
 export async function checkServerHealth(): Promise<{
   online: boolean;
   database: boolean;

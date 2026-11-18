@@ -1,6 +1,7 @@
 /** FRBE calendar V4, confirmed by the announcement of 25 September 2026. */
 export const ACTIVE_SEASON = '2026';
 export const SEASON_LABEL = '2026–2027';
+export const DEFAULT_SEASON_LABEL = '2026-2027';
 export const DIVISION_FILE = 'division_2026.csv';
 
 export const ROUND_DATES = [
@@ -13,8 +14,40 @@ export const DIVISION_SIX_DATES = DIVISION_SIX_CALENDAR_ROUNDS.map(
   (round) => ROUND_DATES[round - 1]
 );
 
+/**
+ * Normalizes season representations into standard "YYYY-YYYY" format.
+ * Examples: "2026" -> "2026-2027", "2026–2027" -> "2026-2027", "2026/2027" -> "2026-2027"
+ */
+export function normalizeSeasonYear(seasonInput?: string | null): string {
+  if (!seasonInput || typeof seasonInput !== 'string') {
+    return DEFAULT_SEASON_LABEL;
+  }
+
+  const cleaned = seasonInput.trim().replace(/[\u2013\u2014\/]/g, '-');
+
+  if (/^\d{4}$/.test(cleaned)) {
+    const startYear = parseInt(cleaned, 10);
+    return `${startYear}-${startYear + 1}`;
+  }
+
+  if (/^\d{4}-\d{4}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  return DEFAULT_SEASON_LABEL;
+}
+
+/**
+ * Extracts starting year string (e.g. "2026" from "2026-2027" or "2026")
+ */
+export function getSeasonStartYear(seasonYear: string = DEFAULT_SEASON_LABEL): string {
+  const norm = normalizeSeasonYear(seasonYear);
+  return norm.split('-')[0];
+}
+
 export function defaultRound(year: string, now = new Date()): number {
-  if (year !== ACTIVE_SEASON) return ROUND_DATES.length;
+  const startYear = getSeasonStartYear(year);
+  if (startYear !== ACTIVE_SEASON) return ROUND_DATES.length;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Brussels' }).format(now);
   return Math.max(1, ROUND_DATES.filter((date) => date <= today).length);
 }
