@@ -25,6 +25,7 @@ model Round {
   date        DateTime?
   isLocked    Boolean            @default(false)
   lockedAt    DateTime?
+  savedBy     String?            // Nom ou rôle de l'auteur (ex: "Directeur", "Président")
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   drafts      TeamDraft[]
@@ -39,6 +40,7 @@ model TeamDraft {
   round         Round             @relation(fields: [roundId], references: [id], onDelete: Cascade)
   teamNumber    Int               // 1 à 6
   divisionLabel String?           // ex: "3C", "5B"
+  savedBy       String?           // Auteur de la modification de cette équipe
   updatedAt     DateTime          @updatedAt
   boards        BoardAssignment[]
 

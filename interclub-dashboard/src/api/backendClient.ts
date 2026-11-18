@@ -5,6 +5,7 @@ export interface ServerDraftResponse {
   isLocked: boolean;
   lockedAt: string | null;
   updatedAt?: string;
+  savedBy?: string | null;
   drafts: Record<number, Record<number, number>>; // { teamNumber: { board: playerId } }
   boardDetails?: Record<
     number,
@@ -48,6 +49,7 @@ export interface SeasonAttendanceResponse {
 }
 
 const STORAGE_DIRECTOR_KEY = 'interclub_director_key';
+const STORAGE_AUTHOR_NAME = 'interclub_author_name';
 
 export function getServerBaseUrl(): string {
   const envUrl = import.meta.env?.VITE_API_URL;
@@ -71,6 +73,26 @@ export function setStoredDirectorKey(key: string | null): void {
       localStorage.setItem(STORAGE_DIRECTOR_KEY, key);
     } else {
       localStorage.removeItem(STORAGE_DIRECTOR_KEY);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export function getStoredAuthorName(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_AUTHOR_NAME);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAuthorName(name: string | null): void {
+  try {
+    if (name && name.trim()) {
+      localStorage.setItem(STORAGE_AUTHOR_NAME, name.trim());
+    } else {
+      localStorage.removeItem(STORAGE_AUTHOR_NAME);
     }
   } catch {
     // Ignore
@@ -107,8 +129,6 @@ export interface VerifyKeyResult {
 
 export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
   const trimmed = key.trim();
-  // Quick fallback check: if key matches default 'director1234'
-  const isDefaultKey = trimmed === 'director1234';
 
   try {
     const res = await fetch(`${getServerBaseUrl()}/api/auth/verify`, {
@@ -123,9 +143,19 @@ export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
       return { valid: !!data.valid, message: data.message };
     }
 
-    // 401 Unauthorized: explicitly wrong key
+    // 401/403 Unauthorized: explicitly wrong key
     if (res.status === 401 || res.status === 403) {
-      return { valid: false, message: 'Mot de passe / Clé Directeur incorrecte.' };
+      const data = await res.json().catch(() => ({}));
+      return { valid: false, message: data.error || 'Mot de passe / Clé Directeur incorrecte.' };
+    }
+
+    // 429 Too Many Requests (Rate limit)
+    if (res.status === 429) {
+      const data = await res.json().catch(() => ({}));
+      return {
+        valid: false,
+        message: data.error || 'Trop de tentatives infructueuses. Veuillez patienter 15 minutes avant de réessayer.',
+      };
     }
 
     return { valid: false, message: `Erreur serveur HTTP ${res.status}` };
@@ -133,11 +163,9 @@ export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
     // If backend is unreachable or timed out
     console.warn('[Backend] Auth verify offline or unreachable:', err);
     return {
-      valid: isDefaultKey,
+      valid: false,
       isOffline: true,
-      message: isDefaultKey
-        ? 'Mode hors-ligne validé avec la clé par défaut.'
-        : 'Serveur backend local inaccessible (port 3001). Vérifiez que le serveur est démarré.',
+      message: 'Serveur backend inaccessible (port 3001). Vérifiez la connexion ou le statut du serveur.',
     };
   }
 }
@@ -202,7 +230,8 @@ export async function saveRoundDrafts(
   >,
   directorKey?: string,
   seasonYear?: string,
-  clubId?: number
+  clubId?: number,
+  authorName?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const key = directorKey || getStoredDirectorKey();
@@ -210,16 +239,23 @@ export async function saveRoundDrafts(
       return { success: false, error: 'Clé Directeur requise pour sauvegarder la composition.' };
     }
 
+    const effectiveAuthor = authorName || getStoredAuthorName() || undefined;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-director-key': key,
+    };
+    if (effectiveAuthor) {
+      headers['x-author-name'] = effectiveAuthor;
+    }
+
     const res = await fetch(`${getServerBaseUrl()}/api/rounds/${roundNumber}/drafts`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-director-key': key,
-      },
+      headers,
       body: JSON.stringify({
         seasonYear,
         clubId,
         drafts: draftsPayload,
+        savedBy: effectiveAuthor,
       }),
       signal: AbortSignal.timeout(6000),
     });
@@ -240,21 +276,28 @@ export async function lockRound(
   lock: boolean,
   directorKey?: string,
   seasonYear?: string,
-  clubId?: number
-): Promise<{ success: boolean; isLocked?: boolean; message?: string; error?: string }> {
+  clubId?: number,
+  authorName?: string
+): Promise<{ success: boolean; isLocked?: boolean; savedBy?: string | null; message?: string; error?: string }> {
   try {
     const key = directorKey || getStoredDirectorKey();
     if (!key) {
       return { success: false, error: 'Clé Directeur requise.' };
     }
 
+    const effectiveAuthor = authorName || getStoredAuthorName() || undefined;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-director-key': key,
+    };
+    if (effectiveAuthor) {
+      headers['x-author-name'] = effectiveAuthor;
+    }
+
     const res = await fetch(`${getServerBaseUrl()}/api/rounds/${roundNumber}/lock`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-director-key': key,
-      },
-      body: JSON.stringify({ lock, seasonYear, clubId }),
+      headers,
+      body: JSON.stringify({ lock, seasonYear, clubId, savedBy: effectiveAuthor }),
       signal: AbortSignal.timeout(5000),
     });
 
@@ -263,7 +306,7 @@ export async function lockRound(
       return { success: false, error: data.error || 'Erreur lors du verrouillage.' };
     }
 
-    return { success: true, isLocked: data.isLocked, message: data.message };
+    return { success: true, isLocked: data.isLocked, savedBy: data.savedBy, message: data.message };
   } catch (err: any) {
     return { success: false, error: err.message || 'Erreur réseau vers le serveur.' };
   }

@@ -90,6 +90,7 @@ export async function getRoundDrafts(req: Request, res: Response) {
       isLocked: round.isLocked,
       lockedAt: round.lockedAt,
       updatedAt: round.updatedAt,
+      savedBy: round.savedBy || null,
       drafts: draftsDict,
       boardDetails,
     });
@@ -104,6 +105,7 @@ export async function saveRoundDrafts(req: Request, res: Response) {
     const roundNumber = parseInt(req.params.roundNumber, 10);
     const { seasonYear = DEFAULT_SEASON, drafts } = req.body;
     const clubId = extractClubId(req);
+    const authorName = (req as any).authorName || req.body?.savedBy || 'Directeur';
 
     if (isNaN(roundNumber) || roundNumber < 1 || roundNumber > 11) {
       return res.status(400).json({ error: 'Numéro de ronde invalide.' });
@@ -146,9 +148,11 @@ export async function saveRoundDrafts(req: Request, res: Response) {
           seasonId: season.id,
           clubId,
           roundNumber,
+          savedBy: authorName,
         },
         update: {
           updatedAt: new Date(),
+          savedBy: authorName,
         },
       });
 
@@ -177,9 +181,11 @@ export async function saveRoundDrafts(req: Request, res: Response) {
             roundId: round.id,
             teamNumber,
             divisionLabel,
+            savedBy: authorName,
           },
           update: {
             divisionLabel,
+            savedBy: authorName,
             updatedAt: new Date(),
           },
         });
@@ -219,6 +225,7 @@ export async function toggleRoundLock(req: Request, res: Response) {
     const roundNumber = parseInt(req.params.roundNumber, 10);
     const { lock = true, seasonYear = DEFAULT_SEASON } = req.body;
     const clubId = extractClubId(req);
+    const authorName = (req as any).authorName || req.body?.savedBy || 'Directeur';
 
     if (isNaN(roundNumber)) {
       return res.status(400).json({ error: 'Numéro de ronde invalide.' });
@@ -240,10 +247,12 @@ export async function toggleRoundLock(req: Request, res: Response) {
         roundNumber,
         isLocked: lock,
         lockedAt: lock ? new Date() : null,
+        savedBy: authorName,
       },
       update: {
         isLocked: lock,
         lockedAt: lock ? new Date() : null,
+        savedBy: authorName,
       },
     });
 
@@ -253,6 +262,7 @@ export async function toggleRoundLock(req: Request, res: Response) {
       clubId: round.clubId,
       isLocked: round.isLocked,
       lockedAt: round.lockedAt,
+      savedBy: round.savedBy,
       message: round.isLocked
         ? `Ronde ${roundNumber} verrouillée : les compositions sont désormais officielles.`
         : `Ronde ${roundNumber} déverrouillée pour modification.`,

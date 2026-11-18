@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import {
   getRoundDrafts,
   saveRoundDrafts,
@@ -9,10 +10,27 @@ import {
   saveRoundAttendances,
   getSeasonAttendanceStats,
 } from '../controllers/attendancesController';
-import { requireDirectorAuth } from '../middleware/auth';
+import {
+  requireDirectorAuth,
+  getDirectorKey,
+  safeCompareKeys,
+  extractProvidedKey,
+} from '../middleware/auth';
 import { prisma } from '../prisma';
 
 export const apiRouter = Router();
+
+// Rate limiter against brute-force on key verification
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 10, // max 10 attempts per IP per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    valid: false,
+    error: 'Trop de tentatives infructueuses. Veuillez patienter 15 minutes avant de réessayer.',
+  },
+});
 
 // Health check
 apiRouter.get('/health', async (_req, res) => {
@@ -29,16 +47,24 @@ apiRouter.get('/health', async (_req, res) => {
   }
 });
 
-// Director Key verification
-apiRouter.post('/auth/verify', (req, res) => {
-  const directorKey = process.env.DIRECTOR_KEY || 'director1234';
-  const providedKey = req.body.key || req.headers['x-director-key'];
+// Director Key verification with rate-limiting and timing-safe comparison
+apiRouter.post('/auth/verify', authLimiter, (req, res) => {
+  const expectedKey = getDirectorKey();
+  const { key: headerKey, rejectedFromQuery } = extractProvidedKey(req);
+  const candidateKey = req.body?.key?.trim() || headerKey;
 
-  if (!providedKey) {
+  if (rejectedFromQuery) {
+    return res.status(400).json({
+      valid: false,
+      error: "Sécurité : la clé secrète ne doit pas être transmise dans l'URL (query string).",
+    });
+  }
+
+  if (!candidateKey) {
     return res.status(400).json({ valid: false, error: 'Clé manquante.' });
   }
 
-  if (providedKey === directorKey) {
+  if (safeCompareKeys(candidateKey, expectedKey)) {
     return res.json({ valid: true, message: 'Authentification Directeur réussie.' });
   }
 
