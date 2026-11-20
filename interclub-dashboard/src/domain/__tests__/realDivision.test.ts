@@ -6,8 +6,7 @@ import { calculateDivisionProjections } from '../projections';
 import { DivisionFrbe } from '../../modelsFRBE';
 
 describe('Real Division Integration Test', () => {
-  it('inspect 3C with calibrated Monte Carlo simulation', async () => {
-    // Fetch rounds 1 to 3
+  it('compares Elo mode vs Neutral 50-50 mode on Division 3C', async () => {
     const [r1, r2, r3, directory] = await Promise.all([
       fetchFirestoreRound(1),
       fetchFirestoreRound(2),
@@ -17,11 +16,9 @@ describe('Real Division Integration Test', () => {
 
     if (!r1) return;
 
-    // Target division 3C
     const target = r1.find((d) => d.division === 3 && d.index === 'C');
     if (!target) return;
 
-    console.log(`\n=== Calibrated Inspection: Division 3C ===`);
     const mergedDiv: DivisionFrbe = {
       division: target.division,
       index: target.index,
@@ -46,26 +43,19 @@ describe('Real Division Integration Test', () => {
     const standings = calculateDivisionStandings(mergedDiv, 0, directory);
     const projections = calculateDivisionProjections(mergedDiv, standings, 2500);
 
-    console.log(`\nResults after round 3 in Div 3C (rules: 1 promotion, 2 relegations):`);
-    console.log(`Favorite: ${projections.favoriteTeam?.teamName} (${projections.favoriteTeam?.promotionProbability.toFixed(1)}% Montée)`);
-
-    console.log('\nÉquipe                    | Pts  | Rang | Exp  | Montée(1er)| Maintien(Top10)| Relég(11-12) | Row Sum');
-    console.log('-------------------------------------------------------------------------------------------------');
+    console.log(`\n=== COMPARATIF DIVISION 3C (Ronde 3 / 8 rondes restantes) ===`);
+    console.log('\nÉquipe                    | Pts  | Elo  | Montée ÉLO (%) | Montée NEUTRE 50-50 (%) | Rang Exp Élo | Rang Exp Neutre');
+    console.log('------------------------------------------------------------------------------------------------------------------');
     projections.teams.forEach((t) => {
+      const neutral = projections.teamsNeutral.find((nt) => nt.pairingNumber === t.pairingNumber)!;
       const name = t.teamName.padEnd(25, ' ').slice(0, 25);
       const pts = `${t.matchPoints} pts`.padEnd(5, ' ');
-      const curRank = `${t.rank}e`.padEnd(5, ' ');
-      const expRank = `${t.expectedRank.toFixed(1)}e`.padEnd(5, ' ');
-      const p1 = `${t.promotionProbability.toFixed(1)}%`.padEnd(11, ' ');
-      const safe = `${t.safeProbability.toFixed(1)}%`.padEnd(15, ' ');
-      const rel = `${t.relegationProbability.toFixed(1)}%`.padEnd(13, ' ');
-      const rowSum = t.integerRankProbabilities.reduce((a, b) => a + b, 0);
-      console.log(`${name} | ${pts} | ${curRank} | ${expRank} | ${p1} | ${safe} | ${rel} | ${rowSum}%`);
-    });
-
-    console.log('\nDistribution des rangs entiers (1er à 12e):');
-    projections.teams.slice(0, 5).forEach((t) => {
-      console.log(`${t.teamName.padEnd(20)}: [${t.integerRankProbabilities.join(', ')}]`);
+      const elo = `${t.seasonAvgElo}`.padEnd(5, ' ');
+      const pElo = `${t.promotionProbability.toFixed(1)}%`.padEnd(14, ' ');
+      const pNeut = `${neutral.promotionProbability.toFixed(1)}%`.padEnd(23, ' ');
+      const expElo = `${t.expectedRank.toFixed(1)}e`.padEnd(12, ' ');
+      const expNeut = `${neutral.expectedRank.toFixed(1)}e`;
+      console.log(`${name} | ${pts} | ${elo} | ${pElo} | ${pNeut} | ${expElo} | ${expNeut}`);
     });
   }, 30000);
 });

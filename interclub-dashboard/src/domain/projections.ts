@@ -3,6 +3,8 @@ import { PAIRINGS_12, PAIRINGS_10, PAIRINGS_6J } from '../season';
 import { DivisionStandingTable } from './standings';
 import { getBoardCountForDivision } from './scouting';
 
+export type SimulationMode = 'elo' | 'neutral';
+
 export interface DivisionRulesConfig {
   promotionSpots: number; // 0 for Div 1, 1 for Div 2-4, 2 for Div 5, 1 for Div 6
   relegationSpots: number; // 2 for Div 1-5, 0 for Div 6
@@ -114,7 +116,8 @@ export interface DivisionProjections {
   simulationsCount: number;
   favoriteTeam?: TeamProjection;
   ourTeam?: TeamProjection;
-  teams: TeamProjection[]; // Sorted by current rank
+  teams: TeamProjection[]; // Mode Élo (default)
+  teamsNeutral: TeamProjection[]; // Mode Neutre (50-50 chances)
 }
 
 export interface UnplayedMatch {
@@ -149,7 +152,6 @@ export function distributeIntegerPercentages(rawPercentages: number[]): number[]
     return res;
   }
 
-  // Normalize to 100 in case sum is slightly off due to float arithmetic
   const normalized = rawPercentages.map((p) => (p / sumRaw) * 100);
   const floors = normalized.map((p) => Math.floor(p));
   const remainders = normalized.map((p, idx) => ({ remainder: p - floors[idx], idx }));
@@ -168,15 +170,24 @@ export function distributeIntegerPercentages(rawPercentages: number[]): number[]
 }
 
 /**
- * Calculates win/draw/loss probabilities for an encounter between two teams based on Elo.
- * Calibrated for Belgian amateur/club interclubs:
- * - Uses D = 480 logistic scaling (accounts for board Elo dispersion).
- * - Calibrated draw rate (22% to 32% depending on rating gap).
+ * Calculates win/draw/loss probabilities for an encounter between two teams.
+ * In 'elo' mode: calibrated logistic curve with D = 480 and realistic draw rate.
+ * In 'neutral' mode: perfectly symmetrical 50-50 chances (35% win, 30% draw, 35% loss).
  */
 export function calculateMatchBoardProbabilities(
   homeElo: number,
-  awayElo: number
+  awayElo: number,
+  mode: SimulationMode = 'elo'
 ): { pWin: number; pDraw: number; pLoss: number } {
+  if (mode === 'neutral') {
+    // Equal 50/50 chances with realistic 30% draw rate per board
+    return {
+      pWin: 0.35,
+      pDraw: 0.30,
+      pLoss: 0.35,
+    };
+  }
+
   const rHome = homeElo > 0 ? homeElo : 1500;
   const rAway = awayElo > 0 ? awayElo : 1500;
   const deltaElo = rHome - rAway;
@@ -311,86 +322,18 @@ export function calculateMathematicalRankBounds(
 }
 
 /**
- * Runs a Monte Carlo simulation on remaining encounters to project final standings probabilities
+ * Runs a single simulation pass for a given mode ('elo' or 'neutral')
  */
-export function calculateDivisionProjections(
-  division: DivisionFrbe,
+function runMonteCarloSimulation(
   standings: DivisionStandingTable,
-  simulationsCount = 2500
-): DivisionProjections {
+  remainingMatches: UnplayedMatch[],
+  boardCount: number,
+  rules: DivisionRulesConfig,
+  boundsMap: Map<number, { minRank: number; maxRank: number }>,
+  simulationsCount: number,
+  mode: SimulationMode
+): TeamProjection[] {
   const totalTeams = standings.teams.length;
-  const boardCount = getBoardCountForDivision(division.division);
-  const pairings = getDivisionPairings(division.division, division.index, totalTeams);
-  const totalRounds = pairings.length;
-  const remainingMatches = extractRemainingMatches(division, totalTeams);
-  const playedRounds = Math.max(0, ...standings.teams.flatMap((t) => t.matchHistory.map((m) => m.round)));
-  const remainingRounds = Math.max(0, totalRounds - playedRounds);
-  const isSeasonCompleted = remainingMatches.length === 0;
-
-  // Retrieve official promotion / relegation rules for this division
-  const rules = getDivisionRules(division.division, totalTeams);
-  const boundsMap = calculateMathematicalRankBounds(standings, remainingMatches);
-
-  // If season is completed, every team's rank is fixed with 100% certainty
-  if (isSeasonCompleted) {
-    const projections: TeamProjection[] = standings.teams.map((t) => {
-      const rawProbs = new Array(totalTeams).fill(0);
-      rawProbs[t.rank - 1] = 100;
-
-      const isPromotion =
-        rules.promotionSpots > 0 ? t.rank <= rules.promotionSpots : t.rank === 1;
-      const isSafe = t.rank <= rules.safeRankMax;
-
-      return {
-        rank: t.rank,
-        teamName: t.teamName,
-        pairingNumber: t.pairingNumber,
-        clubId: t.clubId,
-        isOurClub: t.isOurClub,
-        played: t.played,
-        remaining: 0,
-        matchPoints: t.matchPoints,
-        boardPoints: t.boardPoints,
-        seasonAvgElo: t.seasonAvgElo,
-        integerRankProbabilities: [...rawProbs],
-        rankProbabilities: rawProbs.map((p) => Math.round(p * 10) / 10),
-        expectedRank: t.rank,
-        championProbability: t.rank === 1 ? 100 : 0,
-        promotionProbability: isPromotion ? 100 : 0,
-        safeProbability: isSafe ? 100 : 0,
-        relegationProbability: isSafe ? 0 : 100,
-        minPossibleRank: t.rank,
-        maxPossibleRank: t.rank,
-        isFavorite: t.rank === 1,
-        isGuaranteedChampion: t.rank === 1,
-        isGuaranteedPromotion: isPromotion,
-        isGuaranteedSafe: isSafe,
-        isGuaranteedRelegated: !isSafe,
-      };
-    });
-
-    const favoriteTeam = projections.find((p) => p.isFavorite);
-    const ourTeam = projections.find((p) => p.isOurClub);
-
-    return {
-      division: division.division,
-      index: division.index,
-      divisionLabel: standings.divisionLabel,
-      boardCount,
-      totalTeams,
-      totalRounds,
-      playedRounds,
-      remainingRounds: 0,
-      isSeasonCompleted: true,
-      rules,
-      simulationsCount: 0,
-      favoriteTeam,
-      ourTeam,
-      teams: projections,
-    };
-  }
-
-  // Precompute team ratings and lookup maps
   const teamIndexMap = new Map<number, number>();
   const teamElos: number[] = [];
   const baseMatchPoints: number[] = [];
@@ -403,13 +346,11 @@ export function calculateDivisionProjections(
     baseBoardPoints.push(t.boardPoints);
   });
 
-  // Precalculate matchup base indices
   const unplayedEncounters = remainingMatches.map((m) => ({
     hIdx: teamIndexMap.get(m.homePairingNr)!,
     aIdx: teamIndexMap.get(m.awayPairingNr)!,
   }));
 
-  // Monte Carlo simulation state
   const rankCounts: number[][] = Array.from({ length: totalTeams }, () =>
     new Array(totalTeams).fill(0)
   );
@@ -418,24 +359,29 @@ export function calculateDivisionProjections(
   const curBoardPoints = new Float64Array(totalTeams);
   const indices = Array.from({ length: totalTeams }, (_, i) => i);
 
+  // Pre-generate neutral probabilities if in neutral mode
+  const neutralProbs = calculateMatchBoardProbabilities(1500, 1500, 'neutral');
+
   for (let sim = 0; sim < simulationsCount; sim++) {
-    // Reset starting points
     for (let i = 0; i < totalTeams; i++) {
       curMatchPoints[i] = baseMatchPoints[i];
       curBoardPoints[i] = baseBoardPoints[i];
     }
 
-    // Round-to-round team form noise (simulates lineup rotation, absences, board order shifts)
-    // +/- 35 Elo per team per simulation run
+    // In elo mode, add small round-to-round team form noise (+/- 35 Elo)
     const simElos = new Float64Array(totalTeams);
-    for (let i = 0; i < totalTeams; i++) {
-      simElos[i] = teamElos[i] + (Math.random() - 0.5) * 70;
+    if (mode === 'elo') {
+      for (let i = 0; i < totalTeams; i++) {
+        simElos[i] = teamElos[i] + (Math.random() - 0.5) * 70;
+      }
     }
 
-    // Simulate remaining matches board-by-board
     for (let m = 0; m < unplayedEncounters.length; m++) {
       const match = unplayedEncounters[m];
-      const probs = calculateMatchBoardProbabilities(simElos[match.hIdx], simElos[match.aIdx]);
+      const probs =
+        mode === 'neutral'
+          ? neutralProbs
+          : calculateMatchBoardProbabilities(simElos[match.hIdx], simElos[match.aIdx], 'elo');
 
       let homeScore = 0;
       for (let b = 0; b < boardCount; b++) {
@@ -461,21 +407,18 @@ export function calculateDivisionProjections(
       }
     }
 
-    // Sort teams by match points (desc), then board points (desc)
     indices.sort((a, b) => {
       const diffMp = curMatchPoints[b] - curMatchPoints[a];
       if (diffMp !== 0) return diffMp;
       return curBoardPoints[b] - curBoardPoints[a];
     });
 
-    // Record finishing rank for this iteration
     for (let r = 0; r < totalTeams; r++) {
       const teamIdx = indices[r];
       rankCounts[teamIdx][r]++;
     }
   }
 
-  // Count remaining matches per team
   const remainingCountMap = new Map<number, number>();
   standings.teams.forEach((t) => remainingCountMap.set(t.pairingNumber, 0));
   remainingMatches.forEach((m) => {
@@ -483,12 +426,10 @@ export function calculateDivisionProjections(
     remainingCountMap.set(m.awayPairingNr, (remainingCountMap.get(m.awayPairingNr) || 0) + 1);
   });
 
-  // Assemble final projections
   const projections: TeamProjection[] = standings.teams.map((team, idx) => {
     const counts = rankCounts[idx];
     const rawProbs = counts.map((c) => (c / simulationsCount) * 100);
 
-    // Distribute integers so row sum is exactly 100%
     const integerRankProbabilities = distributeIntegerPercentages(rawProbs);
     const rankProbabilities = rawProbs.map((p) => Math.round(p * 10) / 10);
 
@@ -500,10 +441,6 @@ export function calculateDivisionProjections(
 
     const championProbability = rankProbabilities[0] || 0;
 
-    // Promotion probability:
-    // In Div 1: title (rank 1)
-    // In Div 2-4, 6: rank 1
-    // In Div 5: ranks 1 and 2
     let promoSum = 0;
     const promoRanks = rules.promotionSpots > 0 ? rules.promotionSpots : 1;
     for (let r = 0; r < promoRanks && r < totalTeams; r++) {
@@ -511,7 +448,6 @@ export function calculateDivisionProjections(
     }
     const promotionProbability = Math.min(100, Math.round(promoSum * 10) / 10);
 
-    // Safety (Maintien) probability: ranks 1..safeRankMax
     let safeSum = 0;
     for (let r = 0; r < rules.safeRankMax && r < totalTeams; r++) {
       safeSum += rawProbs[r] || 0;
@@ -523,7 +459,6 @@ export function calculateDivisionProjections(
 
     const bounds = boundsMap.get(team.pairingNumber) || { minRank: 1, maxRank: totalTeams };
 
-    // Find observed simulation bounds
     let simBestRank = 1;
     for (let r = 0; r < totalTeams; r++) {
       if (counts[r] > 0) {
@@ -572,7 +507,7 @@ export function calculateDivisionProjections(
       relegationProbability,
       minPossibleRank,
       maxPossibleRank,
-      isFavorite: false, // will mark after evaluating leaders
+      isFavorite: false,
       isGuaranteedChampion,
       isGuaranteedPromotion,
       isGuaranteedSafe,
@@ -580,7 +515,7 @@ export function calculateDivisionProjections(
     };
   });
 
-  // Determine favorite (highest promotion/champion probability)
+  // Mark favorite team
   let maxPromoProb = -1;
   let favoriteIdx = -1;
   projections.forEach((p, idx) => {
@@ -594,8 +529,112 @@ export function calculateDivisionProjections(
     projections[favoriteIdx].isFavorite = true;
   }
 
-  const favoriteTeam = projections.find((p) => p.isFavorite);
-  const ourTeam = projections.find((p) => p.isOurClub);
+  return projections;
+}
+
+/**
+ * Runs Monte Carlo simulations on remaining encounters to project final standings probabilities.
+ * Computes both the Elo-based projections and the Neutral 50-50 projections.
+ */
+export function calculateDivisionProjections(
+  division: DivisionFrbe,
+  standings: DivisionStandingTable,
+  simulationsCount = 2500
+): DivisionProjections {
+  const totalTeams = standings.teams.length;
+  const boardCount = getBoardCountForDivision(division.division);
+  const pairings = getDivisionPairings(division.division, division.index, totalTeams);
+  const totalRounds = pairings.length;
+  const remainingMatches = extractRemainingMatches(division, totalTeams);
+  const playedRounds = Math.max(0, ...standings.teams.flatMap((t) => t.matchHistory.map((m) => m.round)));
+  const remainingRounds = Math.max(0, totalRounds - playedRounds);
+  const isSeasonCompleted = remainingMatches.length === 0;
+
+  const rules = getDivisionRules(division.division, totalTeams);
+  const boundsMap = calculateMathematicalRankBounds(standings, remainingMatches);
+
+  if (isSeasonCompleted) {
+    const completedProjections: TeamProjection[] = standings.teams.map((t) => {
+      const rawProbs = new Array(totalTeams).fill(0);
+      rawProbs[t.rank - 1] = 100;
+
+      const isPromotion =
+        rules.promotionSpots > 0 ? t.rank <= rules.promotionSpots : t.rank === 1;
+      const isSafe = t.rank <= rules.safeRankMax;
+
+      return {
+        rank: t.rank,
+        teamName: t.teamName,
+        pairingNumber: t.pairingNumber,
+        clubId: t.clubId,
+        isOurClub: t.isOurClub,
+        played: t.played,
+        remaining: 0,
+        matchPoints: t.matchPoints,
+        boardPoints: t.boardPoints,
+        seasonAvgElo: t.seasonAvgElo,
+        integerRankProbabilities: [...rawProbs],
+        rankProbabilities: rawProbs.map((p) => Math.round(p * 10) / 10),
+        expectedRank: t.rank,
+        championProbability: t.rank === 1 ? 100 : 0,
+        promotionProbability: isPromotion ? 100 : 0,
+        safeProbability: isSafe ? 100 : 0,
+        relegationProbability: isSafe ? 0 : 100,
+        minPossibleRank: t.rank,
+        maxPossibleRank: t.rank,
+        isFavorite: t.rank === 1,
+        isGuaranteedChampion: t.rank === 1,
+        isGuaranteedPromotion: isPromotion,
+        isGuaranteedSafe: isSafe,
+        isGuaranteedRelegated: !isSafe,
+      };
+    });
+
+    const favoriteTeam = completedProjections.find((p) => p.isFavorite);
+    const ourTeam = completedProjections.find((p) => p.isOurClub);
+
+    return {
+      division: division.division,
+      index: division.index,
+      divisionLabel: standings.divisionLabel,
+      boardCount,
+      totalTeams,
+      totalRounds,
+      playedRounds,
+      remainingRounds: 0,
+      isSeasonCompleted: true,
+      rules,
+      simulationsCount: 0,
+      favoriteTeam,
+      ourTeam,
+      teams: completedProjections,
+      teamsNeutral: completedProjections,
+    };
+  }
+
+  // Run simulation in both Elo and Neutral modes
+  const teamsElo = runMonteCarloSimulation(
+    standings,
+    remainingMatches,
+    boardCount,
+    rules,
+    boundsMap,
+    simulationsCount,
+    'elo'
+  );
+
+  const teamsNeutral = runMonteCarloSimulation(
+    standings,
+    remainingMatches,
+    boardCount,
+    rules,
+    boundsMap,
+    simulationsCount,
+    'neutral'
+  );
+
+  const favoriteTeam = teamsElo.find((p) => p.isFavorite);
+  const ourTeam = teamsElo.find((p) => p.isOurClub);
 
   return {
     division: division.division,
@@ -611,6 +650,7 @@ export function calculateDivisionProjections(
     simulationsCount,
     favoriteTeam,
     ourTeam,
-    teams: projections,
+    teams: teamsElo,
+    teamsNeutral,
   };
 }
