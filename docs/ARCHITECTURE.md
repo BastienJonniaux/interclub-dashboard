@@ -116,9 +116,13 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
      - **Comportement adapté (Brouillon vs Verrouillage)** : les brouillons en cours d'élaboration restent sauvegardables avec retour d'un rapport de validation informatif ; lors du verrouillage officiel (`POST /lock`), le serveur effectue une vérification exhaustive et signale les éventuelles infractions dans le message de statut.
      - **Tests unitaires dédiés** : 15 nouveaux tests unitaires (`schemas.test.ts` et `frbeRules.test.ts`).
 
-6. **Code mort / héritage non nettoyé côté frontend**
-   - **Constat** : `src/frbeGatewayCalls.ts` (84 lignes) n'est importé nulle part dans le projet et court-circuite le proxy `/api`. Le dossier `src/models/` contient ~16 fichiers dont seul `ResultEnum.ts` est encore importé par `firestoreFallback.ts`, alors que tout le reste de l'app utilise `src/modelsFRBE.ts`.
-   - **Amélioration** : Supprimer `frbeGatewayCalls.ts` et les modèles inutilisés de `src/models/` (en ne gardant que `ResultEnum` déplacé vers `modelsFRBE.ts`), et aligner TypeScript front (`~6.0.2`) et back (`^5.6.2`).
+6. **[RÉSOLU] Suppression du code mort et consolidation des modèles** (`src/modelsFRBE.ts`, suppression de `src/frbeGatewayCalls.ts` et `src/models/`)
+   - **Historique** : Présence de 21 fichiers obsolètes issus d'anciens prototypes, dont `src/frbeGatewayCalls.ts` (84 lignes orphelines court-circuitant le proxy) et 20 fichiers de modèles dans `src/models/` dont seul `ResultEnum` était encore importé.
+   - **Corrections apportées** :
+     - Rapatriement de `ResultEnum` au sein de `src/modelsFRBE.ts`.
+     - Mise à jour des imports dans `src/utility.ts` et `src/api/firestoreFallback.ts`.
+     - Suppression définitive de `src/frbeGatewayCalls.ts` et de l'intégralité du dossier `src/models/` (21 fichiers supprimés).
+     - Nettoyage du graphe de dépendances et réduction de la dette technique.
 
 ### 🟡 Mineur — Performance & Ergonomie technique
 

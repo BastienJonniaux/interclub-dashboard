@@ -1,5 +1,4 @@
-import { ResultEnum } from './models/ResultEnum';
-import { GameFrbe } from './modelsFRBE';
+import { GameFrbe, ResultEnum } from './modelsFRBE';
 
 export function getGameResult(game: GameFrbe): ResultEnum {
   const overruled = !!game.overruled && game.overruled !== 'NOR';
