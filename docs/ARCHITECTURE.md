@@ -108,9 +108,13 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
      - **Nettoyage Firestore** : `firestoreFallback.ts` utilise dynamiquement `ACTIVE_SEASON` au lieu d'une URL codée en dur sur `/years/2026`.
      - **Tests unitaires** : 11 nouveaux tests dédiés (`server/src/utils/__tests__/season.test.ts` et `interclub-dashboard/src/domain/__tests__/season.test.ts`).
 
-5. **Validation des règles FRBE absente côté serveur**
-   - **Constat** : `frbeValidator.ts` s'exécute uniquement dans le navigateur. `POST /api/rounds/:roundNumber/drafts` accepte n'importe quel JSON valide sans vérifier l'absence de doublons ni les limites de ronde/échiquier.
-   - **Amélioration** : Partager les validateurs ou ajouter une validation de schéma (ex: **Zod**) et des invariants métier côté Express.
+5. **[RÉSOLU] Validation de schéma Zod et règles FRBE côté serveur** (`server/src/validation/schemas.ts`, `server/src/validation/frbeRules.ts`, `draftsController.ts`)
+   - **Historique** : L'API Express acceptait n'importe quel payload JSON sans validation structurelle, permettant l'injection de doublons d'échiquiers, de matricules invalides ou du même joueur dans deux équipes différentes à la même ronde.
+   - **Corrections apportées** :
+     - **Validation stricte de schéma (Zod)** : validation de `POST /api/rounds/:roundNumber/drafts` et `POST /api/rounds/:roundNumber/lock`. Rejet strict avec code HTTP 400 si un échiquier est dupliqué au sein d'une équipe, si un joueur est aligné dans plusieurs équipes pour la même ronde, ou si les numéros d'échiquiers dépassent la limite (1..8).
+     - **Validateur de règles FRBE côté serveur** : implémentation de `validateRoundDrafts` vérifiant la complétude par division, l'interdiction de descente de titulaire, les plafonds Elo des réserves, les contraintes de Division 1 et les moyennes croisées.
+     - **Comportement adapté (Brouillon vs Verrouillage)** : les brouillons en cours d'élaboration restent sauvegardables avec retour d'un rapport de validation informatif ; lors du verrouillage officiel (`POST /lock`), le serveur effectue une vérification exhaustive et signale les éventuelles infractions dans le message de statut.
+     - **Tests unitaires dédiés** : 15 nouveaux tests unitaires (`schemas.test.ts` et `frbeRules.test.ts`).
 
 6. **Code mort / héritage non nettoyé côté frontend**
    - **Constat** : `src/frbeGatewayCalls.ts` (84 lignes) n'est importé nulle part dans le projet et court-circuite le proxy `/api`. Le dossier `src/models/` contient ~16 fichiers dont seul `ResultEnum.ts` est encore importé par `firestoreFallback.ts`, alors que tout le reste de l'app utilise `src/modelsFRBE.ts`.
@@ -147,3 +151,4 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 - [ADR-006 : Génération des Feuilles de Match via `@media print` et `createPortal`](./adr/006-native-print-portal-match-sheets.md)
 - [ADR-007 : Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions)](./adr/007-automated-testing-strategy-and-ci.md)
 - [ADR-008 : Unification de la Saison et Autorité du Calendrier](./adr/008-centralized-season-and-calendar-authority.md)
+- [ADR-009 : Validation de Schéma Zod et Règles Métier FRBE Côté Serveur](./adr/009-server-side-validation-zod-and-frbe-rules.md)

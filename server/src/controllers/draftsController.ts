@@ -3,6 +3,8 @@ import { prisma } from '../prisma';
 import { isDirectorAuthenticated } from '../middleware/auth';
 import { isRoundInPast } from '../utils/calendar';
 import { DEFAULT_SEASON, getOrCreateSeason, extractClubId } from '../utils/season';
+import { saveDraftsSchema, lockRoundSchema } from '../validation/schemas';
+import { validateRoundDrafts, ValidationSummary, TeamDraftPayload } from '../validation/frbeRules';
 
 export async function getRoundDrafts(req: Request, res: Response) {
   try {
@@ -103,17 +105,29 @@ export async function getRoundDrafts(req: Request, res: Response) {
 export async function saveRoundDrafts(req: Request, res: Response) {
   try {
     const roundNumber = parseInt(req.params.roundNumber, 10);
-    const { seasonYear = DEFAULT_SEASON, drafts } = req.body;
-    const clubId = extractClubId(req);
-    const authorName = (req as any).authorName || req.body?.savedBy || 'Directeur';
-
     if (isNaN(roundNumber) || roundNumber < 1 || roundNumber > 11) {
-      return res.status(400).json({ error: 'Numéro de ronde invalide.' });
+      return res.status(400).json({ error: 'Numéro de ronde invalide (1 à 11 attendu).' });
     }
 
-    if (!drafts || typeof drafts !== 'object') {
-      return res.status(400).json({ error: 'Format des compositions invalide.' });
+    // 1. Zod schema validation (structural integrity & duplicate rejection)
+    const parseResult = saveDraftsSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Données de composition invalides.',
+        details: parseResult.error.issues.map((e) => ({
+          path: e.path.join('.'),
+          message: e.message,
+        })),
+      });
     }
+
+    const { drafts } = parseResult.data;
+    const seasonYear = parseResult.data.seasonYear || DEFAULT_SEASON;
+    const clubId = parseResult.data.clubId || extractClubId(req);
+    const authorName = (req as any).authorName || parseResult.data.savedBy || 'Directeur';
+
+    // 2. FRBE regulations advisory validation
+    const frbeValidation = validateRoundDrafts(drafts);
 
     const season = await getOrCreateSeason(seasonYear);
 
@@ -162,12 +176,7 @@ export async function saveRoundDrafts(req: Request, res: Response) {
 
         const teamData = drafts[teamKey];
         const divisionLabel = teamData.divisionLabel || null;
-        const boardsList: Array<{
-          board: number;
-          playerId: number;
-          playerName: string;
-          playerRating: number;
-        }> = Array.isArray(teamData.boards) ? teamData.boards : [];
+        const boardsList = teamData.boards || [];
 
         // Upsert TeamDraft
         const teamDraft = await tx.teamDraft.upsert({
@@ -213,6 +222,7 @@ export async function saveRoundDrafts(req: Request, res: Response) {
       success: true,
       clubId,
       message: `Compositions de la ronde ${roundNumber} enregistrées avec succès.`,
+      validation: frbeValidation,
     });
   } catch (error) {
     console.error('Error saving round drafts:', error);
@@ -223,13 +233,24 @@ export async function saveRoundDrafts(req: Request, res: Response) {
 export async function toggleRoundLock(req: Request, res: Response) {
   try {
     const roundNumber = parseInt(req.params.roundNumber, 10);
-    const { lock = true, seasonYear = DEFAULT_SEASON } = req.body;
-    const clubId = extractClubId(req);
-    const authorName = (req as any).authorName || req.body?.savedBy || 'Directeur';
-
-    if (isNaN(roundNumber)) {
-      return res.status(400).json({ error: 'Numéro de ronde invalide.' });
+    if (isNaN(roundNumber) || roundNumber < 1 || roundNumber > 11) {
+      return res.status(400).json({ error: 'Numéro de ronde invalide (1 à 11 attendu).' });
     }
+
+    const parseResult = lockRoundSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Paramètres de verrouillage invalides.',
+        details: parseResult.error.issues.map((e) => ({
+          path: e.path.join('.'),
+          message: e.message,
+        })),
+      });
+    }
+
+    const { lock, seasonYear = DEFAULT_SEASON } = parseResult.data;
+    const clubId = parseResult.data.clubId || extractClubId(req);
+    const authorName = (req as any).authorName || parseResult.data.savedBy || 'Directeur';
 
     const season = await getOrCreateSeason(seasonYear);
 
@@ -256,6 +277,41 @@ export async function toggleRoundLock(req: Request, res: Response) {
       },
     });
 
+    // Option B: Validate FRBE rules on lock and return advisory report
+    let validation: ValidationSummary | undefined;
+    if (lock) {
+      const fullRound = await prisma.round.findUnique({
+        where: { id: round.id },
+        include: {
+          drafts: {
+            include: {
+              boards: true,
+            },
+          },
+        },
+      });
+
+      if (fullRound && fullRound.drafts.length > 0) {
+        const roundDraftsDict: Record<number, TeamDraftPayload> = {};
+        for (const td of fullRound.drafts) {
+          roundDraftsDict[td.teamNumber] = {
+            divisionLabel: td.divisionLabel || undefined,
+            boards: td.boards.map((b) => ({
+              board: b.boardNumber,
+              playerId: b.playerId,
+              playerName: b.playerName,
+              playerRating: b.playerRating,
+            })),
+          };
+        }
+        validation = validateRoundDrafts(roundDraftsDict);
+      }
+    }
+
+    const warningNote = validation?.hasErrors
+      ? ' (Avertissement : des infractions FRBE ont été détectées)'
+      : '';
+
     return res.json({
       success: true,
       roundNumber: round.roundNumber,
@@ -263,8 +319,9 @@ export async function toggleRoundLock(req: Request, res: Response) {
       isLocked: round.isLocked,
       lockedAt: round.lockedAt,
       savedBy: round.savedBy,
+      validation,
       message: round.isLocked
-        ? `Ronde ${roundNumber} verrouillée : les compositions sont désormais officielles.`
+        ? `Ronde ${roundNumber} verrouillée : les compositions sont désormais officielles.${warningNote}`
         : `Ronde ${roundNumber} déverrouillée pour modification.`,
     });
   } catch (error) {
