@@ -156,3 +156,4 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 - [ADR-007 : Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions)](./adr/007-automated-testing-strategy-and-ci.md)
 - [ADR-008 : Unification de la Saison et Autorité du Calendrier](./adr/008-centralized-season-and-calendar-authority.md)
 - [ADR-009 : Validation de Schéma Zod et Règles Métier FRBE Côté Serveur](./adr/009-server-side-validation-zod-and-frbe-rules.md)
+- [ADR-010 : Moteur de simulation Monte Carlo et projections de classement](./adr/010-monte-carlo-standings-projections.md)

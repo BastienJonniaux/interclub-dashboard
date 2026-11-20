@@ -1,18 +1,32 @@
 import React, { useState } from 'react';
 import { DivisionStandingTable, getDivisionBadgeStyle } from '../../domain/standings';
+import { DivisionProjections } from '../../domain/projections';
 import { LatestTeamMatch } from '../../domain/matches';
 import { LatestMatchesSection } from './LatestMatchesSection';
+import { DivisionProjectionsView } from './DivisionProjectionsView';
 import { TeamHoverCard } from '../common/TeamHoverCard';
-import { Trophy, ChevronDown, ChevronUp, Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import {
+  Trophy,
+  ChevronDown,
+  ChevronUp,
+  Award,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Sparkles,
+  CheckCircle2,
+} from 'lucide-react';
 
 interface Props {
   standings: DivisionStandingTable[];
   clubName: string;
   latestMatches?: LatestTeamMatch[];
+  projections?: DivisionProjections[];
 }
 
-export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatches }) => {
+export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatches, projections = [] }) => {
   const [expandedDiv, setExpandedDiv] = useState<string | null>(null);
+  const [divViewModes, setDivViewModes] = useState<Record<string, 'standings' | 'projections'>>({});
 
   if (standings.length === 0) {
     return (
@@ -142,6 +156,11 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
             const matchPoints = our?.matchPoints ?? 0;
             const matchPointsPercent = maxMatchPoints > 0 ? (matchPoints / maxMatchPoints) * 100 : 0;
 
+            const divProj = projections?.find(
+              (p) => p.division === divTable.division && p.index === divTable.index
+            );
+            const ourProj = divProj?.ourTeam;
+
             return (
               <div
                 key={`${divTable.division}${divTable.index}`}
@@ -218,6 +237,40 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                       </span>
                     </div>
                   </div>
+
+                  {/* Projections Mini-Banner */}
+                  {ourProj && (
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-indigo-500" /> Projection
+                      </span>
+                      {ourProj.isGuaranteedChampion ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          <Award className="h-3 w-3 text-amber-600" /> Champion 100%
+                        </span>
+                      ) : ourProj.isGuaranteedTop8 ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Maintien Assuré (100%)
+                        </span>
+                      ) : ourProj.isFavorite ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          <Trophy className="h-3 w-3 text-amber-600" /> Favori ({ourProj.championProbability}%)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-slate-600">
+                          Maintien :{' '}
+                          <strong
+                            className={
+                              ourProj.top8Probability >= 80 ? 'text-emerald-700' : 'text-slate-900'
+                            }
+                          >
+                            {ourProj.top8Probability}%
+                          </strong>{' '}
+                          &bull; Esp. : <strong>{ourProj.expectedRank}e</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -244,6 +297,10 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
         {standings.map((divTable) => {
           const key = `${divTable.division}${divTable.index}`;
           const isExpanded = expandedDiv === key;
+          const divProj = projections?.find(
+            (p) => p.division === divTable.division && p.index === divTable.index
+          );
+          const currentMode = divViewModes[key] || 'standings';
 
           return (
             <div
@@ -274,91 +331,143 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
               </button>
 
               {isExpanded && (
-                <div className="overflow-x-auto border-t border-slate-200/80 bg-white">
-                  <table className="w-full text-left text-sm text-slate-900">
-                    <thead className="bg-slate-50 text-[11px] uppercase tracking-wider font-semibold text-slate-500 border-b border-slate-200/80">
-                      <tr>
-                        <th className="px-6 py-4 text-center border-r border-slate-200/60 w-28">Rang</th>
-                        <th className="px-6 py-4 border-r border-slate-200/60">Équipe</th>
-                        <th className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">Forme</th>
-                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Joués">J</th>
-                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Gagnés">G</th>
-                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Nuls">N</th>
-                        <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Perdus">P</th>
-                        <th className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60">
-                          Pts Match
-                        </th>
-                        <th className="px-6 py-4 text-center font-bold text-slate-900">Pts Échiq.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {divTable.teams.map((t) => {
-                        const isOur = t.isOurClub;
-                        return (
-                          <tr
-                            key={t.pairingNumber}
-                            className={`transition-colors ${
-                              isOur
-                                ? 'bg-emerald-50/60 font-semibold'
-                                : 'hover:bg-slate-50/80'
-                            }`}
-                          >
-                            <td className="px-6 py-4 text-center border-r border-slate-200/60 font-mono tabular-nums">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <span
-                                  className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs rounded-md border ${
-                                    t.rank === 1
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                      : t.rank === 2
-                                      ? 'bg-slate-200/80 text-slate-800 border-slate-300'
-                                      : t.rank === 3
-                                      ? 'bg-orange-100 text-orange-800 border-orange-200'
-                                      : 'bg-slate-50 text-slate-600 border-slate-200'
-                                  }`}
-                                >
-                                  {t.rank}
-                                </span>
-                                {renderRankDiffBadge(t.rankDiff)}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 border-r border-slate-200/60">
-                              <div className="flex items-center gap-2.5">
-                                <TeamHoverCard team={t} divisionLabel={divTable.divisionLabel}>
-                                  <span
-                                    className={`text-sm cursor-pointer ${
-                                      isOur ? 'font-bold text-emerald-800' : 'font-medium text-slate-800'
-                                    } hover:underline underline-offset-2 transition-colors`}
-                                  >
-                                    {t.teamName}
-                                  </span>
-                                </TeamHoverCard>
-                                {isOur && (
-                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md">
-                                    Notre Équipe
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">
-                              <div className="flex justify-center">
-                                {renderFormPills(t.matchHistory)}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.played}</td>
-                            <td className="px-4 py-4 text-center font-bold text-emerald-600 border-r border-slate-200/60 font-mono tabular-nums">{t.won}</td>
-                            <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.drawn}</td>
-                            <td className="px-4 py-4 text-center font-bold text-rose-600 border-r border-slate-200/60 font-mono tabular-nums">{t.lost}</td>
-                            <td className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60 font-mono tabular-nums text-base">
-                              {t.matchPoints}
-                            </td>
-                            <td className="px-6 py-4 text-center font-bold text-slate-900 font-mono tabular-nums text-base">
-                              {t.boardPoints}
-                            </td>
+                <div>
+                  {/* Mode Selector Toolbar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-slate-50 border-t border-b border-slate-200/80">
+                    <div className="inline-flex items-center gap-1 p-1 bg-slate-200/60 rounded-xl text-xs font-semibold">
+                      <button
+                        onClick={() => setDivViewModes((prev) => ({ ...prev, [key]: 'standings' }))}
+                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                          currentMode === 'standings'
+                            ? 'bg-white text-slate-900 shadow-xs font-bold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Classement Officiel
+                      </button>
+                      <button
+                        onClick={() => setDivViewModes((prev) => ({ ...prev, [key]: 'projections' }))}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                          currentMode === 'projections'
+                            ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Projections & Cotes
+                      </button>
+                    </div>
+
+                    {divProj && (
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        {divProj.favoriteTeam && (
+                          <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md font-medium">
+                            <Trophy className="h-3.5 w-3.5 text-amber-600" />
+                            Favori : <strong className="font-semibold">{divProj.favoriteTeam.teamName}</strong> ({divProj.favoriteTeam.championProbability}%)
+                          </span>
+                        )}
+                        <span className="text-slate-500 font-mono text-[11px]">
+                          {divProj.remainingRounds} ronde{divProj.remainingRounds > 1 ? 's' : ''} restante{divProj.remainingRounds > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {currentMode === 'projections' && divProj ? (
+                    <div className="p-4 sm:p-6 bg-slate-50/50">
+                      <DivisionProjectionsView
+                        projections={divProj}
+                        standingTable={divTable}
+                      />
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto bg-white">
+                      <table className="w-full text-left text-sm text-slate-900">
+                        <thead className="bg-slate-50 text-[11px] uppercase tracking-wider font-semibold text-slate-500 border-b border-slate-200/80">
+                          <tr>
+                            <th className="px-6 py-4 text-center border-r border-slate-200/60 w-28">Rang</th>
+                            <th className="px-6 py-4 border-r border-slate-200/60">Équipe</th>
+                            <th className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">Forme</th>
+                            <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Joués">J</th>
+                            <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Gagnés">G</th>
+                            <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Nuls">N</th>
+                            <th className="px-4 py-4 text-center border-r border-slate-200/60" title="Perdus">P</th>
+                            <th className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60">
+                              Pts Match
+                            </th>
+                            <th className="px-6 py-4 text-center font-bold text-slate-900">Pts Échiq.</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {divTable.teams.map((t) => {
+                            const isOur = t.isOurClub;
+                            return (
+                              <tr
+                                key={t.pairingNumber}
+                                className={`transition-colors ${
+                                  isOur
+                                    ? 'bg-emerald-50/60 font-semibold'
+                                    : 'hover:bg-slate-50/80'
+                                }`}
+                              >
+                                <td className="px-6 py-4 text-center border-r border-slate-200/60 font-mono tabular-nums">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <span
+                                      className={`inline-flex h-6 w-6 items-center justify-center font-bold text-xs rounded-md border ${
+                                        t.rank === 1
+                                          ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                          : t.rank === 2
+                                          ? 'bg-slate-200/80 text-slate-800 border-slate-300'
+                                          : t.rank === 3
+                                          ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                          : 'bg-slate-50 text-slate-600 border-slate-200'
+                                      }`}
+                                    >
+                                      {t.rank}
+                                    </span>
+                                    {renderRankDiffBadge(t.rankDiff)}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 border-r border-slate-200/60">
+                                  <div className="flex items-center gap-2.5">
+                                    <TeamHoverCard team={t} divisionLabel={divTable.divisionLabel}>
+                                      <span
+                                        className={`text-sm cursor-pointer ${
+                                          isOur ? 'font-bold text-emerald-800' : 'font-medium text-slate-800'
+                                        } hover:underline underline-offset-2 transition-colors`}
+                                      >
+                                        {t.teamName}
+                                      </span>
+                                    </TeamHoverCard>
+                                    {isOur && (
+                                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md">
+                                        Notre Équipe
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 text-center border-r border-slate-200/60 hidden md:table-cell">
+                                  <div className="flex justify-center">
+                                    {renderFormPills(t.matchHistory)}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.played}</td>
+                                <td className="px-4 py-4 text-center font-bold text-emerald-600 border-r border-slate-200/60 font-mono tabular-nums">{t.won}</td>
+                                <td className="px-4 py-4 text-center border-r border-slate-200/60 text-slate-500 font-mono tabular-nums">{t.drawn}</td>
+                                <td className="px-4 py-4 text-center font-bold text-rose-600 border-r border-slate-200/60 font-mono tabular-nums">{t.lost}</td>
+                                <td className="px-6 py-4 text-center font-bold text-slate-900 border-r border-slate-200/60 font-mono tabular-nums text-base">
+                                  {t.matchPoints}
+                                </td>
+                                <td className="px-6 py-4 text-center font-bold text-slate-900 font-mono tabular-nums text-base">
+                                  {t.boardPoints}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

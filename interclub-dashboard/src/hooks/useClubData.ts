@@ -11,6 +11,7 @@ import { clearCache } from '../api/cache';
 import { ClubFrbe, DivisionFrbe, VenueFrbe } from '../modelsFRBE';
 import { calculateClubPlayerStats, PlayerStats } from '../domain/performance';
 import { calculateDivisionStandings, DivisionStandingTable } from '../domain/standings';
+import { calculateDivisionProjections, DivisionProjections } from '../domain/projections';
 import { scoutNextMatch, NextMatchScout } from '../domain/scouting';
 import { LatestTeamMatch, extractLatestClubMatches } from '../domain/matches';
 import { defaultRound, ACTIVE_SEASON } from '../season';
@@ -22,6 +23,7 @@ export interface ClubDataState {
   venues: VenueFrbe[];
   playerStats: PlayerStats[];
   standings: DivisionStandingTable[];
+  projections: DivisionProjections[];
   scouting: NextMatchScout[];
   latestMatches: LatestTeamMatch[];
   allDivisions: DivisionFrbe[];
@@ -40,6 +42,7 @@ export function useClubData(): ClubDataState {
   const [venues, setVenues] = useState<VenueFrbe[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [standings, setStandings] = useState<DivisionStandingTable[]>([]);
+  const [projections, setProjections] = useState<DivisionProjections[]>([]);
   const [scouting, setScouting] = useState<NextMatchScout[]>([]);
   const [latestMatches, setLatestMatches] = useState<LatestTeamMatch[]>([]);
   const [allDivisions, setAllDivisions] = useState<DivisionFrbe[]>([]);
@@ -118,8 +121,9 @@ export function useClubData(): ClubDataState {
       const stats = calculateClubPlayerStats(clubData.players || [], mergedDivisions, clubId, directory);
       setPlayerStats(stats);
 
-      // 6. Calculate Division Standings & Scouting for each team
+      // 6. Calculate Division Standings & Scouting & Projections for each team
       const divisionStandingsList: DivisionStandingTable[] = [];
+      const divisionProjectionsList: DivisionProjections[] = [];
       const scoutingList: NextMatchScout[] = [];
 
       const allDivisionsAcrossRounds = seriesResults.map((divs, idx) => ({
@@ -136,6 +140,9 @@ export function useClubData(): ClubDataState {
         if (matchingDiv) {
           const divStandings = calculateDivisionStandings(matchingDiv, clubId, directory);
           divisionStandingsList.push(divStandings);
+
+          const divProjections = calculateDivisionProjections(matchingDiv, divStandings);
+          divisionProjectionsList.push(divProjections);
 
           // Calculate our team average Elo from titulars
           const titulars = (clubData.players || []).filter(
@@ -160,6 +167,7 @@ export function useClubData(): ClubDataState {
       });
 
       setStandings(divisionStandingsList);
+      setProjections(divisionProjectionsList);
       setScouting(scoutingList);
 
       // 7. Extract Latest Played Matches with board-by-board detail
@@ -229,6 +237,7 @@ export function useClubData(): ClubDataState {
     venues,
     playerStats,
     standings,
+    projections,
     scouting,
     latestMatches,
     allDivisions,
