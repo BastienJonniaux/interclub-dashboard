@@ -1,5 +1,4 @@
-import { ClubFrbe, DivisionFrbe, TeamFrbe, PlayerFrbe } from '../modelsFRBE';
-import { ResultEnum } from '../models/ResultEnum';
+import { ClubFrbe, DivisionFrbe, TeamFrbe, PlayerFrbe, ResultEnum } from '../modelsFRBE';
 import { ACTIVE_SEASON } from '../season';
 
 const FIRESTORE_BASE =
