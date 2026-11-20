@@ -12,3 +12,4 @@ Ce dossier recense les principales décisions d'architecture prises dans le proj
 | [ADR-006](./006-native-print-portal-match-sheets.md) | Génération des Feuilles de Match via `@media print` et `createPortal` | Accepté | Dépend des réglages d'impression navigateur ; pas d'export `.pdf` binaire direct |
 | [ADR-007](./007-automated-testing-strategy-and-ci.md) | Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions) | Accepté | Tests unitaires sur règles FRBE et auth, pipeline CI sur PR |
 | [ADR-008](./008-centralized-season-and-calendar-authority.md) | Unification de la Saison et Autorité du Calendrier (Endpoint API & Normalisation) | Accepté | Source unique de vérité pour les 11 dates et formats de saison normalisés |
+| [ADR-009](./009-server-side-validation-zod-and-frbe-rules.md) | Validation de Schéma Zod et Règles Métier FRBE Côté Serveur | Accepté | Intégrité structurelle stricte (Zod) et avertissements réglementaires FRBE |
