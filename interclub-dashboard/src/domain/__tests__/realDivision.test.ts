@@ -1,28 +1,27 @@
 import { describe, it } from 'vitest';
 import { fetchFirestoreRound } from '../../api/firestoreFallback';
+import { fetchPlayerDirectory } from '../../api/frbeClient';
 import { calculateDivisionStandings } from '../standings';
 import { calculateDivisionProjections } from '../projections';
 import { DivisionFrbe } from '../../modelsFRBE';
 
 describe('Real Division Integration Test', () => {
-  it('runs Monte Carlo projections on a real division from Firestore mirror', async () => {
+  it('inspect 3C with calibrated Monte Carlo simulation', async () => {
     // Fetch rounds 1 to 3
-    const [r1, r2, r3] = await Promise.all([
+    const [r1, r2, r3, directory] = await Promise.all([
       fetchFirestoreRound(1),
       fetchFirestoreRound(2),
       fetchFirestoreRound(3),
+      fetchPlayerDirectory().catch(() => new Map()),
     ]);
 
-    if (!r1 || r1.length === 0) {
-      console.log('Firestore mirror unavailable during test, skipping network test.');
-      return;
-    }
+    if (!r1) return;
 
-    // Pick division 3A or 4A or first available division
-    const target = r1.find((d) => d.division === 3 && d.index === 'A') || r1[0];
-    console.log(`\n=== Testing Real Division: Division ${target.division}${target.index} ===`);
+    // Target division 3C
+    const target = r1.find((d) => d.division === 3 && d.index === 'C');
+    if (!target) return;
 
-    // Merge rounds for this division
+    console.log(`\n=== Calibrated Inspection: Division 3C ===`);
     const mergedDiv: DivisionFrbe = {
       division: target.division,
       index: target.index,
@@ -44,25 +43,29 @@ describe('Real Division Integration Test', () => {
       }
     });
 
-    const standings = calculateDivisionStandings(mergedDiv, 901); // 901 or any club
-    const projections = calculateDivisionProjections(mergedDiv, standings, 2000);
+    const standings = calculateDivisionStandings(mergedDiv, 0, directory);
+    const projections = calculateDivisionProjections(mergedDiv, standings, 2500);
 
-    console.log(`\nResults after round ${projections.playedRounds} (${projections.remainingRounds} rounds remaining):`);
-    console.log(`Favorite: ${projections.favoriteTeam?.teamName} (${projections.favoriteTeam?.championProbability}% 1st)`);
+    console.log(`\nResults after round 3 in Div 3C (rules: 1 promotion, 2 relegations):`);
+    console.log(`Favorite: ${projections.favoriteTeam?.teamName} (${projections.favoriteTeam?.promotionProbability.toFixed(1)}% Montée)`);
 
-    console.log('\nEquipe                     | Pts | Rang Act | Exp Rang | 1er (%) | Top 2 (%) | Top 8 (Maintien) | Relég (%) | Maintien Assuré?');
-    console.log('-------------------------------------------------------------------------------------------------------------------------');
+    console.log('\nÉquipe                    | Pts  | Rang | Exp  | Montée(1er)| Maintien(Top10)| Relég(11-12) | Row Sum');
+    console.log('-------------------------------------------------------------------------------------------------');
     projections.teams.forEach((t) => {
-      const name = t.teamName.padEnd(26, ' ').slice(0, 26);
+      const name = t.teamName.padEnd(25, ' ').slice(0, 25);
       const pts = `${t.matchPoints} pts`.padEnd(5, ' ');
-      const curRank = `${t.rank}e`.padEnd(8, ' ');
-      const expRank = `${t.expectedRank}e`.padEnd(8, ' ');
-      const p1 = `${t.championProbability}%`.padEnd(7, ' ');
-      const p2 = `${t.top2Probability}%`.padEnd(9, ' ');
-      const p8 = `${t.top8Probability}%`.padEnd(16, ' ');
-      const prel = `${t.relegationProbability}%`.padEnd(9, ' ');
-      const safe = t.isGuaranteedTop8 ? 'OUI (Assuré)' : 'En jeu';
-      console.log(`${name} | ${pts} | ${curRank} | ${expRank} | ${p1} | ${p2} | ${p8} | ${prel} | ${safe}`);
+      const curRank = `${t.rank}e`.padEnd(5, ' ');
+      const expRank = `${t.expectedRank.toFixed(1)}e`.padEnd(5, ' ');
+      const p1 = `${t.promotionProbability.toFixed(1)}%`.padEnd(11, ' ');
+      const safe = `${t.safeProbability.toFixed(1)}%`.padEnd(15, ' ');
+      const rel = `${t.relegationProbability.toFixed(1)}%`.padEnd(13, ' ');
+      const rowSum = t.integerRankProbabilities.reduce((a, b) => a + b, 0);
+      console.log(`${name} | ${pts} | ${curRank} | ${expRank} | ${p1} | ${safe} | ${rel} | ${rowSum}%`);
+    });
+
+    console.log('\nDistribution des rangs entiers (1er à 12e):');
+    projections.teams.slice(0, 5).forEach((t) => {
+      console.log(`${t.teamName.padEnd(20)}: [${t.integerRankProbabilities.join(', ')}]`);
     });
   }, 30000);
 });

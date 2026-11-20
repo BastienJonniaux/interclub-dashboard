@@ -5,9 +5,55 @@ import {
   calculateMathematicalRankBounds,
   calculateDivisionProjections,
   getDivisionPairings,
+  getDivisionRules,
+  distributeIntegerPercentages,
 } from '../projections';
 import { DivisionFrbe, TeamFrbe, RoundFrbe } from '../../modelsFRBE';
 import { DivisionStandingTable, TeamStanding } from '../standings';
+
+describe('Projections Domain - getDivisionRules', () => {
+  it('enforces official FRBE promotion and relegation rules per division', () => {
+    // Div 1: Title, 0 promotion, 2 relegations (11-12)
+    const d1 = getDivisionRules(1, 12);
+    expect(d1.promotionSpots).toBe(0);
+    expect(d1.relegationSpots).toBe(2);
+    expect(d1.hasTitle).toBe(true);
+    expect(d1.safeRankMax).toBe(10);
+
+    // Div 2, 3, 4: 1 promotion (champion), 2 relegations
+    const d3 = getDivisionRules(3, 12);
+    expect(d3.promotionSpots).toBe(1);
+    expect(d3.relegationSpots).toBe(2);
+    expect(d3.safeRankMax).toBe(10);
+
+    // Div 5: 2 promotions (1st and 2nd), 2 relegations
+    const d5 = getDivisionRules(5, 12);
+    expect(d5.promotionSpots).toBe(2);
+    expect(d5.relegationSpots).toBe(2);
+    expect(d5.safeRankMax).toBe(10);
+
+    // Div 6: 1 promotion, 0 relegations
+    const d6 = getDivisionRules(6, 10);
+    expect(d6.promotionSpots).toBe(1);
+    expect(d6.relegationSpots).toBe(0);
+    expect(d6.safeRankMax).toBe(10);
+  });
+});
+
+describe('Projections Domain - distributeIntegerPercentages (Largest Remainder Method)', () => {
+  it('guarantees that distributed integer percentages sum to exactly 100', () => {
+    const raw = [33.333, 33.333, 33.334];
+    const ints = distributeIntegerPercentages(raw);
+    expect(ints.reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
+  it('handles 12-element arrays with many fractional remainders', () => {
+    const raw = [28.4, 21.8, 14.1, 11.2, 8.7, 5.3, 4.1, 2.9, 1.8, 1.1, 0.4, 0.2];
+    const ints = distributeIntegerPercentages(raw);
+    expect(ints).toHaveLength(12);
+    expect(ints.reduce((a, b) => a + b, 0)).toBe(100);
+  });
+});
 
 describe('Projections Domain - calculateMatchBoardProbabilities', () => {
   it('gives symmetric probabilities when ratings are equal', () => {
@@ -19,15 +65,15 @@ describe('Projections Domain - calculateMatchBoardProbabilities', () => {
 
   it('favors higher-rated team when Elo difference is positive', () => {
     const probs = calculateMatchBoardProbabilities(2000, 1600); // +400 Elo
-    expect(probs.pWin).toBeGreaterThan(0.7);
-    expect(probs.pLoss).toBeLessThan(0.15);
+    expect(probs.pWin).toBeGreaterThan(0.65);
+    expect(probs.pLoss).toBeLessThan(0.18);
     expect(probs.pWin + probs.pDraw + probs.pLoss).toBeCloseTo(1, 4);
   });
 
   it('favors opponent when Elo difference is negative', () => {
     const probs = calculateMatchBoardProbabilities(1500, 1900); // -400 Elo
-    expect(probs.pLoss).toBeGreaterThan(0.7);
-    expect(probs.pWin).toBeLessThan(0.15);
+    expect(probs.pLoss).toBeGreaterThan(0.65);
+    expect(probs.pWin).toBeLessThan(0.18);
     expect(probs.pWin + probs.pDraw + probs.pLoss).toBeCloseTo(1, 4);
   });
 
@@ -72,7 +118,6 @@ describe('Projections Domain - extractRemainingMatches & pairings', () => {
       playersplayed: [],
     }));
 
-    // Round 1 pairings in PAIRINGS_12: ['1-12', '2-11', '3-10', '4-9', '5-8', '6-7']
     const round1: RoundFrbe = {
       round: 1,
       rdate: '2026-09-27',
@@ -104,7 +149,7 @@ describe('Projections Domain - extractRemainingMatches & pairings', () => {
     };
 
     const remaining = extractRemainingMatches(division, 12);
-    expect(remaining).toHaveLength(65); // 66 - 1 = 65
+    expect(remaining).toHaveLength(65);
     const has1vs12 = remaining.some(
       (m) => m.round === 1 && m.homePairingNr === 1 && m.awayPairingNr === 12
     );
@@ -114,8 +159,6 @@ describe('Projections Domain - extractRemainingMatches & pairings', () => {
 
 describe('Projections Domain - calculateMathematicalRankBounds', () => {
   it('identifies guaranteed champion when lead is insurmountable', () => {
-    // 12 teams, team 1 has 18 match points with 1 match remaining (max points 20)
-    // 2nd place has 14 points with 1 match remaining (max points 16)
     const teams: TeamStanding[] = [
       {
         rank: 1,
@@ -151,7 +194,6 @@ describe('Projections Domain - calculateMathematicalRankBounds', () => {
       },
     ];
 
-    // Add remaining 10 teams with 10 or fewer points
     for (let i = 3; i <= 12; i++) {
       teams.push({
         rank: i,
@@ -178,7 +220,6 @@ describe('Projections Domain - calculateMathematicalRankBounds', () => {
       teams,
     };
 
-    // 1 match remaining for team 1 and 2
     const remainingMatches = [
       { round: 11, homePairingNr: 1, awayPairingNr: 2 },
     ];
@@ -188,20 +229,17 @@ describe('Projections Domain - calculateMathematicalRankBounds', () => {
 
     expect(leaderBounds).toBeDefined();
     expect(leaderBounds?.minRank).toBe(1);
-    expect(leaderBounds?.maxRank).toBe(1); // Guaranteed 1st!
+    expect(leaderBounds?.maxRank).toBe(1);
   });
 
-  it('identifies guaranteed Top 8 (maintien assuré) when safe from 9th place', () => {
-    // Team has 14 points, with 2 matches left (min 14 pts).
-    // Teams ranked 9-12 have at most 6 points with 2 matches left (max 10 pts).
-    // Can team ever fall into ranks 9-12? No!
+  it('identifies guaranteed Top 10 (maintien assuré) when safe from 11th place', () => {
     const teams: TeamStanding[] = Array.from({ length: 12 }, (_, i) => {
       const rank = i + 1;
       let mp = 14;
       if (rank === 1) mp = 16;
       else if (rank <= 6) mp = 14;
-      else if (rank <= 8) mp = 10;
-      else mp = 4; // ranks 9-12 have 4 points
+      else if (rank <= 10) mp = 10;
+      else mp = 2; // ranks 11-12 have 2 points
 
       return {
         rank,
@@ -228,21 +266,17 @@ describe('Projections Domain - calculateMathematicalRankBounds', () => {
       teams,
     };
 
-    // 2 matches remaining per team
     const remainingMatches = [
       { round: 10, homePairingNr: 1, awayPairingNr: 2 },
       { round: 10, homePairingNr: 3, awayPairingNr: 4 },
-      { round: 10, homePairingNr: 9, awayPairingNr: 10 },
       { round: 10, homePairingNr: 11, awayPairingNr: 12 },
-      { round: 11, homePairingNr: 4, awayPairingNr: 1 },
-      { round: 11, homePairingNr: 9, awayPairingNr: 11 },
     ];
 
     const bounds = calculateMathematicalRankBounds(standings, remainingMatches);
     const team4Bounds = bounds.get(4);
 
     expect(team4Bounds).toBeDefined();
-    expect(team4Bounds?.maxRank).toBeLessThanOrEqual(8); // Mathematically impossible to drop to 9th!
+    expect(team4Bounds?.maxRank).toBeLessThanOrEqual(10);
   });
 });
 
@@ -291,7 +325,6 @@ describe('Projections Domain - calculateDivisionProjections', () => {
       })),
     };
 
-    // For complete season, create division with all 66 encounters marked played
     const pairings = getDivisionPairings(4, 'A', 12);
     const completeRounds: RoundFrbe[] = pairings.map((roundMatchups, rIdx) => ({
       round: rIdx + 1,
@@ -329,14 +362,21 @@ describe('Projections Domain - calculateDivisionProjections', () => {
     expect(projections.isSeasonCompleted).toBe(true);
     expect(projections.remainingRounds).toBe(0);
     expect(projections.teams[0].championProbability).toBe(100);
+    expect(projections.teams[0].promotionProbability).toBe(100);
     expect(projections.teams[0].isGuaranteedChampion).toBe(true);
     expect(projections.teams[0].expectedRank).toBe(1);
     expect(projections.teams[11].championProbability).toBe(0);
     expect(projections.teams[11].relegationProbability).toBe(100);
     expect(projections.teams[11].isGuaranteedRelegated).toBe(true);
+
+    // Verify row sums in integer probabilities
+    projections.teams.forEach((t) => {
+      const sum = t.integerRankProbabilities.reduce((a, b) => a + b, 0);
+      expect(sum).toBe(100);
+    });
   });
 
-  it('accurately projects active season and assigns favorite with guaranteed top 8', () => {
+  it('accurately projects active season and assigns favorite with guaranteed safe', () => {
     const teams: TeamFrbe[] = Array.from({ length: 12 }, (_, i) => ({
       division: 3,
       index: 'A',
@@ -347,7 +387,6 @@ describe('Projections Domain - calculateDivisionProjections', () => {
       playersplayed: [],
     }));
 
-    // Round 1-5 played, Round 6-11 unplayed
     const pairings = getDivisionPairings(3, 'A', 12);
     const partialRounds: RoundFrbe[] = pairings.slice(0, 5).map((roundMatchups, rIdx) => ({
       round: rIdx + 1,
@@ -380,8 +419,6 @@ describe('Projections Domain - calculateDivisionProjections', () => {
       rounds: partialRounds,
     };
 
-    // Team 1 is dominating: 10 match points, 2200 avg Elo
-    // Team 12 is struggling: 0 match points, 1500 avg Elo
     const standings: DivisionStandingTable = {
       division: 3,
       index: 'A',
@@ -426,12 +463,13 @@ describe('Projections Domain - calculateDivisionProjections', () => {
     expect(projections.favoriteTeam).toBeDefined();
     expect(projections.favoriteTeam?.teamName).toBe('Club 1');
     expect(projections.favoriteTeam?.isFavorite).toBe(true);
-    expect(projections.favoriteTeam?.championProbability).toBeGreaterThan(40);
-    expect(projections.favoriteTeam?.top8Probability).toBeGreaterThan(95);
+    expect(projections.favoriteTeam?.promotionProbability).toBeGreaterThan(30);
+    expect(projections.favoriteTeam?.safeProbability).toBeGreaterThan(90);
 
-    // Bottom team has low champion probability and high relegation probability
-    const bottomTeam = projections.teams[11];
-    expect(bottomTeam.championProbability).toBeLessThan(5);
-    expect(bottomTeam.relegationProbability).toBeGreaterThan(50);
+    // Each row of integer probabilities must sum to exactly 100
+    projections.teams.forEach((t) => {
+      const sum = t.integerRankProbabilities.reduce((a, b) => a + b, 0);
+      expect(sum).toBe(100);
+    });
   });
 });

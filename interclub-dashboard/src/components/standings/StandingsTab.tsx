@@ -248,25 +248,37 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
                           <Award className="h-3 w-3 text-amber-600" /> Champion 100%
                         </span>
-                      ) : ourProj.isGuaranteedTop8 ? (
+                      ) : ourProj.isGuaranteedPromotion ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                          <Trophy className="h-3 w-3 text-amber-600" /> Montée 100%
+                        </span>
+                      ) : ourProj.isGuaranteedSafe ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                           <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Maintien Assuré (100%)
                         </span>
                       ) : ourProj.isFavorite ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                          <Trophy className="h-3 w-3 text-amber-600" /> Favori ({ourProj.championProbability}%)
+                          <Trophy className="h-3 w-3 text-amber-600" /> Favori ({ourProj.promotionProbability.toFixed(1)}%)
                         </span>
                       ) : (
                         <span className="text-[10px] font-mono text-slate-600">
-                          Maintien :{' '}
-                          <strong
-                            className={
-                              ourProj.top8Probability >= 80 ? 'text-emerald-700' : 'text-slate-900'
-                            }
-                          >
-                            {ourProj.top8Probability}%
-                          </strong>{' '}
-                          &bull; Esp. : <strong>{ourProj.expectedRank}e</strong>
+                          {divProj?.rules.relegationSpots === 0 ? (
+                            <>
+                              Montée : <strong>{ourProj.promotionProbability.toFixed(1)}%</strong> &bull; Esp. : <strong>{ourProj.expectedRank.toFixed(1)}e</strong>
+                            </>
+                          ) : (
+                            <>
+                              Maintien :{' '}
+                              <strong
+                                className={
+                                  ourProj.safeProbability >= 80 ? 'text-emerald-700' : 'text-slate-900'
+                                }
+                              >
+                                {ourProj.safeProbability.toFixed(1)}%
+                              </strong>{' '}
+                              &bull; Esp. : <strong>{ourProj.expectedRank.toFixed(1)}e</strong>
+                            </>
+                          )}
                         </span>
                       )}
                     </div>
@@ -363,7 +375,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
                         {divProj.favoriteTeam && (
                           <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md font-medium">
                             <Trophy className="h-3.5 w-3.5 text-amber-600" />
-                            Favori : <strong className="font-semibold">{divProj.favoriteTeam.teamName}</strong> ({divProj.favoriteTeam.championProbability}%)
+                            Favori : <strong className="font-semibold">{divProj.favoriteTeam.teamName}</strong> ({divProj.favoriteTeam.promotionProbability.toFixed(1)}%)
                           </span>
                         )}
                         <span className="text-slate-500 font-mono text-[11px]">
