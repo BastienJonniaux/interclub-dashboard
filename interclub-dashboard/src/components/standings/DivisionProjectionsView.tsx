@@ -96,14 +96,14 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
   const relegateCutoff = rules.safeRankMax;
 
   return (
-    <div className="space-y-4">
-      {/* Light Theme Clean Toolbar */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs">
+    <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+      {/* Streamlined Single Control Toolbar */}
+      <div className="p-4 sm:px-6 sm:py-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-slate-900">
-                Projections de fin de saison &bull; {projections.divisionLabel}
+                Simulation Monte-Carlo &bull; {projections.divisionLabel}
               </span>
               <span className="text-xs font-mono text-slate-500">
                 ({projections.remainingRounds} ronde{projections.remainingRounds > 1 ? 's' : ''} restante{projections.remainingRounds > 1 ? 's' : ''})
@@ -134,78 +134,74 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
           </div>
 
           {/* Model Toggle: [ ♟️ Modèle Élo ] [ ⚖️ Neutre (Chances 50-50) ] */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 border border-slate-200/80 rounded-xl text-xs shrink-0 font-semibold">
+          <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200/90 rounded-xl text-xs shrink-0 font-semibold shadow-2xs">
             <button
               onClick={() => setSimulationMode('elo')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 simulationMode === 'elo'
-                  ? 'bg-white text-slate-900 shadow-xs font-bold border border-slate-200/60'
+                  ? 'bg-slate-900 text-white shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Simulation probabiliste basée sur les cotes Elo et la force des effectifs"
             >
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              Modèle Élo (Force théorique)
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <span>Modèle Élo</span>
             </button>
             <button
               onClick={() => setSimulationMode('neutral')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 simulationMode === 'neutral'
-                  ? 'bg-white text-slate-900 shadow-xs font-bold border border-slate-200/60'
+                  ? 'bg-slate-900 text-white shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Simulation neutre (50/50 à chaque match) : probabilités basées uniquement sur les points actuels et le calendrier restant"
             >
-              <Scale className="h-3.5 w-3.5 text-indigo-500" />
-              Modèle Neutre (50-50 pur)
+              <Scale className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Modèle Neutre (50-50)</span>
             </button>
           </div>
         </div>
 
-        {/* Quick Summary Badges (Light Theme) */}
-        <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+        {/* Compact Inline Indicators (Spacious & Clean) */}
+        <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center gap-3 sm:gap-6 flex-wrap text-xs">
           {currentFavorite && (
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5">
-              <span className="text-[10px] uppercase font-bold text-amber-800 tracking-wider flex items-center gap-1">
-                <Trophy className="h-3 w-3 text-amber-600" /> Favori {rules.promotionLabel}
-              </span>
-              <span className="font-bold text-slate-900 block mt-0.5 truncate" title={currentFavorite.teamName}>
+            <div className="flex items-center gap-1.5">
+              <Trophy className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span className="text-slate-500">Favori {rules.promotionLabel} :</span>
+              <strong className="text-slate-900 font-semibold truncate max-w-[150px] sm:max-w-[200px]" title={currentFavorite.teamName}>
                 {currentFavorite.teamName}
-              </span>
-              <span className="text-[11px] font-mono font-bold text-amber-700">
-                {currentFavorite.promotionProbability.toFixed(1)}% de chance
+              </strong>
+              <span className="font-mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/70">
+                {currentFavorite.promotionProbability.toFixed(1)}%
               </span>
             </div>
           )}
 
-          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5">
-            <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider flex items-center gap-1">
-              <ShieldCheck className="h-3 w-3 text-emerald-600" /> Maintien Assuré (Top {rules.safeRankMax})
-            </span>
-            <span className="text-lg font-bold text-slate-900 block mt-0.5 font-mono">
-              {safeCount}{' '}
-              <span className="text-xs font-normal text-slate-500">/{projections.totalTeams} équipes</span>
-            </span>
-            <span className="text-[10px] text-emerald-700">
-              {safeCount > 0 ? 'sécurisées à 100%' : 'en cours'}
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span className="text-slate-500">Maintien Assuré :</span>
+            <strong className="text-slate-900 font-mono">
+              {safeCount}/{projections.totalTeams}
+            </strong>
+            <span className="text-slate-400 text-[11px]">
+              ({safeCount > 0 ? 'sécurisées à 100%' : 'en cours'})
             </span>
           </div>
 
-          <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-2.5 col-span-2 sm:col-span-1">
-            <span className="text-[10px] uppercase font-bold text-rose-800 tracking-wider flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3 text-rose-600" /> En Danger (Descente &ge; 50%)
-            </span>
-            <span className="text-lg font-bold text-slate-900 block mt-0.5 font-mono">
-              {inDangerCount}{' '}
-              <span className="text-xs font-normal text-slate-500">équipe{inDangerCount > 1 ? 's' : ''}</span>
-            </span>
-            <span className="text-[10px] text-rose-700">zone rouge (11e ou 12e)</span>
-          </div>
+          {inDangerCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+              <span className="text-slate-500">En Danger (≥50%) :</span>
+              <strong className="text-rose-700 font-mono">
+                {inDangerCount} équipe{inDangerCount > 1 ? 's' : ''}
+              </strong>
+            </div>
+          )}
         </div>
       </div>
 
       {/* LIGHT-THEME DISTRIBUTION HEATMAP MATRIX */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs overflow-x-auto">
+      <div className="p-4 sm:p-6 overflow-x-auto">
         <table className="w-full border-collapse font-sans select-none text-slate-900">
           <thead>
             <tr className="text-slate-500 text-xs font-mono border-b border-slate-200/80">
@@ -234,22 +230,24 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
                   </th>
                 );
               })}
+
+              {/* DISTINCT BORDER SEPARATION FOR SUMMARY METRICS */}
               <th
                 onClick={() => handleSort('expectedRank')}
-                className="py-2.5 px-3 text-right font-semibold text-slate-700 cursor-pointer hover:text-slate-900 transition-colors"
-                title="Rang attendu (moyenne pondérée sur 2 500 simulations)"
+                className="py-2.5 px-4 text-right font-semibold text-slate-700 cursor-pointer hover:text-slate-900 transition-colors border-l-2 border-slate-200/90 pl-5"
+                title="Rang attendu (moyenne pondérée sur 3 000 simulations)"
               >
-                <div className="inline-flex items-center gap-1">
+                <div className="inline-flex items-center gap-1 justify-end">
                   <span>Rang attendu</span>
                   <ArrowUpDown className="h-3 w-3 text-slate-400" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('promotion')}
-                className="py-2.5 px-3 text-right font-semibold text-amber-800 cursor-pointer hover:text-amber-900 transition-colors"
+                className="py-2.5 px-4 text-right font-semibold text-amber-800 cursor-pointer hover:text-amber-900 transition-colors"
                 title={rules.hasTitle ? 'Titre de champion' : 'Chances de montée'}
               >
-                <div className="inline-flex items-center gap-1">
+                <div className="inline-flex items-center gap-1 justify-end">
                   <span>{rules.promotionLabel}</span>
                   <ArrowUpDown className="h-3 w-3 text-amber-500" />
                 </div>
@@ -257,10 +255,10 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
               {rules.relegationSpots > 0 && (
                 <th
                   onClick={() => handleSort('safe')}
-                  className="py-2.5 pl-3 pr-2 text-right font-semibold text-emerald-800 cursor-pointer hover:text-emerald-900 transition-colors"
+                  className="py-2.5 px-4 text-right font-semibold text-emerald-800 cursor-pointer hover:text-emerald-900 transition-colors"
                   title="Chances de maintien (Top 10)"
                 >
-                  <div className="inline-flex items-center gap-1">
+                  <div className="inline-flex items-center gap-1 justify-end">
                     <span>Maintien</span>
                     <ArrowUpDown className="h-3 w-3 text-emerald-600" />
                   </div>
@@ -338,13 +336,13 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
                     );
                   })}
 
-                  {/* Expected Rank */}
-                  <td className="py-2 px-3 text-right font-mono text-xs text-slate-700">
-                    {t.expectedRank.toFixed(1)}
+                  {/* Expected Rank (with distinct left border separation) */}
+                  <td className="py-2.5 px-4 text-right font-mono text-xs text-slate-700 border-l-2 border-slate-200/90 pl-5 font-semibold">
+                    {t.expectedRank.toFixed(1)}e
                   </td>
 
                   {/* Promotion / Title Prob */}
-                  <td className="py-2 px-3 text-right font-mono text-xs font-bold text-amber-700">
+                  <td className="py-2.5 px-4 text-right font-mono text-xs font-bold text-amber-700">
                     {t.isGuaranteedPromotion || t.isGuaranteedChampion
                       ? '100.0%'
                       : `${t.promotionProbability.toFixed(1)}%`}
@@ -352,7 +350,7 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
 
                   {/* Safe / Maintien Prob */}
                   {rules.relegationSpots > 0 && (
-                    <td className="py-2 pl-3 pr-2 text-right font-mono text-xs font-bold text-emerald-700">
+                    <td className="py-2.5 px-4 text-right font-mono text-xs font-bold text-emerald-700">
                       {t.isGuaranteedSafe || t.safeProbability >= 99.9
                         ? '100.0%'
                         : `${t.safeProbability.toFixed(1)}%`}
@@ -378,12 +376,13 @@ export const DivisionProjectionsView: React.FC<Props> = ({ projections, standing
               </span>
             )}
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 bg-indigo-600 inline-block rounded-xs" />
-              Pic de probabilité (&ge; 60%)
+              <span className="h-2.5 w-2.5 bg-indigo-600 inline-block rounded-xs" />
+              Bleu foncé : Forte probabilité (&ge; 60%)
             </span>
           </div>
-          <div className="text-slate-400 font-mono text-[10px]">
-            Chaque ligne totalise exactement 100% (Méthode des plus forts restes)
+
+          <div className="font-mono text-slate-400 text-[10px]">
+            Tirages Monte-Carlo : 3 000 simulations par division &bull; Total lignes = 100%
           </div>
         </div>
       </div>

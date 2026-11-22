@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { NextRoundBanner } from './NextRoundBanner';
 
-export type TabType = 'hub' | 'standings' | 'players' | 'scouting' | 'simulator' | 'exports';
+export type TabType = 'standings' | 'scouting' | 'players' | 'simulator' | 'exports';
 
 interface Props {
   activeTab: TabType;
@@ -53,8 +53,7 @@ export const Navbar: React.FC<Props> = ({
   }, [clubId]);
 
   const baseNavItems = [
-    { id: 'standings' as const, label: 'Classements Équipes', icon: Trophy },
-    { id: 'hub' as const, label: 'Le Club', icon: Home },
+    { id: 'standings' as const, label: 'Équipes & Classements', icon: Trophy },
     { id: 'scouting' as const, label: 'Prochains Matchs', icon: Compass },
     { id: 'players' as const, label: 'Joueurs du Club', icon: Users },
   ];
@@ -111,18 +110,8 @@ export const Navbar: React.FC<Props> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto justify-end">
-            {/* Interactive Next Round Countdown */}
+            {/* Interactive Next Round Countdown (Click opens full schedule & France clashes) */}
             <NextRoundBanner onClick={onOpenSchedule} />
-
-            {/* Quick Access to Calendar & France Clashes */}
-            <button
-              onClick={onOpenSchedule}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
-              title="Voir le calendrier des 11 rondes et les conflits avec les interclubs français"
-            >
-              <Calendar className="h-3.5 w-3.5 text-emerald-700" />
-              <span className="hidden sm:inline">Calendrier & Conflits</span>
-            </button>
 
             {/* What's New / Nouveautés Button */}
             {onOpenWhatsNew && (
@@ -154,27 +143,23 @@ export const Navbar: React.FC<Props> = ({
               </span>
             </button>
 
-            {/* Director Mode Indicator / Preview Toggle */}
+            {/* Single Unified Director / Guest Mode Toggle */}
             {isDirectorMode ? (
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/90 shadow-2xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>Directeur</span>
-                </span>
-                <button
-                  onClick={onLockDirectorMode}
-                  className="px-2 py-1.5 text-xs font-mono text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                  title="Aperçu du mode invité (membres)"
-                >
-                  Vue Invité
-                </button>
-              </div>
+              <button
+                onClick={onLockDirectorMode}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-50 hover:bg-emerald-100/90 text-emerald-800 border border-emerald-200 shadow-2xs transition-colors cursor-pointer"
+                title="Mode Directeur actif. Cliquez pour passer en Vue Invité"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Directeur</span>
+                <span className="text-[10px] text-emerald-600 font-normal opacity-70">(quitter)</span>
+              </button>
             ) : (
               <button
                 onClick={onOpenDirectorAuth}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/90 shadow-2xs transition-colors cursor-pointer"
-                title="Revenir à l'Espace Directeur"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+                title="Activer l'Espace Directeur"
               >
                 <Lock className="h-3.5 w-3.5 text-slate-500" />
                 <span>Espace Directeur</span>
