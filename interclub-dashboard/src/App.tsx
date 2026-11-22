@@ -3,7 +3,6 @@ import { ClubProvider, useClub } from './context/ClubContext';
 import { SimulatorProvider } from './context/SimulatorContext';
 import { useClubData } from './hooks/useClubData';
 import { Navbar, TabType } from './components/layout/Navbar';
-import { ClubHubTab } from './components/hub/ClubHubTab';
 import { StandingsTab } from './components/standings/StandingsTab';
 import { PlayerPerformanceTab } from './components/players/PlayerPerformanceTab';
 import { ScoutingTab } from './components/scouting/ScoutingTab';
@@ -15,10 +14,10 @@ import { CalendarScheduleModal } from './components/layout/CalendarScheduleModal
 import { WhatsNewModal } from './components/layout/WhatsNewModal';
 import { extractFullSeasonSchedule, getUpcomingRoundNumber } from './domain/calendar';
 import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
-import { Loader2, AlertCircle, RotateCcw, Sparkles, ArrowRight, X } from 'lucide-react';
+import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
-  // Default to standings tab (original director default) with all tabs accessible
+  // Default to standings tab with all tabs accessible
   const [activeTab, setActiveTab] = useState<TabType>('standings');
   const [isDirectorMode, setIsDirectorMode] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -26,19 +25,12 @@ const DashboardContent: React.FC = () => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
   const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(() => getUpcomingRoundNumber());
 
-  // What's New / Nouveautés banner & modal state
+  // What's New / Nouveautés modal state
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
   const [autoOpenProjections, setAutoOpenProjections] = useState<boolean>(false);
   const [hasUnseenWhatsNew, setHasUnseenWhatsNew] = useState<boolean>(() => {
     try {
       return localStorage.getItem('interclub_whats_new_seen_v2_4') !== 'true';
-    } catch {
-      return true;
-    }
-  });
-  const [showNoticeBanner, setShowNoticeBanner] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('interclub_notice_dismissed_v2_4') !== 'true';
     } catch {
       return true;
     }
@@ -52,13 +44,6 @@ const DashboardContent: React.FC = () => {
     } catch {}
   };
 
-  const handleDismissNotice = () => {
-    setShowNoticeBanner(false);
-    try {
-      localStorage.setItem('interclub_notice_dismissed_v2_4', 'true');
-    } catch {}
-  };
-
   const handleNavigateFromWhatsNew = (action: {
     tab?: TabType;
     openSchedule?: boolean;
@@ -66,10 +51,8 @@ const DashboardContent: React.FC = () => {
   }) => {
     setIsWhatsNewOpen(false);
     setHasUnseenWhatsNew(false);
-    setShowNoticeBanner(false);
     try {
       localStorage.setItem('interclub_whats_new_seen_v2_4', 'true');
-      localStorage.setItem('interclub_notice_dismissed_v2_4', 'true');
     } catch {}
 
     if (action.tab) {
@@ -183,54 +166,6 @@ const DashboardContent: React.FC = () => {
         hasUnseenWhatsNew={hasUnseenWhatsNew}
       />
 
-      {/* Persistent Feature Notice Banner for Director & Users */}
-      {showNoticeBanner && (
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
-          <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-emerald-50/70 border border-indigo-200/90 rounded-2xl p-3 sm:px-5 sm:py-2.5 flex items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shrink-0 shadow-xs">
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <div className="text-xs sm:text-sm text-slate-800 truncate sm:overflow-visible">
-                <span className="font-bold text-indigo-950">
-                  Nouveau : Projections Monte-Carlo & Validation FRBE !
-                </span>
-                <span className="hidden md:inline text-slate-600 ml-2">
-                  Simulez la fin de saison (titre, montée, maintien) et contrôlez les règles d’équipes.
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => {
-                  handleDismissNotice();
-                  setActiveTab('standings');
-                  setAutoOpenProjections(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Voir les Projections</span>
-              </button>
-              <button
-                onClick={handleOpenWhatsNew}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 transition-colors shadow-2xs cursor-pointer"
-              >
-                <span>Toutes les nouveautés</span>
-              </button>
-              <button
-                onClick={handleDismissNotice}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/80 transition-colors cursor-pointer"
-                title="Masquer cette annonce"
-                aria-label="Fermer la notice"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {isFallback && (
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-amber-800">
@@ -240,32 +175,19 @@ const DashboardContent: React.FC = () => {
       )}
 
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 relative">
-        {/* Hub Tab (Guest / Member default) */}
-        {activeTab === 'hub' && (
-          <div className="animate-in fade-in duration-300">
-            <ClubHubTab
-              club={club}
-              standings={standings}
-              latestMatches={latestMatches}
-              scouting={scouting}
-              playerStats={playerStats}
-              onNavigateTab={setActiveTab}
-              onOpenClubSelector={() => setIsClubSelectorOpen(true)}
-              onOpenSchedule={() => setIsScheduleModalOpen(true)}
-            />
-          </div>
-        )}
-
-        {/* Division Standings Tab */}
+        {/* Unified Équipes & Classements Tab (Club Hub + Divisions + Projections) */}
         {activeTab === 'standings' && (
           <div className="animate-in fade-in duration-300">
             <StandingsTab
               standings={standings}
               projections={projections}
+              club={club}
               clubName={club.name}
+              playerStats={playerStats}
               latestMatches={latestMatches}
               autoOpenProjections={autoOpenProjections}
               onProjectionsOpened={() => setAutoOpenProjections(false)}
+              onNavigateTab={setActiveTab}
             />
           </div>
         )}
