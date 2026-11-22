@@ -53,9 +53,9 @@ Deux approches étaient envisageables :
 1. **Suppression des en-têtes et pieds de page par défaut du navigateur** :
    - *Critique* : Selon les navigateurs, l'URL de la page ou l'heure d'impression peut s'imprimer dans la marge si l'utilisateur ne décoche pas l'option.
    - *Amélioration* : La directive CSS `@page { margin: 8mm; }` minimise ce problème sur Chrome/Edge récents. L'ajout d'une notice explicative dans l'en-tête du modal (*"Astuce : décochez 'En-têtes et pieds de page' dans la boîte d'impression"*) garantit un rendu professionnel sur tous les navigateurs.
-2. **Besoin futur d'export direct en fichier `.pdf` pour l'envoi par e-mail** :
-   - *Critique* : Si le club souhaite un jour envoyer automatiquement les feuilles de match par e-mail aux capitaines sans passer par la boîte de dialogue d'impression, l'approche `window.print()` est insuffisante.
-   - *Amélioration* : Si ce besoin apparaît, utiliser `html2canvas` + `jspdf` ou `@react-pdf/renderer` chargé **en import dynamique lazy** (`await import(...)`) sur le clic d'un bouton dédié "Télécharger PDF", afin de ne pas pénaliser le temps de chargement initial des autres utilisateurs.
-3. **Harmonisation des logos et en-têtes de club** :
-   - *Critique* : Le bas de page porte en dur la mention *"Feuille de match officielle • Echiquier Leuzois"*. Si un autre club utilise l'application, cette mention reste associée à Leuze.
-   - *Amélioration* : Dynamiser le libellé avec le nom du club issu de `ClubContext` (`clubName || 'Interclubs FRBE'`).
+2. **Besoin futur d'export direct en fichier `.pdf` pour l'envoi par e-mail [RÉSOLU - ADR-013]** :
+   - *Critique* : Si le club souhaite envoyer automatiquement les feuilles de match par e-mail aux capitaines sans passer par la boîte de dialogue d'impression, l'approche `window.print()` est insuffisante.
+   - *Résolution* : Implémenté via l'**[ADR-013](./013-binary-pdf-match-sheet-generation-pdf-lib.md)** avec la bibliothèque vectorielle `pdf-lib`, offrant un téléchargement binaire `.pdf` en un clic (par équipe ou pour toutes les équipes) indépendant des réglages d'impression.
+3. **Harmonisation des logos et en-têtes de club [RÉSOLU - ADR-013]** :
+   - *Critique* : Le bas de page portait en dur la mention *"Feuille de match officielle • Echiquier Leuzois"*. Si un autre club utilisait l'application, cette mention restait associée à Leuze.
+   - *Résolution* : Dynamisé via `clubName || 'Interclubs FRBE'` dans `MatchSheetModal.tsx` et `matchSheetPdf.ts`.

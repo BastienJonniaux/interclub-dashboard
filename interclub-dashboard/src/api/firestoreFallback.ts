@@ -4,6 +4,23 @@ import { ACTIVE_SEASON } from '../season';
 const FIRESTORE_BASE =
   `https://firestore.googleapis.com/v1/projects/interclub-668f3/databases/(default)/documents/years/${ACTIVE_SEASON}`;
 
+function combineSignals(timeoutMs: number, externalSignal?: AbortSignal): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  if (!externalSignal) return timeoutSignal;
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([externalSignal, timeoutSignal]);
+  }
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (externalSignal.aborted || timeoutSignal.aborted) {
+    controller.abort();
+    return controller.signal;
+  }
+  externalSignal.addEventListener('abort', onAbort, { once: true });
+  timeoutSignal.addEventListener('abort', onAbort, { once: true });
+  return controller.signal;
+}
+
 export function decodeFirestoreValue(val: any): any {
   if (!val || typeof val !== 'object') return val;
   if ('stringValue' in val) return val.stringValue;
@@ -65,9 +82,9 @@ function resultEnumToString(res: any): string {
 /**
  * Fetch club from Firestore mirror when FRBE API is down
  */
-export async function fetchFirestoreClub(clubId: number): Promise<ClubFrbe | null> {
+export async function fetchFirestoreClub(clubId: number, signal?: AbortSignal): Promise<ClubFrbe | null> {
   const url = `${FIRESTORE_BASE}/club/${clubId}`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  const response = await fetch(url, { signal: combineSignals(10000, signal) });
   if (!response.ok) return null;
 
   const json = await response.json();
@@ -115,10 +132,11 @@ export async function fetchFirestoreClub(clubId: number): Promise<ClubFrbe | nul
  */
 export async function fetchFirestoreRound(
   round: number,
-  season: string = ACTIVE_SEASON
+  season: string = ACTIVE_SEASON,
+  signal?: AbortSignal
 ): Promise<DivisionFrbe[] | null> {
   const url = `https://firestore.googleapis.com/v1/projects/interclub-668f3/databases/(default)/documents/years/${season}/roundOverview/${round}`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const response = await fetch(url, { signal: combineSignals(15000, signal) });
   if (!response.ok) return null;
 
   const json = await response.json();
@@ -191,9 +209,12 @@ export async function fetchFirestoreRound(
 /**
  * Extracts a complete player directory (id -> { name, rating, clubName }) from round 1 matches
  */
-export async function extractPlayersFromFirestoreRound(round: number): Promise<Map<number, { name: string; rating: number; clubName?: string }>> {
+export async function extractPlayersFromFirestoreRound(
+  round: number,
+  signal?: AbortSignal
+): Promise<Map<number, { name: string; rating: number; clubName?: string }>> {
   const url = `${FIRESTORE_BASE}/roundOverview/${round}`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const response = await fetch(url, { signal: combineSignals(15000, signal) });
   const map = new Map<number, { name: string; rating: number; clubName?: string }>();
   if (!response.ok) return map;
 

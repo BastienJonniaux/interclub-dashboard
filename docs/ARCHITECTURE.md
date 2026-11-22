@@ -126,22 +126,31 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 
 ### 🟡 Mineur — Performance & Ergonomie technique
 
-7. **Gestion du cache et rafale réseau au chargement** (`useClubData.ts`, `cache.ts`, `fideClient.ts`)
-   - **Constat** :
-     - Au chargement, `useClubData` lance en parallèle toutes les rondes `1..maxRound` (`Promise.all`) sans annulation (`AbortController`) si le `clubId` change.
-     - `isFallbackMode` est une variable globale mutable exportée (`export let isFallbackMode = false` dans `frbeClient.ts`), ce qui est un anti-pattern réactif.
-     - `clearCache()` nettoie `frbe_cache_*` mais oublie `fide_v3_*`.
-     - Le cache `sessionStorage` est perdu à la fermeture de l'onglet et les rondes passées (immuables après validation) re-expirent toutes les 15 minutes.
-   - **Amélioration** : Adopter `@tanstack/react-query` (déduplication, annulation, stale-while-revalidate) et passer le TTL des rondes clôturées à plusieurs heures/jours.
+7. **[RÉSOLU] Gestion du cache, annulation des requêtes et encapsulation du fallback** (`useClubData.ts`, `cache.ts`, `frbeClient.ts`, `fideClient.ts`, `firestoreFallback.ts`)
+   - **Historique** : Au chargement, `useClubData` lançait en parallèle toutes les rondes `1..maxRound` (`Promise.all`) sans possibilité d'annulation si le `clubId` changeait ou lors du démontage du composant, causant des *race conditions*. De plus, `isFallbackMode` était exportée comme variable globale mutable (`export let isFallbackMode = false` dans `frbeClient.ts`), `clearCache()` omettait de purger les clés `fide_v3_*` ainsi que le cache mémoire, et les résultats immuables des rondes passées expiraient toutes les 15 minutes en `sessionStorage`.
+   - **Corrections apportées** :
+     - **Annulation par AbortController** : intégration d'un `AbortController` dans le hook `useClubData.ts` avec nettoyage `useEffect`, et propagation du signal d'annulation à l'ensemble des requêtes (`fetchClub`, `fetchRoundSeries`, `fetchVenues`, `fetchPlayerDirectory` et miroir Firestore).
+     - **Encapsulation propre du mode dégradé** : élimination de `export let isFallbackMode`, remplacé par `getIsFallbackMode()`, `setFallbackMode()` et `resetFallbackMode()`.
+     - **Vidage exhaustif multi-stockages** : mise à niveau de `clearCache()` pour purger à la fois `frbe_cache_*` et `fide_*` sur `sessionStorage` et `localStorage`, complété par `clearFideMemoryCache()`.
+     - **Persistance différentielle** : conservation des rondes clôturées et validées (`round < defaultRound(ACTIVE_SEASON)`) en `localStorage` avec un TTL long de 30 jours (`COMPLETED_ROUND_TTL_MS`), réduisant drastiquement les requêtes réseau répétitives vers les serveurs FRBE.
+     - **Tests unitaires dédiés** : nouveaux tests unitaires complets sous Vitest (`src/api/__tests__/cache.test.ts` et `src/api/__tests__/frbeClient.test.ts`).
 
-8. **Cold start Render Free Tier**
-   - **Constat** : Sur le plan gratuit Render, le serveur s'endort après 15 min d'inactivité (latence de 30 à 50 s au réveil), alors que `backendClient.ts` applique des timeouts courts (`4000 ms` sur `/api/health`, `5000 ms` sur `fetchRoundDrafts`).
-   - **Risque** : Le premier chargement après inactivité échoue silencieusement sur timeout et fait croire au frontend que le serveur est hors ligne.
-   - **Amélioration** : Augmenter le timeout initial ou distinguer un état *"Réveil du serveur en cours..."* avec retry automatique, ou passer sur un hébergeur sans cold start agressif (ex: Koyeb/Railway/Fly ou cron healthcheck).
+8. **[RÉSOLU] Résilience face au Cold Start du Render Free Tier** (`backendClient.ts`, `SimulatorTab.tsx`)
+   - **Historique** : Sur le plan gratuit Render, l'instance du serveur backend s'endort après 15 minutes d'inactivité, imposant un temps de réveil de 30 à 50 secondes. Les timeouts initiaux trop courts (`4000 ms` pour `/api/health`, `5000 ms` pour `fetchRoundDrafts`) faisaient échouer prématurément les requêtes et affichaient à tort un état "Local (Hors-ligne)".
+   - **Corrections apportées** :
+     - **Timeouts progressifs et résilients** : configuration de `COLD_START_TIMEOUT_MS = 50_000` et `DEFAULT_TIMEOUT_MS = 25_000` dans `backendClient.ts` pour couvrir intégralement la phase de démarrage du conteneur Render et la connexion PostgreSQL.
+     - **Retry automatique avec notification de progression** : `checkServerHealth` implémente une boucle de nouvelle tentative adaptative avec callback `onProgress({ isWakingUp: true, elapsedMs })`.
+     - **Feedback visuel distinct dans l'interface** : `SimulatorTab.tsx` distingue désormais clairement la phase de réveil d'une panne réelle via un badge ambre animé avec spinner `Loader2` (*"Réveil du serveur Render en cours..."*), basculant automatiquement vers l'état connecté dès la fin de l'initialisation et déclenchant la synchronisation des brouillons.
+     - **Tests unitaires dédiés** : suite de tests simulant le cold start et vérifiant la résilience des retries (`src/api/__tests__/backendClient.test.ts`).
 
-9. **Dépendance au moteur d'impression navigateur pour les PDF** (`MatchSheetModal.tsx`)
-   - **Constat** : Le rendu dépend des paramètres d'impression Chrome/Firefox/Edge (en-têtes/pieds de page navigateur, case "Graphiques d'arrière-plan") et ne génère pas un fichier `.pdf` binaire téléchargeable en un clic pour l'envoi par mail.
-   - **Amélioration** : Garder l'approche actuelle pour sa rapidité d'itération tant que l'impression papier prime ; envisager `pdf-lib` ou `@react-pdf/renderer` (chargé en *lazy import*) uniquement si un workflow automatisé d'envoi/archivage PDF devient requis.
+9. **[RÉSOLU] Génération et téléchargement direct de feuilles de match en PDF binaire** (`MatchSheetModal.tsx`, `src/domain/pdf/matchSheetPdf.ts`)
+   - **Historique** : L'impression des feuilles de match reposait exclusivement sur le moteur d'impression natif du navigateur (`window.print()`), soumis à la variabilité des options locales des navigateurs (en-têtes URL, marges, case graphiques d'arrière-plan) et ne permettait pas de générer un fichier `.pdf` autonome téléchargeable d'un clic pour archivage ou diffusion électronique. De plus, le bas de page portait en dur le nom d'un club (*"Echiquier Leuzois"*).
+   - **Corrections apportées** :
+     - **Moteur vectoriel PDF autonome (`pdf-lib`)** : implémentation de `src/domain/pdf/matchSheetPdf.ts` générant des documents PDF binaires A4 Paysage conformes aux spécifications officielles FRBE.
+     - **Polices standard sans surcharge réseau** : utilisation de `StandardFonts.Helvetica` et `StandardFonts.HelveticaBold` (0 KB de police embarquée) avec assainissement d'encodage WinAnsi (`sanitizeText`) préservant l'intégralité des accents français.
+     - **Téléchargement direct en un clic** : ajout de boutons de téléchargement direct dans `MatchSheetModal.tsx` permettant d'exporter soit une feuille isolée pour une équipe, soit l'ensemble des feuilles de match de toutes les équipes en un seul document multi-pages.
+     - **Dynamisation multi-clubs** : intégration dynamique du nom du club organisateur dans toutes les métadonnées et le pied de page officiel (`clubName || 'Interclubs FRBE'`).
+     - **Tests unitaires dédiés** : tests unitaires sous Vitest (`src/domain/pdf/__tests__/matchSheetPdf.test.ts`) validant la conformité binaire du PDF, les dimensions de page A4 et le rendu multi-pages.
 
 ---
 
@@ -157,3 +166,6 @@ Une revue critique du code actuel met en évidence **9 fragilités concrètes**,
 - [ADR-008 : Unification de la Saison et Autorité du Calendrier](./adr/008-centralized-season-and-calendar-authority.md)
 - [ADR-009 : Validation de Schéma Zod et Règles Métier FRBE Côté Serveur](./adr/009-server-side-validation-zod-and-frbe-rules.md)
 - [ADR-010 : Moteur de simulation Monte Carlo et projections de classement](./adr/010-monte-carlo-standings-projections.md)
+- [ADR-011 : Stratégie de mise en cache, persistance et annulation des requêtes réseau](./adr/011-cache-management-and-network-burst-optimization.md)
+- [ADR-012 : Résilience aux démarrages à froid (Cold Start) du serveur Render Free-Tier](./adr/012-render-cold-start-resilience-and-retries.md)
+- [ADR-013 : Génération et téléchargement direct de feuilles de match en PDF binaire (pdf-lib)](./adr/013-binary-pdf-match-sheet-generation-pdf-lib.md)

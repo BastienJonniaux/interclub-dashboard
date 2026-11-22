@@ -13,3 +13,7 @@ Ce dossier recense les principales décisions d'architecture prises dans le proj
 | [ADR-007](./007-automated-testing-strategy-and-ci.md) | Stratégie de Tests Automatisés et Pipeline CI (Vitest, Node test, GitHub Actions) | Accepté | Tests unitaires sur règles FRBE et auth, pipeline CI sur PR |
 | [ADR-008](./008-centralized-season-and-calendar-authority.md) | Unification de la Saison et Autorité du Calendrier (Endpoint API & Normalisation) | Accepté | Source unique de vérité pour les 11 dates et formats de saison normalisés |
 | [ADR-009](./009-server-side-validation-zod-and-frbe-rules.md) | Validation de Schéma Zod et Règles Métier FRBE Côté Serveur | Accepté | Intégrité structurelle stricte (Zod) et avertissements réglementaires FRBE |
+| [ADR-010](./010-monte-carlo-standings-projections.md) | Moteur de simulation Monte Carlo et projections de classement | Accepté | Simulation stochastique 2500 itérations côté client |
+| [ADR-011](./011-cache-management-and-network-burst-optimization.md) | Stratégie de mise en cache, persistance et annulation réseau | Accepté | AbortController, encapsulation mode dégradé, TTL différencié |
+| [ADR-012](./012-render-cold-start-resilience-and-retries.md) | Résilience aux démarrages à froid de l'API Render | Accepté | Timeouts progressifs, retries automatiques et feedback visuel UI |
+| [ADR-013](./013-binary-pdf-match-sheet-generation-pdf-lib.md) | Génération et téléchargement direct de feuilles de match PDF (pdf-lib) | Accepté | Fichiers PDF vectoriels autonomes, indépendance des réglages d'impression |
