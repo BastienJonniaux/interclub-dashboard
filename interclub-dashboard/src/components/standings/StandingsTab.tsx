@@ -22,11 +22,49 @@ interface Props {
   clubName: string;
   latestMatches?: LatestTeamMatch[];
   projections?: DivisionProjections[];
+  autoOpenProjections?: boolean;
+  onProjectionsOpened?: () => void;
 }
 
-export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatches, projections = [] }) => {
+export const StandingsTab: React.FC<Props> = ({
+  standings,
+  clubName,
+  latestMatches,
+  projections = [],
+  autoOpenProjections,
+  onProjectionsOpened,
+}) => {
   const [expandedDiv, setExpandedDiv] = useState<string | null>(null);
   const [divViewModes, setDivViewModes] = useState<Record<string, 'standings' | 'projections'>>({});
+  const [highlightedDiv, setHighlightedDiv] = useState<string | null>(null);
+
+  const openDivisionProjections = (key: string) => {
+    setExpandedDiv(key);
+    setDivViewModes((prev) => ({ ...prev, [key]: 'projections' }));
+    setHighlightedDiv(key);
+    setTimeout(() => {
+      setHighlightedDiv(null);
+    }, 2500);
+
+    setTimeout(() => {
+      const el = document.getElementById(`details-${key}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
+
+  React.useEffect(() => {
+    if (autoOpenProjections && standings.length > 0) {
+      const target =
+        standings.find((s) =>
+          projections.some((p) => p.division === s.division && p.index === s.index)
+        ) || standings[0];
+      const key = `${target.division}${target.index}`;
+      openDivisionProjections(key);
+      onProjectionsOpened?.();
+    }
+  }, [autoOpenProjections, standings, projections, onProjectionsOpened]);
 
   if (standings.length === 0) {
     return (
@@ -134,7 +172,7 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
     <div className="space-y-8">
       {/* Top Banner / Summary Cards */}
       <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Vue d'ensemble des Équipes — {clubName}
@@ -143,6 +181,25 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
               Classement en direct, forme récente et progression de chaque équipe dans sa division respective.
             </p>
           </div>
+
+          {projections && projections.length > 0 && (
+            <button
+              onClick={() => {
+                const target =
+                  standings.find((s) =>
+                    projections.some((p) => p.division === s.division && p.index === s.index)
+                  ) || standings[0];
+                if (target) {
+                  openDivisionProjections(`${target.division}${target.index}`);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs hover:shadow-md transition-all cursor-pointer shrink-0"
+              title="Ouvrir la matrice de simulation Monte-Carlo et les probabilités de fin de saison"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Projections & Cotes Monte-Carlo</span>
+            </button>
+          )}
         </div>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-6">
@@ -240,8 +297,15 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
 
                   {/* Projections Mini-Banner */}
                   {ourProj && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1">
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDivisionProjections(`${divTable.division}${divTable.index}`);
+                      }}
+                      className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs hover:bg-indigo-50/70 p-1.5 -mx-1.5 rounded-lg transition-colors cursor-pointer group/proj"
+                      title="Cliquer pour ouvrir directement la simulation Monte-Carlo de cette division"
+                    >
+                      <span className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider flex items-center gap-1 group-hover/proj:text-indigo-800">
                         <Sparkles className="h-3 w-3 text-indigo-500" /> Projection
                       </span>
                       {ourProj.isGuaranteedChampion ? (
@@ -318,7 +382,11 @@ export const StandingsTab: React.FC<Props> = ({ standings, clubName, latestMatch
             <div
               key={key}
               id={`details-${key}`}
-              className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden transition-all"
+              className={`bg-white border rounded-2xl shadow-xs overflow-hidden transition-all duration-300 ${
+                highlightedDiv === key
+                  ? 'border-indigo-400 ring-4 ring-indigo-500/20 shadow-md'
+                  : 'border-slate-200/80'
+              }`}
             >
               <button
                 onClick={() => toggleExpand(key)}

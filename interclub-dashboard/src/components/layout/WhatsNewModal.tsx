@@ -27,6 +27,7 @@ export interface WhatsNewFeature {
   actionLabel: string;
   actionTab?: TabType;
   actionOpenSchedule?: boolean;
+  actionOpenProjections?: boolean;
 }
 
 const RECENT_FEATURES: WhatsNewFeature[] = [
@@ -49,6 +50,7 @@ const RECENT_FEATURES: WhatsNewFeature[] = [
     ],
     actionLabel: 'Accéder aux Projections',
     actionTab: 'standings',
+    actionOpenProjections: true,
   },
   {
     id: 'frbe-validation-rules',
@@ -110,7 +112,7 @@ const RECENT_FEATURES: WhatsNewFeature[] = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (action: { tab?: TabType; openSchedule?: boolean }) => void;
+  onNavigate: (action: { tab?: TabType; openSchedule?: boolean; openProjections?: boolean }) => void;
 }
 
 export const WhatsNewModal: React.FC<Props> = ({ isOpen, onClose, onNavigate }) => {
@@ -213,6 +215,7 @@ export const WhatsNewModal: React.FC<Props> = ({ isOpen, onClose, onNavigate }) 
                       onNavigate({
                         tab: feature.actionTab,
                         openSchedule: feature.actionOpenSchedule,
+                        openProjections: feature.actionOpenProjections,
                       });
                     }}
                     className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${

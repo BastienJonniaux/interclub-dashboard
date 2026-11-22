@@ -28,6 +28,7 @@ const DashboardContent: React.FC = () => {
 
   // What's New / Nouveautés banner & modal state
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
+  const [autoOpenProjections, setAutoOpenProjections] = useState<boolean>(false);
   const [hasUnseenWhatsNew, setHasUnseenWhatsNew] = useState<boolean>(() => {
     try {
       return localStorage.getItem('interclub_whats_new_seen_v2_4') !== 'true';
@@ -58,7 +59,11 @@ const DashboardContent: React.FC = () => {
     } catch {}
   };
 
-  const handleNavigateFromWhatsNew = (action: { tab?: TabType; openSchedule?: boolean }) => {
+  const handleNavigateFromWhatsNew = (action: {
+    tab?: TabType;
+    openSchedule?: boolean;
+    openProjections?: boolean;
+  }) => {
     setIsWhatsNewOpen(false);
     setHasUnseenWhatsNew(false);
     setShowNoticeBanner(false);
@@ -72,6 +77,9 @@ const DashboardContent: React.FC = () => {
     }
     if (action.openSchedule) {
       setIsScheduleModalOpen(true);
+    }
+    if (action.openProjections) {
+      setAutoOpenProjections(true);
     }
   };
 
@@ -194,11 +202,21 @@ const DashboardContent: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={handleOpenWhatsNew}
+                onClick={() => {
+                  handleDismissNotice();
+                  setActiveTab('standings');
+                  setAutoOpenProjections(true);
+                }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
               >
-                <span>Découvrir</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Voir les Projections</span>
+              </button>
+              <button
+                onClick={handleOpenWhatsNew}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 transition-colors shadow-2xs cursor-pointer"
+              >
+                <span>Toutes les nouveautés</span>
               </button>
               <button
                 onClick={handleDismissNotice}
@@ -246,6 +264,8 @@ const DashboardContent: React.FC = () => {
               projections={projections}
               clubName={club.name}
               latestMatches={latestMatches}
+              autoOpenProjections={autoOpenProjections}
+              onProjectionsOpened={() => setAutoOpenProjections(false)}
             />
           </div>
         )}
