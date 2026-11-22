@@ -169,33 +169,31 @@ export const StandingsTab: React.FC<Props> = ({
 
     const recent = history.slice(-5);
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         {recent.map((m, idx) => {
-          let style = 'bg-slate-100 text-slate-600 border border-slate-200';
+          let style = 'bg-slate-100 text-slate-700 border border-slate-300';
           let letter = 'N';
           if (m.matchOutcome === 'win') {
-            style = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+            style = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
             letter = 'V';
           } else if (m.matchOutcome === 'draw') {
-            style = 'bg-slate-100 text-slate-600 border border-slate-200';
+            style = 'bg-slate-100 text-slate-700 border border-slate-300';
             letter = 'N';
           } else if (m.matchOutcome === 'loss') {
-            style = 'bg-rose-50 text-rose-700 border border-rose-200';
+            style = 'bg-rose-100 text-rose-800 border border-rose-300';
             letter = 'D';
           }
 
           return (
-            <div key={idx} className="flex flex-col items-center gap-0.5">
-              <span
-                className={`inline-flex w-5 h-5 items-center justify-center rounded-full text-[10px] font-mono font-bold shrink-0 cursor-default ${style}`}
-                title={`Ronde ${m.round}: ${letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'} (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
-              >
-                {letter}
-              </span>
-              <span className="text-[9px] font-mono text-slate-500 tabular-nums leading-none">
-                {m.teamScore}-{m.oppScore}
-              </span>
-            </div>
+            <span
+              key={idx}
+              className={`inline-flex w-4 h-4 sm:w-4.5 sm:h-4.5 items-center justify-center rounded-full text-[9px] font-mono font-bold shrink-0 cursor-default shadow-2xs ${style}`}
+              title={`Ronde ${m.round}: ${
+                letter === 'V' ? 'Victoire' : letter === 'N' ? 'Nul' : 'Défaite'
+              } (${m.teamScore} - ${m.oppScore}) vs ${m.opponentTeamName}`}
+            >
+              {letter}
+            </span>
           );
         })}
       </div>
@@ -353,14 +351,24 @@ export const StandingsTab: React.FC<Props> = ({
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 min-w-0">
-                      <span
-                        className={`inline-flex px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase rounded-md ${getDivisionBadgeStyle(
-                          divTable.division
-                        )}`}
-                      >
-                        {divTable.divisionLabel}
-                      </span>
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider uppercase rounded-md ${getDivisionBadgeStyle(
+                            divTable.division
+                          )}`}
+                        >
+                          {divTable.divisionLabel}
+                        </span>
+
+                        {/* Recent matches form (up to 5 pills, no score clutter) */}
+                        {our && our.matchHistory && our.matchHistory.length > 0 && (
+                          <div className="inline-flex items-center">
+                            {renderFormPills(our.matchHistory)}
+                          </div>
+                        )}
+                      </div>
+
                       <h3 className="text-base font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
                         {our?.teamName || `Équipe ${divTable.divisionLabel}`}
                       </h3>
@@ -380,35 +388,15 @@ export const StandingsTab: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* Bilan & Form */}
-                  <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-slate-400 block">
-                        Bilan
-                      </span>
-                      <span className="text-xs font-bold font-mono text-slate-700 whitespace-nowrap">
-                        {our ? `${our.won}V • ${our.drawn}N • ${our.lost}D` : '-'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      {our ? (
-                        renderFormPills(our.matchHistory)
-                      ) : (
-                        <span className="font-mono text-slate-400 text-xs">-</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Horizontal Metrics Mini-Banner */}
-                  <div className="mt-3 grid grid-cols-3 divide-x divide-slate-200/80 bg-slate-50/80 border border-slate-200/70 rounded-xl py-2 px-1 text-center font-mono tabular-nums shadow-xs">
+                  {/* Horizontal Metrics Mini-Banner: Rang, Pts Match, Départage */}
+                  <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200/80 bg-slate-50/90 border border-slate-200/70 rounded-xl py-2 px-1 text-center font-mono tabular-nums shadow-2xs">
                     <div className="px-1 text-center">
                       <span className="block text-[9px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                         Rang
                       </span>
-                      <span className="font-bold text-slate-900 text-xs">
+                      <span className="font-bold text-slate-900 text-sm">
                         {rank === 1 ? '1er' : `${rank}e`}{' '}
-                        <span className="text-[9px] font-normal text-slate-400">/{totalTeams}</span>
+                        <span className="text-[10px] font-normal text-slate-400">/{totalTeams}</span>
                       </span>
                     </div>
 
@@ -416,9 +404,9 @@ export const StandingsTab: React.FC<Props> = ({
                       <span className="block text-[9px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                         Pts Match
                       </span>
-                      <span className="font-bold text-emerald-700 text-xs">
+                      <span className="font-bold text-emerald-700 text-sm">
                         {matchPoints}{' '}
-                        <span className="text-[9px] font-normal text-slate-400">/{maxMatchPoints}</span>
+                        <span className="text-[10px] font-normal text-slate-400">/{maxMatchPoints}</span>
                       </span>
                     </div>
 
@@ -426,46 +414,94 @@ export const StandingsTab: React.FC<Props> = ({
                       <span className="block text-[9px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                         Départage
                       </span>
-                      <span className="font-bold text-slate-900 text-xs">
+                      <span className="font-bold text-slate-900 text-sm">
                         {our?.boardPoints ?? 0}{' '}
-                        <span className="text-[9px] font-normal text-slate-400">pts</span>
+                        <span className="text-[10px] font-normal text-slate-400">pts</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Clean, Non-Cramped Projection Status Strip */}
+                {/* Projections Section: Montée & Maintien side-by-side + Expected Rank */}
                 {ourProj && (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDivisionProjections(divKey);
-                    }}
-                    className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between group/proj cursor-pointer hover:bg-slate-50 -mx-1.5 px-2 py-1 rounded-lg transition-colors"
-                    title="Cliquer pour afficher la simulation Monte-Carlo de cette division"
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="h-2 w-2 rounded-full bg-indigo-500 shrink-0" />
-                      <span className="text-[10px] font-bold text-slate-600 tracking-wider uppercase">
-                        {divProj?.rules.relegationSpots === 0 ? 'Montée' : 'Maintien'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 font-mono shrink-0">
-                      <span
-                        className={`text-xs font-bold ${
-                          ourProj.safeProbability >= 80 ? 'text-emerald-700' : 'text-slate-800'
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* 1. Titre / Montée */}
+                      <div
+                        className={`rounded-xl p-2 border flex flex-col justify-between transition-colors ${
+                          ourProj.isGuaranteedPromotion || ourProj.isGuaranteedChampion
+                            ? 'bg-amber-100/80 border-amber-300 text-amber-950 font-bold'
+                            : ourProj.promotionProbability >= 40
+                            ? 'bg-amber-50/90 border-amber-300/80 text-amber-950'
+                            : ourProj.promotionProbability >= 10
+                            ? 'bg-amber-50/50 border-amber-200/60 text-amber-900'
+                            : 'bg-slate-50 border-slate-200/70 text-slate-700'
                         }`}
                       >
-                        {ourProj.isGuaranteedSafe || ourProj.safeProbability >= 99.5
-                          ? '100% garanti'
-                          : `${ourProj.safeProbability.toFixed(1)}%`}
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          {divProj?.rules.hasTitle ? 'Titre' : 'Montée'}
+                        </span>
+                        <span className="font-mono font-bold text-xs mt-0.5">
+                          {ourProj.isGuaranteedPromotion || ourProj.isGuaranteedChampion
+                            ? '100% garanti'
+                            : `${ourProj.promotionProbability.toFixed(1)}%`}
+                        </span>
+                      </div>
+
+                      {/* 2. Maintien */}
+                      {divProj && divProj.rules.relegationSpots > 0 ? (
+                        <div
+                          className={`rounded-xl p-2 border flex flex-col justify-between transition-colors ${
+                            ourProj.isGuaranteedSafe || ourProj.safeProbability >= 99.9
+                              ? 'bg-emerald-50/70 border-emerald-200/80 text-emerald-950'
+                              : ourProj.safeProbability < 50
+                              ? 'bg-rose-50/80 border-rose-300 text-rose-950'
+                              : 'bg-amber-50/50 border-amber-200/60 text-amber-950'
+                          }`}
+                        >
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            Maintien
+                          </span>
+                          <span
+                            className={`font-mono font-bold text-xs mt-0.5 ${
+                              ourProj.safeProbability < 50 ? 'text-rose-700 font-extrabold' : ''
+                            }`}
+                          >
+                            {ourProj.isGuaranteedSafe || ourProj.safeProbability >= 99.9
+                              ? '100% garanti'
+                              : `${ourProj.safeProbability.toFixed(1)}%`}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-2 flex flex-col justify-between text-slate-600">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Maintien
+                          </span>
+                          <span className="font-mono text-xs font-semibold text-slate-600 mt-0.5">
+                            Assuré (Div 6)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Rang attendu & Action pour ouvrir la simulation */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDivisionProjections(divKey);
+                      }}
+                      className="flex items-center justify-between text-[11px] font-mono text-slate-500 pt-0.5 group/link cursor-pointer hover:text-indigo-600 transition-colors"
+                      title="Cliquer pour afficher la simulation Monte-Carlo de cette division"
+                    >
+                      <span>
+                        Rang attendu :{' '}
+                        <strong className="text-slate-800 font-bold group-hover/link:text-indigo-600 transition-colors">
+                          {ourProj.expectedRank.toFixed(1)}e
+                        </strong>
                       </span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-[11px] text-slate-500">
-                        Esp. <strong className="text-slate-800 font-semibold">{ourProj.expectedRank.toFixed(1)}e</strong>
+                      <span className="inline-flex items-center gap-0.5 text-indigo-600 font-sans text-xs font-semibold group-hover/link:translate-x-0.5 transition-transform">
+                        Projections <ChevronRight className="h-3.5 w-3.5" />
                       </span>
-                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover/proj:text-indigo-600 transition-colors ml-0.5" />
                     </div>
                   </div>
                 )}
