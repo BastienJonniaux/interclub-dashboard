@@ -12,6 +12,7 @@ import {
   Lock,
   ShieldCheck,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 import { NextRoundBanner } from './NextRoundBanner';
 
@@ -27,6 +28,8 @@ interface Props {
   onOpenDirectorAuth: () => void;
   onLockDirectorMode: () => void;
   onOpenSchedule: () => void;
+  onOpenWhatsNew?: () => void;
+  hasUnseenWhatsNew?: boolean;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -39,6 +42,8 @@ export const Navbar: React.FC<Props> = ({
   onOpenDirectorAuth,
   onLockDirectorMode,
   onOpenSchedule,
+  onOpenWhatsNew,
+  hasUnseenWhatsNew,
 }) => {
   const { clubId, clubName } = useClub();
   const [logoError, setLogoError] = useState(false);
@@ -118,6 +123,23 @@ export const Navbar: React.FC<Props> = ({
               <Calendar className="h-3.5 w-3.5 text-emerald-700" />
               <span className="hidden sm:inline">Calendrier & Conflits</span>
             </button>
+
+            {/* What's New / Nouveautés Button */}
+            {onOpenWhatsNew && (
+              <button
+                onClick={onOpenWhatsNew}
+                className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-900 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 shadow-2xs transition-colors cursor-pointer"
+                title="Découvrir les dernières nouveautés et mises à jour"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Nouveautés</span>
+                {hasUnseenWhatsNew && (
+                  <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-600 text-white animate-pulse">
+                    NEW
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Club Selector Button */}
             <button

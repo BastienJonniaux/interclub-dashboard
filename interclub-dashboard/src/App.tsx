@@ -12,9 +12,10 @@ import { ExportsTab } from './components/exports/ExportsTab';
 import { DirectorAuthModal } from './components/common/DirectorAuthModal';
 import { ClubSelectorModal } from './components/layout/ClubSelectorModal';
 import { CalendarScheduleModal } from './components/layout/CalendarScheduleModal';
+import { WhatsNewModal } from './components/layout/WhatsNewModal';
 import { extractFullSeasonSchedule, getUpcomingRoundNumber } from './domain/calendar';
 import { checkServerHealth, fetchRoundDrafts } from './api/backendClient';
-import { Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { Loader2, AlertCircle, RotateCcw, Sparkles, ArrowRight, X } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
   // Default to standings tab (original director default) with all tabs accessible
@@ -24,6 +25,55 @@ const DashboardContent: React.FC = () => {
   const [isClubSelectorOpen, setIsClubSelectorOpen] = useState<boolean>(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
   const [selectedScoutingRound, setSelectedScoutingRound] = useState<number>(() => getUpcomingRoundNumber());
+
+  // What's New / Nouveautés banner & modal state
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
+  const [hasUnseenWhatsNew, setHasUnseenWhatsNew] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('interclub_whats_new_seen_v2_4') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+  const [showNoticeBanner, setShowNoticeBanner] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('interclub_notice_dismissed_v2_4') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleOpenWhatsNew = () => {
+    setIsWhatsNewOpen(true);
+    setHasUnseenWhatsNew(false);
+    try {
+      localStorage.setItem('interclub_whats_new_seen_v2_4', 'true');
+    } catch {}
+  };
+
+  const handleDismissNotice = () => {
+    setShowNoticeBanner(false);
+    try {
+      localStorage.setItem('interclub_notice_dismissed_v2_4', 'true');
+    } catch {}
+  };
+
+  const handleNavigateFromWhatsNew = (action: { tab?: TabType; openSchedule?: boolean }) => {
+    setIsWhatsNewOpen(false);
+    setHasUnseenWhatsNew(false);
+    setShowNoticeBanner(false);
+    try {
+      localStorage.setItem('interclub_whats_new_seen_v2_4', 'true');
+      localStorage.setItem('interclub_notice_dismissed_v2_4', 'true');
+    } catch {}
+
+    if (action.tab) {
+      setActiveTab(action.tab);
+    }
+    if (action.openSchedule) {
+      setIsScheduleModalOpen(true);
+    }
+  };
 
   React.useEffect(() => {
     // Wake up Neon & backend in background on load
@@ -121,7 +171,47 @@ const DashboardContent: React.FC = () => {
         onOpenDirectorAuth={() => setIsAuthModalOpen(true)}
         onLockDirectorMode={handleLockDirectorMode}
         onOpenSchedule={() => setIsScheduleModalOpen(true)}
+        onOpenWhatsNew={handleOpenWhatsNew}
+        hasUnseenWhatsNew={hasUnseenWhatsNew}
       />
+
+      {/* Persistent Feature Notice Banner for Director & Users */}
+      {showNoticeBanner && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
+          <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-emerald-50/70 border border-indigo-200/90 rounded-2xl p-3 sm:px-5 sm:py-2.5 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shrink-0 shadow-xs">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div className="text-xs sm:text-sm text-slate-800 truncate sm:overflow-visible">
+                <span className="font-bold text-indigo-950">
+                  Nouveau : Projections Monte-Carlo & Validation FRBE !
+                </span>
+                <span className="hidden md:inline text-slate-600 ml-2">
+                  Simulez la fin de saison (titre, montée, maintien) et contrôlez les règles d’équipes.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleOpenWhatsNew}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer"
+              >
+                <span>Découvrir</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={handleDismissNotice}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-white/80 transition-colors cursor-pointer"
+                title="Masquer cette annonce"
+                aria-label="Fermer la notice"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isFallback && (
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-3">
@@ -232,6 +322,13 @@ const DashboardContent: React.FC = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={handleDirectorAuthSuccess}
+      />
+
+      {/* What's New / Dernières Mises à Jour Modal */}
+      <WhatsNewModal
+        isOpen={isWhatsNewOpen}
+        onClose={() => setIsWhatsNewOpen(false)}
+        onNavigate={handleNavigateFromWhatsNew}
       />
     </div>
   );
