@@ -113,8 +113,11 @@ export async function fetchFirestoreClub(clubId: number): Promise<ClubFrbe | nul
 /**
  * Fetch round series from Firestore mirror when FRBE API is down
  */
-export async function fetchFirestoreRound(round: number): Promise<DivisionFrbe[] | null> {
-  const url = `${FIRESTORE_BASE}/roundOverview/${round}`;
+export async function fetchFirestoreRound(
+  round: number,
+  season: string = ACTIVE_SEASON
+): Promise<DivisionFrbe[] | null> {
+  const url = `https://firestore.googleapis.com/v1/projects/interclub-668f3/databases/(default)/documents/years/${season}/roundOverview/${round}`;
   const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!response.ok) return null;
 

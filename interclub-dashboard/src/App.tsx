@@ -38,6 +38,7 @@ const DashboardContent: React.FC = () => {
     venues,
     playerStats,
     standings,
+    projections,
     scouting,
     latestMatches,
     allDivisions,
@@ -152,6 +153,7 @@ const DashboardContent: React.FC = () => {
           <div className="animate-in fade-in duration-300">
             <StandingsTab
               standings={standings}
+              projections={projections}
               clubName={club.name}
               latestMatches={latestMatches}
             />
