@@ -30,6 +30,7 @@ interface SimulatorContextType {
   autoFillAllTeams: (teams: { teamNumber: number; boardCount: number; division: number }[], availablePlayersList: any[]) => void;
   applyRoundDraftsFromExternal: (roundNumber: number, drafts: { [teamNumber: number]: { [board: number]: number | null } }) => void;
   applyAttendancesFromExternal: (newAvail: { [playerId: number]: AvailabilityStatus }) => void;
+  applyPlayerSettingsFromExternal: (newSettings: { [playerId: number]: PlayerSettings }) => void;
 }
 
 const SimulatorContext = createContext<SimulatorContextType>({
@@ -52,6 +53,7 @@ const SimulatorContext = createContext<SimulatorContextType>({
   autoFillAllTeams: () => {},
   applyRoundDraftsFromExternal: () => {},
   applyAttendancesFromExternal: () => {},
+  applyPlayerSettingsFromExternal: () => {},
 });
 
 export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -512,6 +514,11 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
+  const applyPlayerSettingsFromExternal = (newSettings: { [playerId: number]: PlayerSettings }) => {
+    setPlayerSettings(newSettings);
+    saveState(availability, newSettings, draftCompositions);
+  };
+
   return (
     <SimulatorContext.Provider
       value={{
@@ -534,6 +541,7 @@ export const SimulatorProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         autoFillAllTeams,
         applyRoundDraftsFromExternal,
         applyAttendancesFromExternal,
+        applyPlayerSettingsFromExternal,
       }}
     >
       {children}
