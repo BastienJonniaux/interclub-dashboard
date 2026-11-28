@@ -26,6 +26,12 @@ export interface SummaryExportOptions {
   teams: SummaryTeamData[];
 }
 
+function getBoardPieceColor(board: number, isHome?: boolean): 'white' | 'black' | null {
+  if (isHome === undefined) return null;
+  const isOdd = board % 2 === 1;
+  return (isHome ? isOdd : !isOdd) ? 'white' : 'black';
+}
+
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -251,13 +257,40 @@ export function renderSummaryToCanvas(options: SummaryExportOptions): HTMLCanvas
         ctx.fillStyle = isMissing ? '#dc2626' : '#64748b';
         ctx.fillText(`#${b.board}`, rowX + 8, bY + 16);
 
+        // Piece color badge (B = Blancs, N = Noirs)
+        const pieceColor = getBoardPieceColor(b.board, team.isHome);
+        let nameOffsetX = 34;
+        if (pieceColor) {
+          const badgeX = rowX + 30;
+          const badgeY = bY + 4;
+          const badgeSize = 16;
+          drawRoundedRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 4);
+          if (pieceColor === 'white') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.fillStyle = '#0f172a';
+          } else {
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+          }
+          ctx.font = 'bold 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+          ctx.fillText(pieceColor === 'white' ? 'B' : 'N', badgeX + 4.5, badgeY + 11.5);
+          nameOffsetX = 53;
+        }
+
         // Player name or Missing label
         ctx.font = isMissing
           ? 'italic 600 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
           : '600 12.5px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
         ctx.fillStyle = isMissing ? '#b91c1c' : '#0f172a';
-        const displayName = isMissing ? 'Échiquier manquant' : truncateToFit(ctx, b.playerName!, rowW - 95);
-        ctx.fillText(displayName, rowX + 36, bY + 16);
+        const displayName = isMissing
+          ? 'Échiquier manquant'
+          : truncateToFit(ctx, b.playerName!, rowW - (nameOffsetX + 58));
+        ctx.fillText(displayName, rowX + nameOffsetX, bY + 16);
 
         // Rating
         if (!isMissing) {
@@ -281,10 +314,16 @@ export function renderSummaryToCanvas(options: SummaryExportOptions): HTMLCanvas
     currentY += rHeight + rowGap;
   });
 
-  // Footer watermark
+  // Footer watermark & legend
   ctx.fillStyle = '#94a3b8';
   ctx.font = '500 11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   ctx.fillText('Généré via Interclub Dashboard', paddingX, logicalHeight - 12);
+
+  const legendText = 'B = Blancs   •   N = Noirs';
+  ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillStyle = '#475569';
+  const legendW = ctx.measureText(legendText).width;
+  ctx.fillText(legendText, logicalWidth - paddingX - legendW, logicalHeight - 12);
 
   return canvas;
 }
@@ -491,10 +530,35 @@ export async function generateSummaryPdf(options: SummaryExportOptions): Promise
           color: isMissing ? colorRed : colorMuted,
         });
 
+        const pieceColor = getBoardPieceColor(b.board, team.isHome);
+        let nameX = cardX + 26;
+        if (pieceColor) {
+          const boxX = cardX + 23;
+          const boxY = bY - 1;
+          const boxSize = 10.5;
+          page.drawRectangle({
+            x: boxX,
+            y: boxY,
+            width: boxSize,
+            height: boxSize,
+            color: pieceColor === 'white' ? rgb(1, 1, 1) : colorDark,
+            borderColor: colorDark,
+            borderWidth: 0.8,
+          });
+          page.drawText(pieceColor === 'white' ? 'B' : 'N', {
+            x: boxX + 2.8,
+            y: boxY + 2.5,
+            size: 7,
+            font: fontBold,
+            color: pieceColor === 'white' ? colorDark : rgb(1, 1, 1),
+          });
+          nameX = cardX + 38;
+        }
+
         const nameTxt = sanitizeText(isMissing ? 'Echiquier manquant' : b.playerName!);
-        const truncatedName = nameTxt.length > 28 ? nameTxt.slice(0, 25) + '...' : nameTxt;
+        const truncatedName = nameTxt.length > 25 ? nameTxt.slice(0, 22) + '...' : nameTxt;
         page.drawText(truncatedName, {
-          x: cardX + 28,
+          x: nameX,
           y: bY + 1,
           size: 8.5,
           font: isMissing ? fontBold : fontRegular,
