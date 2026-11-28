@@ -453,3 +453,56 @@ export async function fetchSeasonAttendanceStats(
   }
 }
 
+export async function fetchClubPlayerSettings(
+  seasonYear?: string,
+  clubId?: number
+): Promise<Record<number, { isIgnored?: boolean; isBackup?: boolean }> | null> {
+  try {
+    const url = new URL(`${getServerBaseUrl()}/api/player-settings`);
+    if (seasonYear) url.searchParams.set('season', seasonYear);
+    if (clubId) url.searchParams.set('clubId', clubId.toString());
+
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.settings || {};
+  } catch {
+    return null;
+  }
+}
+
+export async function saveClubPlayerSettings(
+  settings: Record<number, { isIgnored?: boolean; isBackup?: boolean }>,
+  directorKey?: string,
+  seasonYear?: string,
+  clubId?: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const key = directorKey || getStoredDirectorKey();
+    if (!key) {
+      return { success: false, error: 'Clé Directeur requise.' };
+    }
+
+    const res = await fetch(`${getServerBaseUrl()}/api/player-settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-director-key': key,
+      },
+      body: JSON.stringify({ seasonYear, clubId, settings }),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Erreur lors de la sauvegarde de la configuration.' };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+

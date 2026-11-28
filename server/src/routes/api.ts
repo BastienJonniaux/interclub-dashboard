@@ -11,6 +11,10 @@ import {
   getSeasonAttendanceStats,
 } from '../controllers/attendancesController';
 import {
+  getClubPlayerSettings,
+  saveClubPlayerSettings,
+} from '../controllers/settingsController';
+import {
   requireDirectorAuth,
   getDirectorKey,
   safeCompareKeys,
@@ -100,6 +104,10 @@ apiRouter.put('/rounds/:roundNumber/attendances', requireDirectorAuth, saveRound
 // Season stats
 apiRouter.get('/stats/attendance', getSeasonAttendanceStats);
 
+// Club-wide player settings (ignored / backup, shared across all rounds)
+apiRouter.get('/player-settings', getClubPlayerSettings);
+apiRouter.put('/player-settings', requireDirectorAuth, saveClubPlayerSettings);
+
 // Explicit RESTful multi-club routes (/api/clubs/:clubId/...)
 apiRouter.get('/clubs/:clubId/rounds/:roundNumber/drafts', getRoundDrafts);
 apiRouter.post('/clubs/:clubId/rounds/:roundNumber/drafts', requireDirectorAuth, saveRoundDrafts);
@@ -107,4 +115,6 @@ apiRouter.post('/clubs/:clubId/rounds/:roundNumber/lock', requireDirectorAuth, t
 apiRouter.get('/clubs/:clubId/rounds/:roundNumber/attendances', getRoundAttendances);
 apiRouter.put('/clubs/:clubId/rounds/:roundNumber/attendances', requireDirectorAuth, saveRoundAttendances);
 apiRouter.get('/clubs/:clubId/stats/attendance', getSeasonAttendanceStats);
+apiRouter.get('/clubs/:clubId/player-settings', getClubPlayerSettings);
+apiRouter.put('/clubs/:clubId/player-settings', requireDirectorAuth, saveClubPlayerSettings);
 

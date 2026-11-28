@@ -9,11 +9,12 @@ generator client {
 }
 
 model Season {
-  id        String   @id @default(uuid())
-  year      String   @unique // ex: "2026-2027"
-  isCurrent Boolean  @default(true)
-  createdAt DateTime @default(now())
-  rounds    Round[]
+  id             String              @id @default(uuid())
+  year           String              @unique // ex: "2026-2027"
+  isCurrent      Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  rounds         Round[]
+  playerSettings ClubPlayerSetting[]
 }
 
 model Round {
@@ -70,5 +71,18 @@ model PlayerAttendance {
   updatedAt  DateTime @updatedAt
 
   @@unique([roundId, playerId])
+}
+
+model ClubPlayerSetting {
+  id        String   @id @default(uuid())
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id])
+  clubId    Int      @default(541)
+  playerId  Int      // Matricule FRBE
+  isIgnored Boolean  @default(false)
+  isBackup  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@unique([seasonId, clubId, playerId])
 }
 

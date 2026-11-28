@@ -22,6 +22,8 @@ import {
   lockRound,
   fetchRoundAttendances,
   saveRoundAttendances,
+  fetchClubPlayerSettings,
+  saveClubPlayerSettings,
   getStoredDirectorKey,
   getStoredAuthorName,
 } from '../../api/backendClient';
@@ -47,7 +49,6 @@ import {
   CloudDownload,
   Lock,
   Unlock,
-  KeyRound,
   RefreshCw,
   Plus,
   Copy,
@@ -97,6 +98,7 @@ export const SimulatorTab: React.FC<Props> = ({
     autoFillAllTeams,
     applyRoundDraftsFromExternal,
     applyAttendancesFromExternal,
+    applyPlayerSettingsFromExternal,
   } = useSimulator();
 
   const [selectedTeamIndex, setSelectedTeamIndex] = useState(-1);
@@ -146,6 +148,11 @@ export const SimulatorTab: React.FC<Props> = ({
           if (res && !res.isRestricted) {
             setRoundLocked(res.isLocked);
             setRoundSavedBy(res.savedBy || null);
+          }
+        });
+        fetchClubPlayerSettings(undefined, clubId).then((settings) => {
+          if (settings && Object.keys(settings).length > 0) {
+            applyPlayerSettingsFromExternal(settings);
           }
         });
       }
@@ -215,7 +222,7 @@ export const SimulatorTab: React.FC<Props> = ({
       return;
     }
 
-    // Also persist attendances for the round
+    // Also persist attendances for the round & club-wide player settings (Config)
     const attPayload: Record<number, any> = {};
     players.forEach(p => {
       const st = availability[p.idnumber] || 'tentative';
@@ -224,14 +231,17 @@ export const SimulatorTab: React.FC<Props> = ({
         playerName: `${p.last_name} ${p.first_name}`,
       };
     });
-    await saveRoundAttendances(selectedRound, attPayload, undefined, undefined, clubId);
+    await Promise.all([
+      saveRoundAttendances(selectedRound, attPayload, undefined, undefined, clubId),
+      saveClubPlayerSettings(playerSettings, undefined, undefined, clubId),
+    ]);
 
     const currentAuthor = getStoredAuthorName() || 'Directeur';
     setRoundSavedBy(currentAuthor);
     setIsSaving(false);
     setSyncFeedback({
       type: 'success',
-      message: `Compositions & présences de la ronde ${selectedRound} sauvegardées sur la base de données.`,
+      message: `Compositions, présences et config de la ronde ${selectedRound} sauvegardées sur le serveur.`,
     });
     setTimeout(() => setSyncFeedback(null), 5000);
   };
@@ -240,9 +250,10 @@ export const SimulatorTab: React.FC<Props> = ({
     setIsLoadingServer(true);
     setSyncFeedback(null);
 
-    const [draftRes, attRes] = await Promise.all([
+    const [draftRes, attRes, settingsRes] = await Promise.all([
       fetchRoundDrafts(selectedRound, undefined, clubId),
       fetchRoundAttendances(selectedRound, undefined, clubId),
+      fetchClubPlayerSettings(undefined, clubId),
     ]);
 
     if (draftRes && draftRes.isRestricted) {
@@ -276,6 +287,10 @@ export const SimulatorTab: React.FC<Props> = ({
         newAvail[Number(k)] = (v as any).status || v;
       }
       applyAttendancesFromExternal(newAvail);
+    }
+
+    if (settingsRes && Object.keys(settingsRes).length > 0) {
+      applyPlayerSettingsFromExternal(settingsRes);
     }
 
     const authorNotice = draftRes?.savedBy ? ` (enregistré par ${draftRes.savedBy})` : '';
@@ -703,29 +718,28 @@ export const SimulatorTab: React.FC<Props> = ({
       />
 
       {/* Server & DB Sync Bar */}
-      <div className="bg-white border border-slate-200/70 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-sm">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="flex items-center gap-1.5 font-mono text-slate-500">
-            <Cloud className="h-4 w-4 text-slate-600" />
-            Base de données :
-          </span>
+      <div className="bg-white border border-slate-200/70 rounded-xl p-3 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
           {serverState.checked && serverState.online && serverState.db ? (
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200/80 font-bold font-mono shadow-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-              Connectée (PostgreSQL)
+              Connecté
             </span>
           ) : serverState.isWakingUp ? (
             <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg border border-amber-200 font-mono shadow-xs">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
-              Réveil du serveur Render en cours...
+              Réveil du serveur...
             </span>
           ) : serverState.checked ? (
             <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-              Local (Hors-ligne)
+              Hors-ligne
             </span>
           ) : (
-            <span className="text-slate-500 font-mono">Vérification...</span>
+            <span className="inline-flex items-center gap-1.5 text-slate-500 font-mono px-2 py-1">
+              <Cloud className="h-3.5 w-3.5 text-slate-400" />
+              Connexion...
+            </span>
           )}
 
           {roundLocked ? (
@@ -734,7 +748,7 @@ export const SimulatorTab: React.FC<Props> = ({
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 bg-white text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 font-mono shadow-xs">
-              <Unlock className="h-3 w-3 text-amber-600" /> Brouillon modifiable
+              <Unlock className="h-3 w-3 text-amber-600" /> Brouillon
             </span>
           )}
 
@@ -750,38 +764,38 @@ export const SimulatorTab: React.FC<Props> = ({
           <button
             onClick={handleLoadFromServer}
             disabled={isLoadingServer}
-            className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 text-xs font-mono font-bold text-slate-800 hover:bg-slate-100 rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
-            title="Télécharger la composition officielle et les disponibilités de cette ronde depuis la base de données"
+            className="inline-flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-mono font-bold text-slate-800 hover:bg-slate-100 rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            title="Télécharger la composition, les présences et la config depuis le serveur"
           >
             <CloudDownload className={`h-3.5 w-3.5 text-slate-600 ${isLoadingServer ? 'animate-bounce' : ''}`} />
-            <span>{isLoadingServer ? 'Chargement...' : 'Charger du serveur'}</span>
+            <span>{isLoadingServer ? 'Chargement...' : 'Charger'}</span>
           </button>
 
           {/* Save to server (Director) */}
           <button
             onClick={() => handleSaveToServer(false)}
             disabled={isSaving || roundLocked}
-            className="inline-flex items-center gap-1.5 bg-emerald-600 text-white border border-emerald-700 px-3.5 py-1.5 text-xs font-mono font-bold hover:bg-emerald-700 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title={roundLocked ? 'Cette ronde est verrouillée. Déverrouillez-la pour modifier.' : 'Enregistrer la composition actuelle sur la base de données'}
+            className="inline-flex items-center gap-1.5 bg-emerald-600 text-white border border-emerald-700 px-3 py-1.5 text-xs font-mono font-bold hover:bg-emerald-700 rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            title={roundLocked ? 'Cette ronde est verrouillée. Déverrouillez-la pour modifier.' : 'Enregistrer la composition, les présences et la config sur le serveur'}
           >
             <CloudUpload className={`h-3.5 w-3.5 ${isSaving ? 'animate-spin' : ''}`} />
-            <span>{isSaving ? 'Sauvegarde...' : 'Sauvegarder (Serveur)'}</span>
+            <span>{isSaving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
           </button>
 
           {/* Printable Match Sheets */}
           <button
             onClick={() => setIsMatchSheetModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-slate-900 text-white border border-slate-900 px-3.5 py-1.5 text-xs font-mono font-bold hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-slate-900 text-white border border-slate-900 px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Générer et imprimer les feuilles de match officielles A4 pour chaque équipe de la ronde sélectionnée"
           >
             <Printer className="h-3.5 w-3.5 text-white" />
-            <span>Feuilles de match (PDF)</span>
+            <span>Feuilles (PDF)</span>
           </button>
 
           {/* Summary Image / PDF for SMS/WhatsApp */}
           <button
             onClick={() => setIsSummaryExportModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-white text-slate-800 border border-slate-200 px-3 py-1.5 text-xs font-mono font-bold hover:bg-slate-100 rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-white text-slate-800 border border-slate-200 px-2.5 py-1.5 text-xs font-mono font-bold hover:bg-slate-100 rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Générer un récapitulatif visuel (Image PNG ou PDF 1 page) prêt à envoyer par SMS / WhatsApp"
           >
             <ImageIcon className="h-3.5 w-3.5 text-emerald-600" />
@@ -792,7 +806,7 @@ export const SimulatorTab: React.FC<Props> = ({
           <button
             onClick={handleToggleLock}
             disabled={isLocking}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-lg border shadow-xs transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border shadow-xs transition-colors cursor-pointer ${
               roundLocked
                 ? 'bg-white text-rose-700 border-rose-300 hover:bg-rose-50'
                 : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
@@ -801,18 +815,6 @@ export const SimulatorTab: React.FC<Props> = ({
           >
             {roundLocked ? <Unlock className="h-3.5 w-3.5 text-rose-600" /> : <Lock className="h-3.5 w-3.5 text-slate-600" />}
             <span>{roundLocked ? 'Déverrouiller' : 'Verrouiller'}</span>
-          </button>
-
-          {/* Director Key Settings */}
-          <button
-            onClick={() => {
-              setAuthAction(null);
-              setIsAuthModalOpen(true);
-            }}
-            className="p-1.5 text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-xs transition-colors cursor-pointer"
-            title="Configurer la clé secrète du Directeur"
-          >
-            <KeyRound className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -839,13 +841,38 @@ export const SimulatorTab: React.FC<Props> = ({
         {/* Left Column: Player Deck (Fixed elegant width) */}
         <div className="w-full lg:w-96 shrink-0 space-y-4">
           <div className="bg-white border border-slate-200/70 rounded-xl shadow-sm p-4 h-full flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-2 shrink-0">
-              <div className="flex flex-col">
-                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-emerald-600" />
-                  Deck des joueurs ({deckPlayers.length})
+            <div className="flex flex-col gap-3 pb-3.5 border-b border-slate-100 shrink-0">
+              {/* Row 1: Title + Config/Eye buttons */}
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2 whitespace-nowrap">
+                  <UserPlus className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Deck ({deckPlayers.length})</span>
                 </h3>
-                <div className="flex items-center gap-1.5 mt-1.5">
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setShowIgnored(!showIgnored)}
+                    className={`text-xs font-mono font-bold p-1.5 rounded-lg transition-colors border shadow-xs cursor-pointer ${
+                      showIgnored ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                    title="Afficher/Masquer les joueurs ignorés"
+                  >
+                    {showIgnored ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-mono font-bold bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
+                    title="Gérer les joueurs (Saison — sauvegardé entre les rondes)"
+                  >
+                    <Settings className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Config</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Counts + Bulk availability actions */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold tabular-nums" title="Présents">
                     <Check className="h-3 w-3" strokeWidth={3} /> {deckCounts.present}
                   </span>
@@ -856,11 +883,8 @@ export const SimulatorTab: React.FC<Props> = ({
                     <X className="h-3 w-3" strokeWidth={3} /> {deckCounts.absent}
                   </span>
                 </div>
-              </div>
-              
-              <div className="flex flex-col xl:flex-row xl:items-center gap-2">
-                {/* Bulk availability actions */}
-                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 divide-x divide-slate-200 shadow-xs">
+
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 divide-x divide-slate-200 shadow-xs shrink-0">
                   <button
                     onClick={() => setAllPlayersAvailability(deckPlayers.filter(p => !playerSettings[p.idnumber]?.isIgnored).map(p => p.idnumber), 'available')}
                     className="flex items-center justify-center p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-l-md transition-colors cursor-pointer"
@@ -881,26 +905,6 @@ export const SimulatorTab: React.FC<Props> = ({
                     title="Mettre tous les joueurs (non ignorés) absents"
                   >
                     <X className="h-3.5 w-3.5" strokeWidth={3} />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowIgnored(!showIgnored)}
-                    className={`text-xs font-mono font-bold p-1.5 rounded-lg transition-colors border shadow-xs cursor-pointer ${
-                      showIgnored ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                    title="Afficher/Masquer les joueurs ignorés"
-                  >
-                    {showIgnored ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={() => setIsSettingsModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 text-xs font-mono font-bold bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-50 shadow-xs transition-colors cursor-pointer"
-                    title="Gérer les joueurs (Saison)"
-                  >
-                    <Settings className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Config</span>
                   </button>
                 </div>
               </div>
