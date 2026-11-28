@@ -99,6 +99,10 @@ export function setStoredAuthorName(name: string | null): void {
   }
 }
 
+export const COLD_START_TIMEOUT_MS = 50_000; // 50 seconds for Render wake-up
+export const PING_TIMEOUT_MS = 8_000;        // 8 seconds per ping attempt
+export const DEFAULT_TIMEOUT_MS = 25_000;     // 25 seconds for normal operations
+
 export interface SeasonConfigResponse {
   seasonYear: string;
   startYear: string;
@@ -117,7 +121,7 @@ export async function fetchCurrentSeasonConfig(
     const url = new URL(`${baseUrl}/api/season/current`);
     if (seasonYear) url.searchParams.set('season', seasonYear);
     const res = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -127,26 +131,44 @@ export async function fetchCurrentSeasonConfig(
   }
 }
 
-export async function checkServerHealth(): Promise<{
+export interface HealthCheckOptions {
+  maxWaitMs?: number;
+  onProgress?: (info: { isWakingUp: boolean; elapsedMs: number }) => void;
+}
+
+export async function checkServerHealth(options?: HealthCheckOptions): Promise<{
   online: boolean;
   database: boolean;
+  isWakingUp?: boolean;
   message?: string;
 }> {
   const baseUrl = getServerBaseUrl();
-  try {
-    console.info(`[Backend] Connecting to ${baseUrl}/api/health`);
-    const res = await fetch(`${baseUrl}/api/health`, {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return { online: true, database: data.database === 'connected' };
+  const maxWaitMs = options?.maxWaitMs ?? COLD_START_TIMEOUT_MS;
+  const startTime = Date.now();
+
+  console.info(`[Backend] Connecting to ${baseUrl}/api/health (cold-start max wait: ${maxWaitMs}ms)`);
+
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const res = await fetch(`${baseUrl}/api/health`, {
+        signal: AbortSignal.timeout(PING_TIMEOUT_MS),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { online: true, database: data.database === 'connected', isWakingUp: false };
+      }
+    } catch (_err: any) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed + 3000 < maxWaitMs) {
+        options?.onProgress?.({ isWakingUp: true, elapsedMs: elapsed });
+        await new Promise((r) => setTimeout(r, 2500));
+        continue;
+      }
     }
-    return { online: false, database: false };
-  } catch (err: any) {
-    console.warn(`[Backend] Health check failed for ${baseUrl}:`, err);
-    return { online: false, database: false, message: err.message };
   }
+
+  console.warn(`[Backend] Health check failed for ${baseUrl} after cold-start timeout (${maxWaitMs}ms)`);
+  return { online: false, database: false, isWakingUp: false, message: 'Server offline or cold start timed out.' };
 }
 
 export interface VerifyKeyResult {
@@ -163,7 +185,7 @@ export async function verifyDirectorKey(key: string): Promise<VerifyKeyResult> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: trimmed }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
 
     if (res.ok) {
@@ -216,7 +238,7 @@ export async function fetchRoundDrafts(
 
     const res = await fetch(url.toString(), {
       headers,
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(COLD_START_TIMEOUT_MS),
     });
 
     if (res.status === 403) {
@@ -285,7 +307,7 @@ export async function saveRoundDrafts(
         drafts: draftsPayload,
         savedBy: effectiveAuthor,
       }),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
 
     const data = await res.json();
@@ -326,7 +348,7 @@ export async function lockRound(
       method: 'POST',
       headers,
       body: JSON.stringify({ lock, seasonYear, clubId, savedBy: effectiveAuthor }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
 
     const data = await res.json();
@@ -358,7 +380,7 @@ export async function fetchRoundAttendances(
 
     const res = await fetch(url.toString(), {
       headers,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -391,7 +413,7 @@ export async function saveRoundAttendances(
         'x-director-key': key,
       },
       body: JSON.stringify({ seasonYear, clubId, attendances }),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
 
     const data = await res.json();
@@ -422,7 +444,7 @@ export async function fetchSeasonAttendanceStats(
 
     const res = await fetch(url.toString(), {
       headers,
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return await res.json();

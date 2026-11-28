@@ -31,6 +31,10 @@ export interface FidePlayerDetails {
 const memoryCache = new Map<string, FidePlayerDetails | null>();
 const CACHE_PREFIX = 'fide_v3_';
 
+export function clearFideMemoryCache(): void {
+  memoryCache.clear();
+}
+
 // Cleanup stale cache keys from previous versions
 try {
   if (typeof sessionStorage !== 'undefined') {

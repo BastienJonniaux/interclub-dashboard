@@ -50,6 +50,7 @@ import {
   Plus,
   Copy,
   Printer,
+  Loader2,
 } from 'lucide-react';
 
 interface Props {
@@ -99,10 +100,16 @@ export const SimulatorTab: React.FC<Props> = ({
   const [isMatchSheetModalOpen, setIsMatchSheetModalOpen] = useState(false);
 
   // Server & DB Sync State
-  const [serverState, setServerState] = useState<{ checked: boolean; online: boolean; db: boolean }>({
+  const [serverState, setServerState] = useState<{
+    checked: boolean;
+    online: boolean;
+    db: boolean;
+    isWakingUp?: boolean;
+  }>({
     checked: false,
     online: false,
     db: false,
+    isWakingUp: false,
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authAction, setAuthAction] = useState<'save' | 'load' | 'lock' | null>(null);
@@ -113,12 +120,30 @@ export const SimulatorTab: React.FC<Props> = ({
   const [roundSavedBy, setRoundSavedBy] = useState<string | null>(null);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  // Check backend server health on mount
+  // Check backend server health on mount & during cold start
   useEffect(() => {
-    checkServerHealth().then(status => {
-      setServerState({ checked: true, online: status.online, db: status.database });
+    checkServerHealth({
+      onProgress: ({ isWakingUp }) => {
+        setServerState((prev) => ({ ...prev, checked: true, isWakingUp }));
+      },
+    }).then((status) => {
+      setServerState({
+        checked: true,
+        online: status.online,
+        db: status.database,
+        isWakingUp: false,
+      });
+
+      if (status.online) {
+        fetchRoundDrafts(selectedRound, undefined, clubId).then((res) => {
+          if (res && !res.isRestricted) {
+            setRoundLocked(res.isLocked);
+            setRoundSavedBy(res.savedBy || null);
+          }
+        });
+      }
     });
-  }, []);
+  }, [selectedRound, clubId]);
 
   // Check round lock status when selectedRound or clubId changes
   useEffect(() => {
@@ -569,6 +594,11 @@ export const SimulatorTab: React.FC<Props> = ({
             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200/80 font-bold font-mono shadow-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
               Connectée (PostgreSQL)
+            </span>
+          ) : serverState.isWakingUp ? (
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg border border-amber-200 font-mono shadow-xs">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
+              Réveil du serveur Render en cours...
             </span>
           ) : serverState.checked ? (
             <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">

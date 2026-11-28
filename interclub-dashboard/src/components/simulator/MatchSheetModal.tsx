@@ -7,11 +7,17 @@ import { fetchVenues } from '../../api/frbeClient';
 import { ROUND_DATES } from '../../season';
 import {
   Printer,
+  Download,
   X,
   Layers,
   Info,
   MapPin,
 } from 'lucide-react';
+import {
+  generateSingleMatchSheetPdf,
+  generateAllMatchSheetsPdf,
+  downloadPdfBlob,
+} from '../../domain/pdf/matchSheetPdf';
 
 interface Props {
   isOpen: boolean;
@@ -46,6 +52,7 @@ export const MatchSheetModal: React.FC<Props> = ({
   const [previewTeamIndex, setPreviewTeamIndex] = useState<number>(0);
   // Holds the active print job filter (0 = all, 1..N = specific team) and timestamp
   const [printJob, setPrintJob] = useState<{ filter: number; timestamp: number } | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
 
   // Venues map by club ID (our club + opponent clubs)
   const [venuesMap, setVenuesMap] = useState<Record<number, VenueFrbe[]>>({
@@ -223,6 +230,47 @@ export const MatchSheetModal: React.FC<Props> = ({
     setPrintJob({ filter: teamNumber, timestamp: Date.now() });
   };
 
+  const sanitizeFilename = (str: string) =>
+    str.toLowerCase().replace(/[^a-z0-9_-]/gi, '-').replace(/-+/g, '-');
+
+  const handleDownloadAllPdf = async () => {
+    try {
+      setIsDownloadingPdf(true);
+      const pdfBytes = await generateAllMatchSheetsPdf(sheetsData, {
+        clubId,
+        clubName,
+        roundNumber: selectedRound,
+        roundDateFormatted,
+      });
+      const filename = `feuilles-de-match-R${selectedRound}-${sanitizeFilename(clubName || 'interclub')}.pdf`;
+      downloadPdfBlob(pdfBytes, filename);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadSinglePdf = async (teamNumber: number) => {
+    const sheet = sheetsData.find((s) => s.teamNumber === teamNumber);
+    if (!sheet) return;
+    try {
+      setIsDownloadingPdf(true);
+      const pdfBytes = await generateSingleMatchSheetPdf(sheet, {
+        clubId,
+        clubName,
+        roundNumber: selectedRound,
+        roundDateFormatted,
+      });
+      const filename = `feuille-de-match-R${selectedRound}-eq${teamNumber}-${sanitizeFilename(sheet.teamName)}.pdf`;
+      downloadPdfBlob(pdfBytes, filename);
+    } catch (err) {
+      console.error('Failed to generate single PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   const sheetsToPreview =
     previewTeamIndex === 0
       ? sheetsData
@@ -328,6 +376,16 @@ export const MatchSheetModal: React.FC<Props> = ({
 
             <div className="flex items-center gap-2">
               <button
+                onClick={handleDownloadAllPdf}
+                disabled={isDownloadingPdf}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg shadow-xs transition-colors cursor-pointer"
+                title="Télécharger directement en fichier PDF (1 page par équipe)"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{isDownloadingPdf ? 'Génération...' : `Télécharger PDF (${teams.length} pages)`}</span>
+              </button>
+
+              <button
                 onClick={handlePrintAll}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition-colors cursor-pointer"
                 title="Imprimer toutes les équipes (1 page par équipe)"
@@ -345,45 +403,35 @@ export const MatchSheetModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Subheader Toolbar: Team selector tabs + Venue selection */}
+          {/* Subheader Toolbar: Team selector dropdown + Venue selection */}
           <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setPreviewTeamIndex(0)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                  previewTeamIndex === 0
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <Layers className="h-3.5 w-3.5" />
-                <span>Toutes ({teams.length})</span>
-              </button>
-
-              {sheetsData.map((s) => (
-                <button
-                  key={s.teamNumber}
-                  onClick={() => setPreviewTeamIndex(s.teamNumber)}
-                  className={`px-2.5 py-1.5 text-xs font-mono font-semibold rounded-lg transition-colors cursor-pointer shrink-0 ${
-                    previewTeamIndex === s.teamNumber
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                  }`}
+            {/* Left side: Team selector dropdown + Venue selector dropdown */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Team Selector Dropdown (Replaces overflowing horizontal pills) */}
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                <Layers className="h-4 w-4 text-indigo-600 shrink-0" />
+                <span className="font-semibold text-slate-500 shrink-0 text-xs">Équipe :</span>
+                <select
+                  className="bg-transparent text-xs font-bold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[280px]"
+                  value={previewTeamIndex}
+                  onChange={(e) => setPreviewTeamIndex(Number(e.target.value))}
                 >
-                  Éq. {s.teamNumber} ({s.divisionLabel})
-                </button>
-              ))}
-            </div>
+                  <option value={0}>Toutes les équipes ({teams.length} pages)</option>
+                  {sheetsData.map((s) => (
+                    <option key={s.teamNumber} value={s.teamNumber}>
+                      Équipe {s.teamNumber} ({s.divisionLabel}) — {s.isHome ? 'Domicile' : `vs ${s.opponentTeamName}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Venue Selector when multiple venues exist */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* If previewing all teams and our club has multiple venues: global home venue picker */}
+              {/* Venue Selector when multiple venues exist */}
               {previewTeamIndex === 0 && homeVenuesList.length > 1 && (
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  <span className="font-semibold text-slate-600 shrink-0 text-[11px]">Salle Domicile :</span>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-slate-500 shrink-0 text-xs">Salle Domicile :</span>
                   <select
-                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[220px] truncate"
+                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[240px] truncate"
                     value={selectedHomeVenueIdx}
                     onChange={(e) => setSelectedHomeVenueIdx(Number(e.target.value))}
                   >
@@ -396,15 +444,14 @@ export const MatchSheetModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* If previewing a specific team: picker for that specific team's venue if >1 available */}
-              {previewTeamIndex > 0 && activePreviewSheet && (activePreviewSheet.availableVenues.length > 1) && (
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  <span className="font-semibold text-slate-600 shrink-0 text-[11px]">
+              {previewTeamIndex > 0 && activePreviewSheet && activePreviewSheet.availableVenues.length > 1 && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold text-slate-500 shrink-0 text-xs">
                     {activePreviewSheet.isHome ? 'Salle Domicile :' : 'Salle Visiteur :'}
                   </span>
                   <select
-                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[220px] truncate"
+                    className="bg-transparent text-xs font-semibold text-slate-900 border-none focus:outline-hidden cursor-pointer max-w-[240px] truncate"
                     value={selectedVenuesByTeam[previewTeamIndex] ?? (activePreviewSheet.isHome ? selectedHomeVenueIdx : 0)}
                     onChange={(e) =>
                       setSelectedVenuesByTeam((prev) => ({
@@ -421,15 +468,35 @@ export const MatchSheetModal: React.FC<Props> = ({
                   </select>
                 </div>
               )}
+            </div>
 
-              {previewTeamIndex > 0 && (
-                <button
-                  onClick={() => handlePrintSingle(previewTeamIndex)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-2xs cursor-pointer shrink-0"
-                >
-                  <Printer className="h-3.5 w-3.5 text-slate-600" />
-                  <span>Imprimer cette équipe (1 page)</span>
-                </button>
+            {/* Right side: Action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              {previewTeamIndex > 0 ? (
+                <>
+                  <button
+                    onClick={() => handleDownloadSinglePdf(previewTeamIndex)}
+                    disabled={isDownloadingPdf}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 disabled:opacity-50 rounded-xl shadow-2xs transition-colors cursor-pointer shrink-0"
+                    title={`Télécharger la feuille de match de l'équipe ${previewTeamIndex} en PDF`}
+                  >
+                    <Download className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>{isDownloadingPdf ? 'Génération...' : `Télécharger PDF (Éq. ${previewTeamIndex})`}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handlePrintSingle(previewTeamIndex)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl shadow-2xs transition-colors cursor-pointer shrink-0"
+                    title={`Imprimer uniquement la feuille de match de l'équipe ${previewTeamIndex}`}
+                  >
+                    <Printer className="h-3.5 w-3.5 text-slate-600" />
+                    <span>Imprimer cette équipe</span>
+                  </button>
+                </>
+              ) : (
+                <span className="text-xs text-slate-500 font-mono hidden md:inline">
+                  Aperçu des {teams.length} équipes &bull; 1 page par équipe
+                </span>
               )}
             </div>
           </div>
@@ -445,6 +512,7 @@ export const MatchSheetModal: React.FC<Props> = ({
                   <MatchSheetContent
                     sheet={sheet}
                     clubId={clubId}
+                    clubName={clubName}
                     roundDateFormatted={roundDateFormatted}
                     roundNumber={selectedRound}
                   />
@@ -477,6 +545,7 @@ export const MatchSheetModal: React.FC<Props> = ({
               <MatchSheetContent
                 sheet={sheet}
                 clubId={clubId}
+                clubName={clubName}
                 roundDateFormatted={roundDateFormatted}
                 roundNumber={selectedRound}
               />
@@ -506,6 +575,7 @@ interface MatchSheetContentProps {
     }[];
   };
   clubId: number;
+  clubName?: string;
   roundDateFormatted: string;
   roundNumber: number;
 }
@@ -513,6 +583,7 @@ interface MatchSheetContentProps {
 const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
   sheet,
   clubId,
+  clubName,
   roundDateFormatted,
   roundNumber,
 }) => {
@@ -752,7 +823,7 @@ const MatchSheetContent: React.FC<MatchSheetContentProps> = ({
         {/* Bottom Metadata bar */}
         <div className="border-t border-slate-300 px-3 py-1 text-[8px] text-slate-500 flex justify-between bg-slate-50">
           <span>Interclubs Nationaux FRBE &bull; Édition officielle générée le {new Intl.DateTimeFormat('fr-BE').format(new Date())}</span>
-          <span>Feuille de match officielle &bull; Echiquier Leuzois</span>
+          <span>Feuille de match officielle &bull; {clubName || 'Interclubs FRBE'}</span>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ import {
   fetchRoundSeries,
   fetchVenues,
   fetchPlayerDirectory,
-  isFallbackMode,
+  getIsFallbackMode,
 } from '../api/frbeClient';
 import { clearCache } from '../api/cache';
 import { ClubFrbe, DivisionFrbe, VenueFrbe } from '../modelsFRBE';
@@ -52,22 +52,28 @@ export function useClubData(): ClubDataState {
   >(new Map());
   const [isFallback, setIsFallback] = useState<boolean>(false);
 
-  const loadData = useCallback(async (bypassCache = false) => {
+  const loadData = useCallback(async (bypassCache = false, signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
 
     try {
       // 1. Fetch club details
-      const clubData = await fetchClub(clubId, bypassCache);
+      const clubData = await fetchClub(clubId, bypassCache, signal);
+      if (signal?.aborted) return;
       setClub(clubData);
       setClubName(clubData.name);
 
       // 2. Fetch venues
-      const venuesData = await fetchVenues(clubId, bypassCache).catch(() => []);
+      const venuesData = await fetchVenues(clubId, bypassCache, signal).catch((err) => {
+        if (signal?.aborted || err?.name === 'AbortError') throw err;
+        return [];
+      });
+      if (signal?.aborted) return;
       setVenues(venuesData);
 
       // 3. Fetch player directory (all players names & ratings)
-      const directory = await fetchPlayerDirectory();
+      const directory = await fetchPlayerDirectory(signal);
+      if (signal?.aborted) return;
       (clubData.players || []).forEach((p) => {
         directory.set(p.idnumber, {
           name: `${p.first_name} ${p.last_name}`.trim(),
@@ -81,9 +87,13 @@ export function useClubData(): ClubDataState {
       const maxRound = Math.max(1, defaultRound(ACTIVE_SEASON));
       const roundsToFetch = Array.from({ length: maxRound }, (_, i) => i + 1);
       const seriesPromises = roundsToFetch.map((r) =>
-        fetchRoundSeries(r, bypassCache).catch(() => [] as DivisionFrbe[])
+        fetchRoundSeries(r, bypassCache, signal).catch((err) => {
+          if (signal?.aborted || err?.name === 'AbortError') throw err;
+          return [] as DivisionFrbe[];
+        })
       );
       const seriesResults = await Promise.all(seriesPromises);
+      if (signal?.aborted) return;
 
       // Merge divisions across rounds so that each division has all played rounds
       const divMap = new Map<string, DivisionFrbe>();
@@ -174,17 +184,26 @@ export function useClubData(): ClubDataState {
       const latest = extractLatestClubMatches(mergedDivisions, clubId, directory);
       setLatestMatches(latest);
 
-      setIsFallback(isFallbackMode);
+      setIsFallback(getIsFallbackMode());
     } catch (err: any) {
+      if (signal?.aborted || err?.name === 'AbortError') {
+        return;
+      }
       console.error('Failed to load club data:', err);
       setError(err.message || 'Impossible de récupérer les données.');
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [clubId, setClubName]);
 
   useEffect(() => {
-    loadData();
+    const controller = new AbortController();
+    loadData(false, controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [loadData]);
 
   const refresh = async () => {
