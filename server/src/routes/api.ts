@@ -57,7 +57,16 @@ apiRouter.get('/season/current', (req, res) => {
 
 // Director Key verification with rate-limiting and timing-safe comparison
 apiRouter.post('/auth/verify', authLimiter, (req, res) => {
-  const expectedKey = getDirectorKey();
+  let expectedKey: string;
+  try {
+    expectedKey = getDirectorKey();
+  } catch (err: any) {
+    return res.status(500).json({
+      valid: false,
+      error: `Configuration serveur requise : ${err.message}. Veuillez définir la variable DIRECTOR_KEY dans les paramètres d'environnement Render.`,
+    });
+  }
+
   const { key: headerKey, rejectedFromQuery } = extractProvidedKey(req);
   const candidateKey = req.body?.key?.trim() || headerKey;
 
