@@ -10,6 +10,9 @@ import { isAllowedOrigin } from './utils/cors';
 const app = express();
 const port = process.env.PORT || 3001;
 
+// Trust reverse proxy (Render, Cloudflare, etc.) so req.ip and express-rate-limit accurately identify client IPs
+app.set('trust proxy', 1);
+
 app.use(
   cors({
     origin: (origin, callback) => {
