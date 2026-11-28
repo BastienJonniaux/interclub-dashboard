@@ -12,6 +12,7 @@ import { getDivisionBadgeStyle } from '../../domain/standings';
 import { InterclubRoundSchedule } from '../../domain/calendar';
 import { PlayerSettingsModal } from './PlayerSettingsModal';
 import { MatchSheetModal } from './MatchSheetModal';
+import { SummaryExportModal } from './SummaryExportModal';
 import { PlayerHoverCard } from '../common/PlayerHoverCard';
 import { DirectorAuthModal } from '../common/DirectorAuthModal';
 import {
@@ -55,6 +56,7 @@ import {
   LayoutGrid,
   MapPin,
   ShieldAlert,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface Props {
@@ -102,6 +104,7 @@ export const SimulatorTab: React.FC<Props> = ({
   const [showIgnored, setShowIgnored] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isMatchSheetModalOpen, setIsMatchSheetModalOpen] = useState(false);
+  const [isSummaryExportModalOpen, setIsSummaryExportModalOpen] = useState(false);
 
   // Server & DB Sync State
   const [serverState, setServerState] = useState<{
@@ -775,6 +778,16 @@ export const SimulatorTab: React.FC<Props> = ({
             <span>Feuilles de match (PDF)</span>
           </button>
 
+          {/* Summary Image / PDF for SMS/WhatsApp */}
+          <button
+            onClick={() => setIsSummaryExportModalOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-white text-slate-800 border border-slate-200 px-3 py-1.5 text-xs font-mono font-bold hover:bg-slate-100 rounded-lg shadow-xs transition-colors cursor-pointer"
+            title="Générer un récapitulatif visuel (Image PNG ou PDF 1 page) prêt à envoyer par SMS / WhatsApp"
+          >
+            <ImageIcon className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Récap (IMG/PDF)</span>
+          </button>
+
           {/* Toggle lock */}
           <button
             onClick={handleToggleLock}
@@ -1276,7 +1289,6 @@ export const SimulatorTab: React.FC<Props> = ({
 
                   const tScout = scouting.find((s) => s.ourTeamName === t.name);
                   const liveEloDiff = avgElo && tScout?.opponentAverageElo ? avgElo - tScout.opponentAverageElo : null;
-                  const reserveLimit = RESERVE_ELO_LIMITS[t.division];
 
                   return (
                     <div
@@ -1389,17 +1401,6 @@ export const SimulatorTab: React.FC<Props> = ({
                                 {tScout?.opponentAverageElo ? `${tScout.opponentAverageElo} Elo` : 'NC'}
                               </div>
                             </div>
-                          </div>
-
-                          <div className="text-[10px] text-slate-600 pt-1 border-t border-slate-200/50 flex items-center justify-between flex-wrap gap-1">
-                            <span>
-                              Règles : {t.division === 1 ? 'Min 1800 Elo (Top 4 ≥ 2000)' : `Plafond réserve ${reserveLimit || '—'} Elo`}
-                            </span>
-                            {tScout?.opponentTeamName && (
-                              <span className="font-medium text-slate-600">
-                                Ronde {selectedRound}
-                              </span>
-                            )}
                           </div>
                         </div>
 
@@ -1847,6 +1848,17 @@ export const SimulatorTab: React.FC<Props> = ({
         draftCompositionsByRound={draftCompositionsByRound}
         schedule={schedule}
         venues={venues}
+      />
+
+      <SummaryExportModal
+        isOpen={isSummaryExportModalOpen}
+        onClose={() => setIsSummaryExportModalOpen(false)}
+        selectedRound={selectedRound}
+        clubName={clubName}
+        teams={teams}
+        players={players}
+        draftCompositions={draftCompositions}
+        scouting={scouting}
       />
     </div>
   );

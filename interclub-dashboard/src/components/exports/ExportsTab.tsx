@@ -10,7 +10,8 @@ import { AssignedBoard } from '../../domain/rules/frbeValidator';
 import { NextMatchScout, getBoardCountForDivision } from '../../domain/scouting';
 import { formatBoardResult } from '../../domain/performance';
 import { CompositionEmail } from './CompositionEmail';
-import { Copy, Check, Printer, Mail, FileText } from 'lucide-react';
+import { SummaryExportModal } from '../simulator/SummaryExportModal';
+import { Copy, Check, Mail, Image as ImageIcon } from 'lucide-react';
 import { ROUND_DATES } from '../../season';
 import { getPlayerScoreFromFrbeResult } from '../../domain/performance';
 
@@ -22,10 +23,11 @@ interface Props {
 }
 
 export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, scouting }) => {
-  const { draftCompositions } = useSimulator();
+  const { draftCompositions, selectedRound } = useSimulator();
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedSheet, setCopiedSheet] = useState(false);
   const [selectedTeamIndex, setSelectedTeamIndex] = useState(0);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   const teams = club.teams || [];
   const activeTeam = teams[selectedTeamIndex] || teams[0];
@@ -180,6 +182,15 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
             Générez en un clic les e-mails de débriefing pour vos membres et imprimez les feuilles de composition officielles.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsSummaryModalOpen(true)}
+          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-mono font-bold rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+          title="Générer une image PNG ou un PDF 1 page des compositions pour envoi rapide par SMS / WhatsApp"
+        >
+          <ImageIcon className="h-4 w-4 text-emerald-400" />
+          <span>Récap Visuel (IMG / PDF)</span>
+        </button>
       </div>
 
       <div className="border-b border-slate-200 flex items-center gap-8">
@@ -267,6 +278,17 @@ export const ExportsTab: React.FC<Props> = ({ club, divisions, playerDirectory, 
           draftCompositions={draftCompositions}
         />
       )}
+
+      <SummaryExportModal
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+        selectedRound={selectedRound}
+        clubName={club.name}
+        teams={teams}
+        players={club.players || []}
+        draftCompositions={draftCompositions}
+        scouting={scouting || []}
+      />
     </div>
   );
 };
