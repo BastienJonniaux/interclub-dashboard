@@ -5,45 +5,20 @@ import express from 'express';
 import cors from 'cors';
 import { apiRouter } from './routes/api';
 import { prisma } from './prisma';
+import { isAllowedOrigin } from './utils/cors';
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-// CORS configuration
-const defaultOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000',
-];
-
-const envOrigins = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map((origin) => origin.trim().replace(/\/+$/, ''))
-  .filter(Boolean);
-
-const allowedOrigins = envOrigins.length > 0 ? envOrigins : defaultOrigins;
-
 app.use(
   cors({
     origin: (origin, callback) => {
-      // 1. Allow requests with no origin (mobile apps, curl, server-to-server)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // 2. Allow wildcard if configured
-      if (allowedOrigins.includes('*')) {
-        return callback(null, true);
-      }
-
-      const normalizedOrigin = origin.trim().replace(/\/+$/, '');
-      if (allowedOrigins.includes(normalizedOrigin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
       console.warn(`[CORS] Requête bloquée depuis l'origine non autorisée : ${origin}`);
-      return callback(new Error(`Bloqué par la politique CORS : l'origine ${origin} n'est pas autorisée.`));
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -71,6 +46,15 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     documentation: '/api/health',
   });
+});
+
+// Global error handler
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err && err.message && err.message.includes('CORS')) {
+    return res.status(403).json({ error: 'Forbidden', message: err.message });
+  }
+  console.error('[Unhandled Server Error]', err);
+  return res.status(500).json({ error: 'Internal Server Error', message: err?.message || 'Unknown error' });
 });
 
 const server = app.listen(port, () => {
